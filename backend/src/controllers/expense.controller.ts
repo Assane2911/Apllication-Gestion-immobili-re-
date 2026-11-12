@@ -11,6 +11,7 @@ import { assertOwnership } from "../utils/authorization";
 import { csvEscape, csvMontant, CSV_BOM } from "../utils/csv";
 import { dateSaisieSchema } from "../utils/dates";
 import { deviseSchema } from "../utils/devises";
+import { arrondir } from "../utils/montants";
 import { avecCode } from "../utils/validationExplicite";
 
 const createExpenseSchema = z.object({
@@ -204,14 +205,18 @@ export const getFinancialSummary = asyncHandler(async (req: Request, res: Respon
 
   const netCashFlowByCurrency: Record<string, number> = {};
   for (const currency of new Set([...Object.keys(totalRevenueByCurrency), ...Object.keys(totalExpensesByCurrency)])) {
-    netCashFlowByCurrency[currency] = (totalRevenueByCurrency[currency] ?? 0) - (totalExpensesByCurrency[currency] ?? 0);
+    netCashFlowByCurrency[currency] = arrondir((totalRevenueByCurrency[currency] ?? 0) - (totalExpensesByCurrency[currency] ?? 0));
   }
 
+  // Les sommes de montants décimaux en virgule flottante laissent du bruit (10,10 + 20,20 = 30.299999999999997) :
+  // on arrondit au centime une seule fois, sur le total, avant de répondre.
+  const arrondirParDevise = (totaux: Record<string, number>) => Object.fromEntries(Object.entries(totaux).map(([devise, montant]) => [devise, arrondir(montant)]));
+
   res.json({
-    totalRevenueByCurrency,
-    totalExpensesByCurrency,
+    totalRevenueByCurrency: arrondirParDevise(totalRevenueByCurrency),
+    totalExpensesByCurrency: arrondirParDevise(totalExpensesByCurrency),
     netCashFlowByCurrency,
-    expensesByCategory,
+    expensesByCategory: Object.fromEntries(Object.entries(expensesByCategory).map(([categorie, parDevise]) => [categorie, arrondirParDevise(parDevise)])),
     expenseCount: allExpenses.length,
     // Factures réglées en totalité (un encaissement partiel n'est pas une facture payée).
     paidInvoiceCount: (paidInvoiceRows as { invoice: typeof invoices.$inferSelect }[]).filter((r) => r.invoice.status === "PAID").length,
@@ -260,7 +265,12 @@ export const exportFinancialReport = asyncHandler(async (req: Request, res: Resp
   const toDate = to ? new Date(`${to}T23:59:59`) : null;
 
   const paidInvoiceRows = await db
-    .select({ invoice: invoices, contract: contracts, tenant: tenants, property: properties })
+    // Seules colonnes lues par le rapport : nom du locataire et titre du bien (ni le bail ni la fiche locataire entière).
+    .select({
+      invoice: invoices,
+      tenant: { firstName: tenants.firstName, lastName: tenants.lastName },
+      property: { id: properties.id, title: properties.title },
+    })
     .from(invoices)
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
@@ -268,18 +278,17 @@ export const exportFinancialReport = asyncHandler(async (req: Request, res: Resp
     .where(and(factureEncaissee, eq(properties.managerId, managerId)));
 
   const expenseRows = await db
-    .select({ expense: expenses, property: properties })
+    .select({ expense: expenses, property: { id: properties.id, title: properties.title } })
     .from(expenses)
     .innerJoin(properties, eq(expenses.propertyId, properties.id))
     .where(eq(properties.managerId, managerId));
 
   type PaidInvoiceRow = {
     invoice: typeof invoices.$inferSelect;
-    contract: typeof contracts.$inferSelect;
-    tenant: typeof tenants.$inferSelect;
-    property: typeof properties.$inferSelect;
+    tenant: Pick<typeof tenants.$inferSelect, "firstName" | "lastName">;
+    property: Pick<typeof properties.$inferSelect, "id" | "title">;
   };
-  type ExpenseRow = { expense: typeof expenses.$inferSelect; property: typeof properties.$inferSelect };
+  type ExpenseRow = { expense: typeof expenses.$inferSelect; property: Pick<typeof properties.$inferSelect, "id" | "title"> };
 
   const inRange = (d: Date) => (!fromDate || d >= fromDate) && (!toDate || d <= toDate);
 
