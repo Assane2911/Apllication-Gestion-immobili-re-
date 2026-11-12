@@ -85,6 +85,13 @@ describe("historique d'abonnement", () => {
     expect(r.enAttente).toBe(2);
   });
 
+  it("ne compte ni comme réglé ni comme en attente un virement refusé", () => {
+    const r = syntheseHistorique([p({ amount: 25000, currency: "XOF", status: "REJECTED" }), p({ amount: 25000, currency: "XOF", status: "PENDING" })]);
+    expect(r.paiements).toBe(0);
+    expect(r.enAttente).toBe(1);
+    expect(r.totaux).toEqual([{ devise: "XOF", montant: 0 }]);
+  });
+
   it("n'affiche aucun paiement réglé quand tout est en attente : total à 0, pas de dernier paiement", () => {
     const r = syntheseHistorique([p({ amount: 25000, currency: "XOF", status: "PENDING" }), p({ amount: 30, currency: "EUR", status: "PENDING" })]);
     expect(r.paiements).toBe(0);

@@ -86,7 +86,7 @@ export interface SyntheseHistorique {
   totaux: Array<{ devise: string; montant: number }>;
   /** Date ISO du paiement validé le plus récent, ou null sans paiement validé. */
   dernier: string | null;
-  /** Paiements enregistrés mais pas encore validés (virement déclaré, paiement en cours). */
+  /** Paiements enregistrés mais pas encore validés (statut PENDING : virement déclaré, paiement en cours). */
   enAttente: number;
 }
 
@@ -99,7 +99,8 @@ export function syntheseHistorique(historique: PaiementAbonnement[]): SyntheseHi
   for (const p of historique) {
     if (!parDevise.has(p.currency)) parDevise.set(p.currency, 0);
     if (p.status !== "PAID") {
-      enAttente += 1;
+      // Un virement refusé par l'administration (REJECTED) n'attend plus rien : il ne compte ni réglé, ni en attente.
+      if (p.status === "PENDING") enAttente += 1;
       continue;
     }
     paiements += 1;

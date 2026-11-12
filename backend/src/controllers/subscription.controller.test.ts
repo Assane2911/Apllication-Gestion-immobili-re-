@@ -5,7 +5,7 @@ import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
 import { env } from "../config/env";
-import { users } from "../db/schema";
+import { platformSubscriptions, users } from "../db/schema";
 import { calculerJoursCredit, calculerPeriode } from "../services/subscriptionPeriod.service";
 import { authHeader, createManager, createPlatformSubscription, createProperty, tokenFor,
   createPortalUser,
@@ -425,6 +425,88 @@ describe("POST /api/subscription/subscribe", () => {
     const [updated] = await testDb.select().from(users).where(eq(users.id, manager.id));
     expect(updated.subscriptionStatus).toBe("TRIAL");
     expect(updated.subscriptionPlan).not.toBe("PRO");
+  });
+
+  /**
+   * Régression vue sur l'écran Abonnement : cinq lignes « en attente » identiques. Chaque déclaration de virement créait une
+   * ligne de plus, et l'administration pouvait ensuite valider chacune, prolongeant l'abonnement autant de fois. Un virement
+   * redéclaré à l'identique réutilise désormais la ligne en attente.
+   */
+  describe("virement déclaré plusieurs fois", () => {
+    const declarer = (manager: Awaited<ReturnType<typeof createManager>>, corps: Record<string, unknown> = {}) =>
+      request(app)
+        .post("/api/subscription/subscribe")
+        .set(authHeader(tokenFor(manager)))
+        .send({ plan: "PRO", billingCycle: "MONTHLY", paymentMethod: "BANK_TRANSFER", ...corps });
+    const lignes = (manager: { id: string }) => testDb.select().from(platformSubscriptions).where(eq(platformSubscriptions.userId, manager.id));
+
+    it("réutilise la ligne en attente quand le même virement est redéclaré", async () => {
+      const manager = await createManager();
+
+      const premier = await declarer(manager, { bankReference: "VIR-1" });
+      const second = await declarer(manager, { bankReference: "VIR-1" });
+
+      expect(second.status).toBe(200);
+      expect(second.body.record.id).toBe(premier.body.record.id);
+      expect(await lignes(manager)).toHaveLength(1);
+    });
+
+    it("met à jour la référence quand une nouvelle est saisie, et garde l'ancienne sinon", async () => {
+      const manager = await createManager();
+      await declarer(manager, { bankReference: "VIR-1" });
+
+      const corrigee = await declarer(manager, { bankReference: "VIR-2" });
+      expect(corrigee.body.record.paymentRef).toBe("VIR-2");
+
+      const sansReference = await declarer(manager);
+      expect(sansReference.body.record.paymentRef).toBe("VIR-2");
+      const toutes = await lignes(manager);
+      expect(toutes).toHaveLength(1);
+      expect(toutes[0].paymentRef).toBe("VIR-2");
+    });
+
+    it("crée une nouvelle ligne quand la formule, le cycle ou le moyen de paiement diffèrent", async () => {
+      const manager = await createManager();
+      await declarer(manager);
+
+      await declarer(manager, { plan: "STARTER" });
+      await declarer(manager, { billingCycle: "ANNUAL" });
+
+      expect(await lignes(manager)).toHaveLength(3);
+    });
+
+    it("crée une nouvelle ligne quand le précédent virement a été rejeté ou confirmé", async () => {
+      const manager = await createManager();
+      const premier = await declarer(manager);
+      await testDb.update(platformSubscriptions).set({ status: "REJECTED" }).where(eq(platformSubscriptions.id, premier.body.record.id));
+
+      const apresRejet = await declarer(manager);
+      expect(apresRejet.body.record.id).not.toBe(premier.body.record.id);
+
+      await testDb.update(platformSubscriptions).set({ status: "PAID" }).where(eq(platformSubscriptions.id, apresRejet.body.record.id));
+      const apresConfirmation = await declarer(manager);
+      expect(apresConfirmation.body.record.id).not.toBe(apresRejet.body.record.id);
+      expect(await lignes(manager)).toHaveLength(3);
+    });
+
+    it("ne crée qu'une ligne quand deux déclarations identiques arrivent en même temps", async () => {
+      const manager = await createManager();
+
+      await Promise.all([declarer(manager), declarer(manager), declarer(manager)]);
+
+      expect(await lignes(manager)).toHaveLength(1);
+    });
+
+    it("n'est pas partagé entre gestionnaires : chacun a sa propre ligne", async () => {
+      const a = await createManager();
+      const b = await createManager();
+
+      await declarer(a);
+      await declarer(b);
+
+      expect(await lignes(a)).toHaveLength(1);
+      expect(await lignes(b)).toHaveLength(1);
+    });
   });
 
   // Régression. La date de fin repartait systématiquement de l'instant de la
