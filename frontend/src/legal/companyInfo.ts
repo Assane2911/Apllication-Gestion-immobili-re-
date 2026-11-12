@@ -38,7 +38,7 @@ export const COMPANY = {
    */
   governingLaw: "droit français",
   /** Date de dernière mise à jour des documents légaux (à mettre à jour à chaque révision). */
-  lastUpdated: "17 octobre 2026",
+  lastUpdated: "12 novembre 2026",
 };
 
 /** Sous-traitants techniques mentionnés dans la politique de confidentialité. */

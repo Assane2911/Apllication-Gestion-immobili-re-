@@ -61,4 +61,26 @@ describe("PolitiqueConfidentialitePage", () => {
       expect(texte).toContain(destinataire);
     }
   });
+
+  /**
+   * Le Service détient des données de personnes qui n'ont pas de compte (garants d'un bail, prospects d'une annonce) et sait désormais
+   * en remettre une copie et les anonymiser (voir backend/src/controllers/personne.controller.ts) : le texte doit le dire, et dire à
+   * qui s'adresser. Il annonce aussi ce que devient un compte portail à la suppression d'une agence et la double authentification de
+   * l'administration — trois comportements du code que la politique ne doit pas contredire.
+   */
+  it("déclare les garants et les prospects, leurs droits, et le sort des comptes portail", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <PolitiqueConfidentialitePage />
+      </MemoryRouter>
+    );
+
+    const texte = (container.textContent ?? "").replace(/\s+/g, " ");
+    expect(texte).toContain("Données de garants");
+    expect(texte).toContain("Demandes de prospects");
+    expect(texte).toMatch(/garant.*prospect.*n'a pas de compte.*adresse sa demande.*au Gestionnaire/);
+    expect(texte).toContain("anonymiser ses données identifiantes");
+    expect(texte).toContain("que cette agence était seule à rattacher");
+    expect(texte).toContain("exige une double authentification");
+  });
 });
