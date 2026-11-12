@@ -4,7 +4,7 @@ import { contracts, invoices, properties, rentRevisions, tenants } from "../db/s
 import { ApiError } from "../utils/asyncHandler";
 import { LANGUE_PAR_DEFAUT, langueOuDefaut, type Langue } from "../utils/langue";
 import { MONTANT_MAXIMUM } from "../utils/montant";
-import { arrondir } from "../utils/montants";
+import { arrondir, arrondirPourDevise } from "../utils/montants";
 import { envoyerCopieAuxColocataires } from "./colocation.service";
 import { rentRevisionEmail, sendEmail } from "./email.service";
 import { TEXTES_SUITE } from "./email.suite.textes";
@@ -38,8 +38,11 @@ export const POURCENTAGE_MAX = 100;
 type Revision = typeof rentRevisions.$inferSelect;
 type Contrat = typeof contracts.$inferSelect;
 
-/** Nouveau loyer d'après l'entrée du gestionnaire, arrondi au centime ; refuse tout ce qui n'est pas un loyer plausible. */
-export function calculerNouveauLoyer(loyerActuel: number, entree: EntreeRevision): number {
+/**
+ * Nouveau loyer d'après l'entrée du gestionnaire, arrondi à la plus petite unité de sa devise (le centime, ou le franc entier
+ * en francs CFA) ; refuse tout ce qui n'est pas un loyer plausible. Sans devise, le centime.
+ */
+export function calculerNouveauLoyer(loyerActuel: number, entree: EntreeRevision, devise?: string | null): number {
   let nouveau: number;
   if (entree.mode === "AMOUNT") nouveau = entree.newRent;
   else if (entree.mode === "PERCENT") {
@@ -51,7 +54,7 @@ export function calculerNouveauLoyer(loyerActuel: number, entree: EntreeRevision
     if (!(entree.indexOld > 0) || !(entree.indexNew > 0)) throw new ApiError(400, "Les deux valeurs de l'indice doivent être positives.", "REVISION_INDEX_POSITIVE");
     nouveau = (loyerActuel * entree.indexNew) / entree.indexOld;
   }
-  nouveau = arrondir(nouveau);
+  nouveau = arrondirPourDevise(nouveau, devise);
   if (!Number.isFinite(nouveau) || nouveau <= 0) throw new ApiError(400, "Le nouveau loyer doit être supérieur à zéro.", "REVISION_RENT_POSITIVE");
   if (nouveau > MONTANT_MAXIMUM) throw new ApiError(400, "Le nouveau loyer dépasse le plafond accepté : vérifiez le montant, le pourcentage ou les valeurs de l'indice.", "REVISION_RENT_CAP");
   if (nouveau === arrondir(loyerActuel)) throw new ApiError(400, "Le nouveau loyer est identique au loyer actuel.", "REVISION_RENT_UNCHANGED");
@@ -100,7 +103,7 @@ async function appliquerAuContrat(tx: Transaction, contrat: Contrat, nouveauLoye
   let recalculees = 0;
   for (const f of aPartirDuMois) {
     if (f.status === "PAID" || f.amountPaid > 0) continue; // loyer déjà encaissé : il garde le montant payé
-    await tx.update(invoices).set({ amount: arrondir((f.amount * nouveauLoyer) / ancien) }).where(eq(invoices.id, f.id));
+    await tx.update(invoices).set({ amount: arrondirPourDevise((f.amount * nouveauLoyer) / ancien, f.currency ?? contrat.currency) }).where(eq(invoices.id, f.id));
     recalculees++;
   }
   await tx.update(contracts).set({ rent: nouveauLoyer }).where(eq(contracts.id, contrat.id));
@@ -147,7 +150,7 @@ export async function creerRevision(p: CreationRevision): Promise<{ revision: Re
       .where(and(eq(rentRevisions.contractId, contrat.id), eq(rentRevisions.status, "PENDING")));
     if (enAttente) throw new ApiError(409, "Une révision est déjà programmée pour ce bail : annulez-la avant d'en créer une autre.", "REVISION_ALREADY_SCHEDULED");
 
-    const nouveauLoyer = calculerNouveauLoyer(contrat.rent, p.entree);
+    const nouveauLoyer = calculerNouveauLoyer(contrat.rent, p.entree, contrat.currency);
 
     // Un mois déjà (même partiellement) encaissé garde son montant : on le dit plutôt que de le réécrire.
     const factures = await tx.select().from(invoices).where(and(eq(invoices.contractId, contrat.id), sql`${invoices.status} <> 'CANCELLED'`));

@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { env } from "../config/env";
 import { ApiError } from "../utils/asyncHandler";
 import { fetchAvecDelai } from "../utils/fetchAvecDelai";
+import { DEVISES_SANS_DECIMALE } from "../utils/montants";
 import type { CompteAgenceEncaissant } from "./comptePaiementAgence.service";
 
 export type PaymentMethodKey = "STRIPE" | "PAYDUNYA" | "BANK_TRANSFER" | "DEMO";
@@ -97,19 +98,11 @@ export async function initiatePayment(params: {
 }
 
 /**
- * Devises dont l'unité n'a pas de sous-division : un "franc CFA" ne se divise
- * pas en centimes. Stripe attend TOUJOURS un entier dans la plus petite unité
- * de la devise — 2900 pour 29,00 EUR, mais 15000 pour 15 000 XOF. Multiplier
- * par 100 sans distinction facturerait cent fois le prix sur ces devises-là,
- * exactement l'erreur d'un facteur 100 déjà rencontrée dans l'autre sens avec
- * PayDunya.
- *
- * Liste des devises sans décimale prises en charge par Stripe.
+ * Devises dont l'unité n'a pas de sous-division : voir DEVISES_SANS_DECIMALE (utils/montants.ts), qui sert aussi à arrondir
+ * les montants calculés. Stripe attend TOUJOURS un entier dans la plus petite unité de la devise — 2900 pour 29,00 EUR, mais
+ * 15000 pour 15 000 XOF. Multiplier par 100 sans distinction facturerait cent fois le prix sur ces devises-là, exactement
+ * l'erreur d'un facteur 100 déjà rencontrée dans l'autre sens avec PayDunya.
  */
-const DEVISES_SANS_DECIMALE = new Set([
-  "BIF", "CLP", "DJF", "GNF", "JPY", "KMF", "KRW", "MGA",
-  "PYG", "RWF", "UGX", "VND", "VUV", "XAF", "XOF", "XPF",
-]);
 
 /**
  * Devises Stripe à TROIS décimales — leur plus petite unité (le fils, le
