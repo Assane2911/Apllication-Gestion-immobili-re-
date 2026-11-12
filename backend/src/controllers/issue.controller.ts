@@ -78,17 +78,25 @@ export const listIssues = asyncHandler(async (req: Request, res: Response) => {
   if (isIssueStatus(req.query.status)) conditions.push(eq(issueReports.status, req.query.status));
   const whereClause = and(...conditions);
 
+  // Colonnes lues : celles que l'écran affiche, pas les lignes entières répétées sur CHAQUE incident. Le bail porte les clauses,
+  // les mentions légales et deux images de signature (jusqu'à 500 000 caractères chacune), le bien sa description, le locataire sa
+  // fiche complète : une page de 20 incidents en renvoyait 20 exemplaires. L'écran lit le nom, le téléphone et l'e-mail du
+  // locataire, le titre du bien, et le prestataire (petite fiche, gardée entière).
+  const colonnesLocataire = { id: tenants.id, firstName: tenants.firstName, lastName: tenants.lastName, phone: tenants.phone, email: tenants.email };
+  const colonnesBail = { id: contracts.id, propertyId: contracts.propertyId, currency: contracts.currency, startDate: contracts.startDate, endDate: contracts.endDate, status: contracts.status };
+  const colonnesBien = { id: properties.id, title: properties.title, address: properties.address };
+
   type IssueRow = {
     issue: typeof issueReports.$inferSelect;
-    tenant: typeof tenants.$inferSelect;
-    contract: typeof contracts.$inferSelect;
-    property: typeof properties.$inferSelect;
+    tenant: { [K in keyof typeof colonnesLocataire]: unknown };
+    contract: { [K in keyof typeof colonnesBail]: unknown };
+    property: { [K in keyof typeof colonnesBien]: unknown };
     vendor: typeof vendors.$inferSelect | null;
   };
 
   const [rows, [{ count }]] = await Promise.all([
     db
-      .select({ issue: issueReports, tenant: tenants, contract: contracts, property: properties, vendor: vendors })
+      .select({ issue: issueReports, tenant: colonnesLocataire, contract: colonnesBail, property: colonnesBien, vendor: vendors })
       .from(issueReports)
       .innerJoin(tenants, eq(issueReports.tenantId, tenants.id))
       .innerJoin(contracts, eq(issueReports.contractId, contracts.id))
@@ -157,6 +165,19 @@ export const updateIssueStatus = asyncHandler(async (req: Request, res: Response
     throw new ApiError(400, "Impossible de planifier une intervention sans prestataire assigné.", "ISSUE_SCHEDULE_NEEDS_VENDOR");
   }
 
+  // Ce qui change VRAIMENT. Un enregistrement identique (double clic, onglet resté ouvert) ne réécrit rien, ne remplit pas
+  // le journal et surtout ne renvoie pas au locataire un e-mail « statut mis à jour » qui ne dit rien de nouveau.
+  const memeTexte = (a: string | null | undefined, b: string | null | undefined) => (a ?? "") === (b ?? "");
+  const memeDate = (a: Date | null | undefined, b: Date | null | undefined) => (a ? a.getTime() : null) === (b ? b.getTime() : null);
+  const statutChange = body.status !== owned.issue.status;
+  const noteChange = body.managerNote !== undefined && !memeTexte(body.managerNote, owned.issue.managerNote);
+  const prestataireChange = body.vendorId !== undefined && (body.vendorId ?? null) !== (owned.issue.vendorId ?? null);
+  const dateChange = body.scheduledAt !== undefined && !memeDate(body.scheduledAt, owned.issue.scheduledAt);
+  if (!statutChange && !noteChange && !prestataireChange && !dateChange) {
+    const vendorActuel = owned.issue.vendorId ? (await db.select().from(vendors).where(eq(vendors.id, owned.issue.vendorId)))[0] ?? null : null;
+    return res.json({ ...(await withSignedPhotos(owned.issue)), vendor: vendorActuel });
+  }
+
   const [updated] = await db
     .update(issueReports)
     .set({
@@ -180,7 +201,9 @@ export const updateIssueStatus = asyncHandler(async (req: Request, res: Response
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
     .where(eq(issueReports.id, updated.id));
 
-  if (row?.tenant?.email) {
+  // Le message contient le statut, la note et la date d'intervention : le prestataire n'y figure pas, donc l'assigner seul
+  // ne prévient personne.
+  if ((statutChange || noteChange || dateChange) && row?.tenant?.email) {
     const { subject, html } = issueStatusUpdateEmail({
       tenantName: `${row.tenant.firstName} ${row.tenant.lastName}`,
       issueTitle: updated.title,
@@ -212,8 +235,12 @@ export const updateIssueStatus = asyncHandler(async (req: Request, res: Response
 
 /** Signalements du locataire connecté (portail locataire). */
 export const myIssues = asyncHandler(async (req: Request, res: Response) => {
+  // Colonnes lues seulement (voir listIssues) : le locataire n'a pas à recevoir le bail entier, ses clauses et ses signatures,
+  // ni la fiche complète du bien, en plusieurs exemplaires.
+  const colonnesBail = { id: contracts.id, propertyId: contracts.propertyId, status: contracts.status };
+  const colonnesBien = { id: properties.id, title: properties.title, address: properties.address };
   const rows = await db
-    .select({ issue: issueReports, contract: contracts, property: properties, vendor: vendors })
+    .select({ issue: issueReports, contract: colonnesBail, property: colonnesBien, vendor: vendors })
     .from(issueReports)
     .innerJoin(contracts, eq(issueReports.contractId, contracts.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
@@ -223,8 +250,8 @@ export const myIssues = asyncHandler(async (req: Request, res: Response) => {
 
   type MyIssueRow = {
     issue: typeof issueReports.$inferSelect;
-    contract: typeof contracts.$inferSelect;
-    property: typeof properties.$inferSelect;
+    contract: { [K in keyof typeof colonnesBail]: unknown };
+    property: { [K in keyof typeof colonnesBien]: unknown };
     vendor: typeof vendors.$inferSelect | null;
   };
 

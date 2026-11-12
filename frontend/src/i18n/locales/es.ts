@@ -308,6 +308,7 @@ const es: TranslationSchema = {
       CARACTERE_INTERDIT: "Solicitud no válida: carácter prohibido.",
       PHONE_INVALID: "Número de teléfono no válido: indique el prefijo del país, por ejemplo +221 77 123 45 67.",
       MESSAGE_RATE_LIMITED: "Demasiados mensajes enviados en poco tiempo. Inténtelo de nuevo en unos minutos.",
+      ISSUE_RATE_LIMITED: "Demasiadas fotos enviadas en poco tiempo. Inténtelo de nuevo en unos minutos.",
       PERSON_DATA_NOT_FOUND: "No hay datos de esta persona.",
       PERSON_CRITERIA_REQUIRED: "Indique el correo electrónico o el teléfono de la persona.",
       LEASE_DATE_OUT_OF_RANGE: "La fecha debe estar comprendida entre {{min}} y {{max}}",
