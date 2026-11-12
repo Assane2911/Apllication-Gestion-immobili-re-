@@ -996,12 +996,19 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
     .where(
       and(
         eq(invoices.id, row.invoice.id),
+        // Un rappel « loyer à payer » n'a de sens que pour une facture encore due. La liste affichée peut dater : la facture a
+        // pu être réglée (en ligne, par un collègue) ou annulée depuis, et le locataire recevrait un e-mail réclamant un
+        // loyer qu'il a déjà payé. Contrôlé dans la réclamation elle-même, donc atomique : rien n'est marqué, rien n'est envoyé.
+        inArray(invoices.status, ["PENDING", "LATE"]),
         or(isNull(invoices.reminderSentAt), lt(invoices.reminderSentAt, seuilReclamationPerimee))
       )
     )
     .returning();
 
   if (!reclamee) {
+    const [actuelle] = await db.select({ status: invoices.status }).from(invoices).where(eq(invoices.id, row.invoice.id));
+    if (actuelle?.status === "PAID") throw new ApiError(409, "Cette facture est déjà réglée.", "INVOICE_ALREADY_PAID");
+    if (actuelle?.status === "CANCELLED") throw new ApiError(409, "Cette facture a été annulée : elle ne peut plus être modifiée.", "INVOICE_CANCELLED_LOCKED");
     throw new ApiError(409, "Un rappel vient déjà d'être envoyé pour cette facture. Patientez un instant puis réessayez.", "REMINDER_IN_PROGRESS");
   }
 
