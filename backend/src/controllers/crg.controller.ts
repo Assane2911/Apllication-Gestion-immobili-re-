@@ -135,8 +135,8 @@ export async function computeCrgPourProprietaires(proprietaires: OwnerRow[], mon
   const tousLesBiens: Array<typeof properties.$inferSelect> = await db.select().from(properties).where(inArray(properties.ownerId, ownerIds));
   const propertyIds = tousLesBiens.map((p) => p.id);
 
-  const tousLesBaux: Array<typeof contracts.$inferSelect> =
-    propertyIds.length > 0 ? await db.select().from(contracts).where(inArray(contracts.propertyId, propertyIds)) : [];
+  const tousLesBaux: BailMinimal[] =
+    propertyIds.length > 0 ? await db.select({ id: contracts.id, propertyId: contracts.propertyId }).from(contracts).where(inArray(contracts.propertyId, propertyIds)) : [];
   const contractIds = tousLesBaux.map((c) => c.id);
 
   // paidAt est nullable (une facture PAID sans paidAt renseigné retombe sur
@@ -169,7 +169,7 @@ export async function computeCrgPourProprietaires(proprietaires: OwnerRow[], mon
 
   // Répartition par propriétaire.
   const proprietaireDuBien = new Map(tousLesBiens.map((p) => [p.id, p.ownerId] as const));
-  const bauxParProprietaire = new Map<string, Array<typeof contracts.$inferSelect>>();
+  const bauxParProprietaire = new Map<string, BailMinimal[]>();
   const proprietaireDuBail = new Map<string, string>();
   for (const c of tousLesBaux) {
     const ownerId = proprietaireDuBien.get(c.propertyId);
@@ -205,9 +205,12 @@ export async function computeCrgPourProprietaires(proprietaires: OwnerRow[], mon
   );
 }
 
+/** Ce que le calcul lit d'un bail : son identifiant et son bien (jamais les clauses ni les images de signature). */
+type BailMinimal = { id: string; propertyId: string };
+
 type DonneesCrg = {
   biens: Array<typeof properties.$inferSelect>;
-  baux: Array<typeof contracts.$inferSelect>;
+  baux: BailMinimal[];
   encaissements: Array<typeof invoices.$inferSelect>;
   depenses: Array<typeof expenses.$inferSelect>;
   reversements: Array<typeof ownerPayouts.$inferSelect>;
@@ -283,6 +286,10 @@ function assemblerCrg(owner: OwnerRow, month: number, year: number, donnees: Don
   // Taux en vigueur CE mois-là : un changement de taux ne recalcule pas les mois passés.
   const tauxCommission = tauxDuMois(owner.managementFeeRate, donnees.historiqueTaux, month, year);
   for (const entry of perProperty.values()) {
+    // Les additions de montants décimaux laissent du bruit binaire (10,10 + 20,20 = 30.299999999999997) :
+    // on arrondit au centime la somme de la ligne, une fois, avant d'en tirer la commission.
+    entry.loyersEncaisses = arrondir(entry.loyersEncaisses);
+    entry.chargesDeduites = arrondir(entry.chargesDeduites);
     entry.commission = Math.round(entry.loyersEncaisses * tauxCommission) / 100;
     entry.netAReverser = Math.round((entry.loyersEncaisses - entry.chargesDeduites - entry.commission) * 100) / 100;
   }
@@ -302,10 +309,10 @@ function assemblerCrg(owner: OwnerRow, month: number, year: number, donnees: Don
   const totalCommissionByCurrency: Record<string, number> = {};
   const totalNetByCurrency: Record<string, number> = {};
   for (const entry of propertyLines) {
-    totalLoyersByCurrency[entry.currency] = (totalLoyersByCurrency[entry.currency] ?? 0) + entry.loyersEncaisses;
-    totalChargesByCurrency[entry.currency] = (totalChargesByCurrency[entry.currency] ?? 0) + entry.chargesDeduites;
-    totalCommissionByCurrency[entry.currency] = (totalCommissionByCurrency[entry.currency] ?? 0) + entry.commission;
-    totalNetByCurrency[entry.currency] = (totalNetByCurrency[entry.currency] ?? 0) + entry.netAReverser;
+    totalLoyersByCurrency[entry.currency] = arrondir((totalLoyersByCurrency[entry.currency] ?? 0) + entry.loyersEncaisses);
+    totalChargesByCurrency[entry.currency] = arrondir((totalChargesByCurrency[entry.currency] ?? 0) + entry.chargesDeduites);
+    totalCommissionByCurrency[entry.currency] = arrondir((totalCommissionByCurrency[entry.currency] ?? 0) + entry.commission);
+    totalNetByCurrency[entry.currency] = arrondir((totalNetByCurrency[entry.currency] ?? 0) + entry.netAReverser);
   }
 
   const reversements = donnees.reversements;
@@ -393,8 +400,8 @@ export async function computeReleveAnnuel(owner: OwnerRow, year: number): Promis
 
   const biens: Array<typeof properties.$inferSelect> = await db.select().from(properties).where(eq(properties.ownerId, owner.id));
   const propertyIds = biens.map((p) => p.id);
-  const baux: Array<typeof contracts.$inferSelect> =
-    propertyIds.length > 0 ? await db.select().from(contracts).where(inArray(contracts.propertyId, propertyIds)) : [];
+  const baux: BailMinimal[] =
+    propertyIds.length > 0 ? await db.select({ id: contracts.id, propertyId: contracts.propertyId }).from(contracts).where(inArray(contracts.propertyId, propertyIds)) : [];
   const contractIds = baux.map((c) => c.id);
   const historiqueTaux = (await chargerHistoriqueTaux([owner.id])).get(owner.id) ?? [];
 

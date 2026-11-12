@@ -39,13 +39,16 @@ function yearBounds(year: number) {
   };
 }
 
+/**
+ * Colonnes réellement lues par les rapports : le nom du locataire et le titre du bien. Le bail (clauses, deux images de signature
+ * de plusieurs centaines de Ko) et la fiche locataire entière n'ont aucune raison d'être chargés pour un total ou un libellé.
+ */
 type PaidInvoiceRow = {
   invoice: typeof invoices.$inferSelect;
-  contract: typeof contracts.$inferSelect;
-  tenant: typeof tenants.$inferSelect;
-  property: typeof properties.$inferSelect;
+  tenant: Pick<typeof tenants.$inferSelect, "firstName" | "lastName">;
+  property: Pick<typeof properties.$inferSelect, "id" | "title">;
 };
-type ExpenseRow = { expense: typeof expenses.$inferSelect; property: typeof properties.$inferSelect };
+type ExpenseRow = { expense: typeof expenses.$inferSelect; property: Pick<typeof properties.$inferSelect, "id" | "title"> };
 
 async function loadYearData(managerId: string, year: number) {
   const { start, end } = yearBounds(year);
@@ -57,14 +60,18 @@ async function loadYearData(managerId: string, year: number) {
   // exportFinancialReport (expense.controller.ts) le fait déjà.
   const [paidInvoiceRows, expenseRows] = await Promise.all([
     db
-      .select({ invoice: invoices, contract: contracts, tenant: tenants, property: properties })
+      .select({
+        invoice: invoices,
+        tenant: { firstName: tenants.firstName, lastName: tenants.lastName },
+        property: { id: properties.id, title: properties.title },
+      })
       .from(invoices)
       .innerJoin(contracts, eq(invoices.contractId, contracts.id))
       .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
       .innerJoin(properties, eq(contracts.propertyId, properties.id))
       .where(and(factureEncaissee, eq(properties.managerId, managerId))),
     db
-      .select({ expense: expenses, property: properties })
+      .select({ expense: expenses, property: { id: properties.id, title: properties.title } })
       .from(expenses)
       .innerJoin(properties, eq(expenses.propertyId, properties.id))
       .where(and(eq(properties.managerId, managerId), gte(expenses.expenseDate, start), lte(expenses.expenseDate, end))),
@@ -147,8 +154,12 @@ export const getAnnualSynthesis = asyncHandler(async (req: Request, res: Respons
 
   const netResultByCurrency: Record<string, number> = {};
   for (const currency of new Set([...Object.keys(totalRevenueByCurrency), ...Object.keys(totalExpensesByCurrency)])) {
-    netResultByCurrency[currency] = (totalRevenueByCurrency[currency] ?? 0) - (totalExpensesByCurrency[currency] ?? 0);
+    netResultByCurrency[currency] = arrondir((totalRevenueByCurrency[currency] ?? 0) - (totalExpensesByCurrency[currency] ?? 0));
   }
+  // Les sommes de montants décimaux en virgule flottante laissent du bruit (10,10 + 20,20 = 30.299999999999997) :
+  // on arrondit au centime les totaux avant de répondre (jamais les montants intermédiaires).
+  const arrondirParDevise = (totaux: Record<string, number>) => Object.fromEntries(Object.entries(totaux).map(([devise, montant]) => [devise, arrondir(montant)]));
+  const arrondirParCle = (groupes: Record<string, Record<string, number>>) => Object.fromEntries(Object.entries(groupes).map(([cle, parDevise]) => [cle, arrondirParDevise(parDevise)]));
 
   // Bilan par bien, ventilé par devise (une clé propertyId+devise, et non
   // simplement propertyId comme le résumé par bien de exportFinancialReport)
@@ -187,18 +198,18 @@ export const getAnnualSynthesis = asyncHandler(async (req: Request, res: Respons
     byPropertyCurrency.set(key, entry);
   }
   const bilanParBien = Array.from(byPropertyCurrency.values())
-    .map((entry) => ({ ...entry, net: entry.revenue - entry.expense }))
+    .map((entry) => ({ ...entry, revenue: arrondir(entry.revenue), expense: arrondir(entry.expense), net: arrondir(entry.revenue - entry.expense) }))
     .sort((a, b) => a.propertyTitle.localeCompare(b.propertyTitle) || a.currency.localeCompare(b.currency));
 
   res.json({
     year,
     availableYears: await availableYears(managerId),
-    totalRevenueByCurrency,
-    totalExpensesByCurrency,
+    totalRevenueByCurrency: arrondirParDevise(totalRevenueByCurrency),
+    totalExpensesByCurrency: arrondirParDevise(totalExpensesByCurrency),
     netResultByCurrency,
-    revenueByMonth,
-    expensesByMonth,
-    expensesByCategory,
+    revenueByMonth: arrondirParCle(revenueByMonth),
+    expensesByMonth: arrondirParCle(expensesByMonth),
+    expensesByCategory: arrondirParCle(expensesByCategory),
     bilanParBien,
   });
 });
