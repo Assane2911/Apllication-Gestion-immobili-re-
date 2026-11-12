@@ -439,8 +439,10 @@ describe("AgencySettingsPage", () => {
 
       await screen.findByText(/Awa Diallo/);
       expect(screen.getByRole("button", { name: "Ouvrir la liste des locataires" })).toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: /purger/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: /anonymiser/i })).not.toBeInTheDocument();
+      // Dans CETTE section : la rubrique « Droits des personnes », plus bas, a son propre bouton d'anonymisation.
+      const conservation = within(document.getElementById("agency-conservation")!);
+      expect(conservation.queryByRole("button", { name: /purger/i })).not.toBeInTheDocument();
+      expect(conservation.queryByRole("button", { name: /anonymiser/i })).not.toBeInTheDocument();
     });
 
     /**

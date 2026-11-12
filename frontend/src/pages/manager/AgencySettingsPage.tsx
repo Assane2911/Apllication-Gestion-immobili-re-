@@ -7,6 +7,7 @@ import { api, apiErrorMessage } from "../../api/client";
 import ChampTelephone from "../../components/ChampTelephone";
 import SectionImageAgence from "../../components/SectionImageAgence";
 import SectionPaiementEnLigne from "../../components/SectionPaiementEnLigne";
+import SectionDroitsPersonnes from "../../components/SectionDroitsPersonnes";
 import SectionReglage from "../../components/SectionReglage";
 import DeleteAccountModal from "../../components/DeleteAccountModal";
 import TwoFactorDisableModal from "../../components/TwoFactorDisableModal";
@@ -263,6 +264,7 @@ export default function AgencySettingsPage() {
     { id: "agency-relances", cle: "reminders" },
     { id: "agency-paiement", cle: "onlinePayment" },
     { id: "agency-conservation", cle: "retention" },
+    { id: "agency-droits", cle: "personRights" },
     { id: "agency-securite", cle: "security" },
     { id: "agency-2fa", cle: "twoFactor" },
     ...(estProprietaire ? [{ id: "agency-equipe", cle: "team" }] : []),
@@ -630,6 +632,8 @@ export default function AgencySettingsPage() {
                 </>
               )}
             </SectionReglage>
+
+            <SectionDroitsPersonnes numero={numero("agency-droits")} />
 
             {/*
               Fermer toutes les sessions est le seul recours quand on soupçonne
