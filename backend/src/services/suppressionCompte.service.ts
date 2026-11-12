@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
 import { db, Transaction } from "../db/client";
-import { agencySettings, contracts, invoices, issueReports, listings, messages, ownerMessages, properties, storedDocuments, tenants, users } from "../db/schema";
+import { agencySettings, contracts, invoices, issueReports, leaseNotices, listings, messages, ownerMessages, properties, storedDocuments, tenants, users } from "../db/schema";
 import { cancelStripeSubscriptionNow } from "./payment.service";
 import { deleteStorageObjectBestEffort } from "./storage.service";
 
@@ -38,7 +38,7 @@ import { deleteStorageObjectBestEffort } from "./storage.service";
 export async function supprimerCompteGestionnaire(user: typeof users.$inferSelect) {
   if (user.stripeSubscriptionId) await cancelStripeSubscriptionNow(user.stripeSubscriptionId);
 
-  const [managerAudios, ownerAudios, managerProperties, managerListings, managerTenants, managerContracts, managerIssues, [reglagesAgence], managerDocuments] = await Promise.all([
+  const [managerAudios, ownerAudios, managerProperties, managerListings, managerTenants, managerContracts, managerIssues, [reglagesAgence], managerDocuments, managerNotices] = await Promise.all([
     // Les messages vocaux : leurs fichiers vivent dans le stockage privé, hors de portée des suppressions en cascade.
     db
       .select({ audioPath: messages.audioPath })
@@ -67,6 +67,14 @@ export async function supprimerCompteGestionnaire(user: typeof users.$inferSelec
     db.select({ logoUrl: agencySettings.logoUrl, stampOrSignatureUrl: agencySettings.stampOrSignatureUrl }).from(agencySettings).where(eq(agencySettings.userId, user.id)),
     // Les documents rangés (diagnostics, pièces, justificatifs) : privés, donc hors de portée des cascades.
     db.select({ filePath: storedDocuments.filePath }).from(storedDocuments).where(eq(storedDocuments.managerId, user.id)),
+    // Les scans des congés (acte d'huissier, lettre, accusé de réception) : privés eux aussi, et nommant le locataire. Les
+    // lignes partent avec les baux ; sans cette lecture préalable, leurs fichiers survivaient à une suppression « définitive ».
+    db
+      .select({ documentUrl: leaseNotices.documentUrl })
+      .from(leaseNotices)
+      .innerJoin(contracts, eq(leaseNotices.contractId, contracts.id))
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .where(and(eq(properties.managerId, user.id), isNotNull(leaseNotices.documentUrl))),
   ]);
   const [{ collaborateurs }] = await db
     .select({ collaborateurs: sql<number>`count(*)::int` })
@@ -118,6 +126,7 @@ export async function supprimerCompteGestionnaire(user: typeof users.$inferSelec
     ...managerTenants.map((t) => t.idDocument),
     ...managerContracts.map((c) => c.scannedContractUrl),
     ...managerDocuments.map((d: { filePath: string }) => d.filePath),
+    ...managerNotices.map((n: { documentUrl: string | null }) => n.documentUrl),
     ...managerAudios.map((m: { audioPath: string | null }) => m.audioPath),
     ...ownerAudios.map((m: { audioPath: string | null }) => m.audioPath),
     ...managerIssues.flatMap((i) => {

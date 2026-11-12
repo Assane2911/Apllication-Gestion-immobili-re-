@@ -73,7 +73,7 @@ describe("READ_ONLY : consultation seulement", () => {
     ["DELETE", "/api/team/u1"],
   ])("ne peut pas %s %s", (m, u) => expect(ok("READ_ONLY", m, u)).toBe(false));
 
-  it.each(["/api/tenants/t1/export", "/api/activity-log", "/api/conservation/echeances", "/api/tenants/t1/id-document-url", "/api/fiscal/fec", "/api/expenses/export"])(
+  it.each(["/api/tenants/t1/export", "/api/owners/o1/export", "/api/activity-log", "/api/conservation/echeances", "/api/tenants/t1/id-document-url", "/api/fiscal/fec", "/api/expenses/export"])(
     "ne peut pas lire la donnée sensible %s",
     (u) => expect(ok("READ_ONLY", "GET", u)).toBe(false)
   );
@@ -138,6 +138,7 @@ describe("AGENT : exploitation courante, sans suppression ni encaissement", () =
   it("lit les pièces d'identité mais pas l'export complet d'un locataire ni le journal", () => {
     expect(ok("AGENT", "GET", "/api/tenants/t1/id-document-url")).toBe(true);
     expect(ok("AGENT", "GET", "/api/tenants/t1/export")).toBe(false);
+    expect(ok("AGENT", "GET", "/api/owners/o1/export")).toBe(false);
     expect(ok("AGENT", "GET", "/api/activity-log")).toBe(false);
     expect(ok("AGENT", "GET", "/api/fiscal/grand-livre")).toBe(false);
   });
@@ -168,6 +169,7 @@ describe("ACCOUNTANT : finances seulement", () => {
     expect(ok("ACCOUNTANT", "GET", "/api/fiscal/syscohada")).toBe(true);
     expect(ok("ACCOUNTANT", "GET", "/api/expenses/export")).toBe(true);
     expect(ok("ACCOUNTANT", "GET", "/api/tenants/t1/export")).toBe(false);
+    expect(ok("ACCOUNTANT", "GET", "/api/owners/o1/export")).toBe(false);
     expect(ok("ACCOUNTANT", "GET", "/api/tenants/t1/id-document-url")).toBe(false);
   });
 });

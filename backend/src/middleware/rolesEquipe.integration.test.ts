@@ -8,6 +8,7 @@ import {
   createContract,
   createInvoice,
   createManager,
+  createOwner,
   createProperty,
   createTeamMember,
   createTenant,
@@ -61,6 +62,22 @@ describe("les quatre preuves de l'audit, rejouées par rôle", () => {
     const { token } = await collaborateur(ctx.owner.id, role);
     const res = await request(app).get(`/api/tenants/${ctx.tenant.id}/export`).set(authHeader(token));
     expect(res.status).toBe(403);
+  });
+
+  /** Audit RGPD : le dossier complet d'un propriétaire (IBAN, notes internes, discussion) n'était pas protégé comme celui d'un locataire. */
+  it.each(["READ_ONLY", "AGENT", "ACCOUNTANT"] as const)("%s ne peut pas exporter les données personnelles d'un propriétaire", async (role) => {
+    const proprietaire = await createOwner(ctx.owner.id);
+    const { token } = await collaborateur(ctx.owner.id, role);
+    const res = await request(app).get(`/api/owners/${proprietaire.id}/export`).set(authHeader(token));
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("ROLE_EQUIPE_INSUFFISANT");
+  });
+
+  it("le rôle complet et le propriétaire de l'agence exportent le dossier d'un propriétaire", async () => {
+    const proprietaire = await createOwner(ctx.owner.id);
+    const { token } = await collaborateur(ctx.owner.id, "FULL");
+    expect((await request(app).get(`/api/owners/${proprietaire.id}/export`).set(authHeader(token))).status).toBe(200);
+    expect((await request(app).get(`/api/owners/${proprietaire.id}/export`).set(authHeader(tokenFor(ctx.owner)))).status).toBe(200);
   });
 
   it.each(["READ_ONLY", "AGENT"] as const)("%s ne peut pas marquer une facture payée", async (role) => {

@@ -124,6 +124,8 @@ const ECRITURES_AUTORISEES: readonly Regle[] = [
 const LECTURES_SENSIBLES: ReadonlyArray<{ chemin: RegExp; roles: readonly RoleEquipe[] }> = [
   // Export des données personnelles d'un locataire, journal d'activité, échéances RGPD.
   { chemin: new RegExp(`^/tenants/${ID}/export$`), roles: [] },
+  // Dossier complet d'un propriétaire (coordonnées, IBAN, notes internes, versements, discussion) : même sensibilité que celui d'un locataire.
+  { chemin: new RegExp(`^/owners/${ID}/export$`), roles: [] },
   { chemin: /^\/activity-log(\/|$)/, roles: [] },
   { chemin: /^\/conservation(\/|$)/, roles: [] },
   // Pièce d'identité : exploitation courante seulement.
