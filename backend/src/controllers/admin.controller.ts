@@ -166,7 +166,7 @@ export const getPlatformDashboardStats = asyncHandler(async (_req: Request, res:
   // gonflait le total et classait chaque collaborateur « sans accès » ou « en
   // essai » — les mêmes règles que la liste des gestionnaires (listManagers).
   const managers = await db
-    .select()
+    .select(COLONNES_LISTE_GESTIONNAIRES)
     .from(users)
     .where(and(eq(users.role, "MANAGER"), isNull(users.teamOwnerId)));
 
@@ -305,6 +305,24 @@ export const getPlatformDashboardStats = asyncHandler(async (_req: Request, res:
   });
 });
 
+/**
+ * Colonnes d'un gestionnaire que lisent la liste, l'export CSV et le tableau de bord de la plateforme : de quoi identifier
+ * le compte et calculer son statut d'abonnement. Ces écrans parcourent TOUS les gestionnaires : charger leurs lignes entières
+ * ramenait en mémoire, à chaque requête, le hash du mot de passe, le secret de double authentification chiffré et les
+ * jetons de réinitialisation de chaque compte de la plateforme, sans que rien ne s'en serve.
+ */
+const COLONNES_LISTE_GESTIONNAIRES = {
+  id: users.id,
+  email: users.email,
+  role: users.role,
+  subscriptionStatus: users.subscriptionStatus,
+  subscriptionPlan: users.subscriptionPlan,
+  trialEndsAt: users.trialEndsAt,
+  subscriptionEndsAt: users.subscriptionEndsAt,
+  suspendedAt: users.suspendedAt,
+  createdAt: users.createdAt,
+};
+
 /** Neutralise `%`, `_` et `\` pour qu'une recherche saisie soit lue littéralement dans un LIKE. */
 function echapperLike(valeur: string): string {
   return valeur.replace(/[\\%_]/g, (c) => `\\${c}`);
@@ -339,7 +357,7 @@ export async function chargerGestionnaires({ search, plan, status }: z.infer<typ
   }
 
   const rows = await db
-    .select({ user: users, agencyName: agencySettings.agencyName })
+    .select({ user: COLONNES_LISTE_GESTIONNAIRES, agencyName: agencySettings.agencyName })
     .from(users)
     .leftJoin(agencySettings, eq(agencySettings.userId, users.id))
     .where(and(...conditions))

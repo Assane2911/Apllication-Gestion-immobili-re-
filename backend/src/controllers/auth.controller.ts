@@ -146,7 +146,10 @@ function identiteJetonPourManager(user: typeof users.$inferSelect): { userId: st
   return { userId: user.id, collaboratorId: null };
 }
 
-export function computeSubscriptionInfo(user: typeof users.$inferSelect) {
+/** Colonnes dont dépend le statut d'abonnement : les listes d'administration ne chargent que celles-là (jamais le hash ni les secrets). */
+export type CompteAbonnement = Pick<typeof users.$inferSelect, "role" | "subscriptionStatus" | "subscriptionPlan" | "trialEndsAt" | "subscriptionEndsAt">;
+
+export function computeSubscriptionInfo(user: CompteAbonnement) {
   if (user.role !== "MANAGER") {
     return null;
   }

@@ -155,6 +155,7 @@ const en: TranslationSchema = {
       TENANT_ANONYMIZED_NO_COTENANT: "This tenant has been anonymized: they cannot join a lease.",
       TENANT_NO_ID_DOCUMENT: "No ID document on file for this tenant",
       OWNER_ONLY_TEAM: "Only the agency's owner manager can manage the team.",
+      TEAM_INVITE_RATE_LIMITED: "Too many invitations sent in a short time. Try again in an hour.",
       REMINDER_IN_PROGRESS: "A reminder has just been sent for this invoice. Wait a moment, then try again.",
       SEARCH_PARAMS_INVALID: "Invalid search parameters",
       TRANSFER_ONLY: "This action is only available for bank transfer payments",

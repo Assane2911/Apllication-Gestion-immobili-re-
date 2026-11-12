@@ -155,6 +155,7 @@ const pt: TranslationSchema = {
       TENANT_ANONYMIZED_NO_COTENANT: "Este inquilino foi anonimizado: não pode ingressar em um contrato.",
       TENANT_NO_ID_DOCUMENT: "Nenhum documento de identidade registrado para este inquilino",
       OWNER_ONLY_TEAM: "Somente o gestor proprietário da agência pode gerenciar a equipe.",
+      TEAM_INVITE_RATE_LIMITED: "Convites demais enviados em pouco tempo. Tente novamente em uma hora.",
       REMINDER_IN_PROGRESS: "Um lembrete acabou de ser enviado para esta fatura. Aguarde um instante e tente novamente.",
       SEARCH_PARAMS_INVALID: "Parâmetros de pesquisa inválidos",
       TRANSFER_ONLY: "Esta ação só está disponível para pagamentos por transferência bancária",

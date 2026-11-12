@@ -119,6 +119,24 @@ export const incidentPhotoLimiter = rateLimit({
 });
 
 /**
+ * Limite par AGENCE sur l'envoi des invitations d'équipe (inviter un collaborateur, renvoyer une invitation) : 30 par heure.
+ * Chaque invitation envoie un e-mail à une adresse que le propriétaire de l'agence saisit librement, depuis le même SMTP que
+ * les rappels et la vérification des comptes : sans plafond, un compte (ou un script) pouvait inonder une boîte de réception
+ * (inviter, puis renvoyer en boucle) et abîmer la réputation d'envoi de la plateforme. Une agence qui accueille une équipe
+ * n'en invite jamais trente d'un coup. Compteur en base, partagé entre les instances. Se place APRÈS `authenticate` (il lit
+ * `req.user`) ; `userId` est celui de l'agence, même pour un collaborateur (mais seul le propriétaire peut inviter).
+ */
+export const equipeInvitationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 30,
+  store: new PostgresRateLimitStore("team-invite"),
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => (req.user ? `team:${req.user.userId}` : ipKeyGenerator(req.ip ?? "unknown")),
+  message: { error: "Trop d'invitations envoyées en peu de temps. Réessayez dans une heure.", code: "TEAM_INVITE_RATE_LIMITED" },
+});
+
+/**
  * Limite par adresse IP sur les routes /api/cron/* : leur seule protection
  * est la comparaison en temps constant du secret (cron.controller.ts::
  * secretValide), qui empêche une attaque par mesure de TIMING mais pas un
