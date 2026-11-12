@@ -80,24 +80,37 @@ export interface PaiementAbonnement {
 }
 
 export interface SyntheseHistorique {
+  /** Paiements VALIDÉS (statut PAID) : un virement déclaré mais pas encore validé n'est pas un paiement reçu. */
   paiements: number;
-  /** Total réglé par devise (un abonnement réglé en francs CFA ne s'additionne jamais à un autre en euros). */
+  /** Total réglé par devise (un abonnement réglé en francs CFA ne s'additionne jamais à un autre en euros) — paiements validés seulement. */
   totaux: Array<{ devise: string; montant: number }>;
-  /** Date ISO du paiement le plus récent, ou null sans historique. */
+  /** Date ISO du paiement validé le plus récent, ou null sans paiement validé. */
   dernier: string | null;
+  /** Paiements enregistrés mais pas encore validés (virement déclaré, paiement en cours). */
+  enAttente: number;
 }
 
 export function syntheseHistorique(historique: PaiementAbonnement[]): SyntheseHistorique {
+  // Chaque devise rencontrée figure au total (à 0 tant que rien n'y est validé) : « Total réglé 0 FCFA » plutôt qu'un chiffre absent.
   const parDevise = new Map<string, number>();
   let dernier: string | null = null;
+  let paiements = 0;
+  let enAttente = 0;
   for (const p of historique) {
+    if (!parDevise.has(p.currency)) parDevise.set(p.currency, 0);
+    if (p.status !== "PAID") {
+      enAttente += 1;
+      continue;
+    }
+    paiements += 1;
     parDevise.set(p.currency, (parDevise.get(p.currency) ?? 0) + p.amount);
     if (!dernier || new Date(p.createdAt).getTime() > new Date(dernier).getTime()) dernier = p.createdAt;
   }
   return {
-    paiements: historique.length,
+    paiements,
     totaux: [...parDevise].map(([devise, montant]) => ({ devise, montant })),
     dernier,
+    enAttente,
   };
 }
 

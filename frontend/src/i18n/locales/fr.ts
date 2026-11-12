@@ -3061,7 +3061,8 @@ const fr = {
       },
     },
     subscription: {
-      historySummary: { label: "Synthèse des paiements", payments: "Paiements", total: "Total réglé", last: "Dernier paiement", lastNone: "—" },
+      historySummary: { label: "Synthèse des paiements", payments: "Paiements", total: "Total réglé", last: "Dernier paiement", lastNone: "—", pending: "En attente", pendingHint: "Enregistrés, en attente de validation" },
+      historyStatus: { PAID: "Réglé", PENDING: "En attente de validation" },
       exportHistory: "Exporter l'historique (CSV)",
       csv: { currency: "Devise", reference: "Référence" },
       annualSaving: "Vous économisez {{amount}} par an",
