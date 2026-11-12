@@ -256,6 +256,7 @@ const en: TranslationSchema = {
       PAYOUT_DATE_FUTURE: "The payout date cannot be in the future.",
       PAYOUT_NO_ACTIVITY_IN_CURRENCY: "None of this owner's properties has any activity in {{currency}} for this month.",
       PAYOUT_NOTHING_LEFT: "There is nothing left to pay out for this month in this currency.",
+      PAYOUT_AMOUNT_POSITIVE: "The payout amount must be greater than zero.",
       PAYOUT_EXCEEDS_REMAINING: "The amount exceeds what remains to be paid out for this month ({{amount}}).",
       INVITATION_ALREADY_ACCEPTED: "This invitation has already been accepted.",
       TWO_FACTOR_RECONFIGURE_FIRST_DISABLE: "Two-factor authentication is already enabled on this account. Disable it before setting up a new one.",

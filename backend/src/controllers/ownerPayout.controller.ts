@@ -67,6 +67,8 @@ export const createOwnerPayout = asyncHandler(async (req: Request, res: Response
   if (body.paidAt > finDuJour) throw new ApiError(400, "La date du versement ne peut pas être dans le futur.", "PAYOUT_DATE_FUTURE");
 
   const montant = arrondir(body.amount);
+  // 0,004 passe « positif » puis s'arrondit à 0 : un reversement de zéro n'a rien versé, mais il serait inscrit au relevé du propriétaire.
+  if (!(montant > 0)) throw new ApiError(400, "Le montant doit être supérieur à zéro.", "PAYOUT_AMOUNT_POSITIVE");
 
   // Le net du mois ne dépend pas des reversements : calculé avant la transaction.
   const crg = await computeCrg(owner, body.month, body.year);

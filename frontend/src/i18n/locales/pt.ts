@@ -256,6 +256,7 @@ const pt: TranslationSchema = {
       PAYOUT_DATE_FUTURE: "A data do pagamento não pode estar no futuro.",
       PAYOUT_NO_ACTIVITY_IN_CURRENCY: "Nenhum imóvel deste proprietário tem atividade em {{currency}} neste mês.",
       PAYOUT_NOTHING_LEFT: "Não resta nada a pagar neste mês nesta moeda.",
+      PAYOUT_AMOUNT_POSITIVE: "O valor do repasse tem de ser superior a zero.",
       PAYOUT_EXCEEDS_REMAINING: "O montante excede o que resta a pagar neste mês ({{amount}}).",
       INVITATION_ALREADY_ACCEPTED: "Este convite já foi aceite.",
       TWO_FACTOR_RECONFIGURE_FIRST_DISABLE: "A autenticação de dois fatores já está ativada nesta conta. Desative-a antes de configurar uma nova.",
