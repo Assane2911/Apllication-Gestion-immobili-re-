@@ -153,6 +153,7 @@ const fr = {
       TENANT_ANONYMIZED_NO_COTENANT: "Ce locataire a été anonymisé : il ne peut pas rejoindre un bail.",
       TENANT_NO_ID_DOCUMENT: "Aucune pièce d'identité enregistrée pour ce locataire",
       OWNER_ONLY_TEAM: "Seul le gestionnaire propriétaire de l'agence peut gérer l'équipe.",
+      TEAM_INVITE_RATE_LIMITED: "Trop d'invitations envoyées en peu de temps. Réessayez dans une heure.",
       REMINDER_IN_PROGRESS: "Un rappel vient déjà d'être envoyé pour cette facture. Patientez un instant puis réessayez.",
       SEARCH_PARAMS_INVALID: "Paramètres de recherche invalides",
       TRANSFER_ONLY: "Cette action n'est disponible que pour les paiements par virement bancaire",
