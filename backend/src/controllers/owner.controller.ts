@@ -515,14 +515,14 @@ export const getOwnerDashboard = asyncHandler(async (req: Request, res: Response
   const year = now.getFullYear();
   const sixMonthsAgo = new Date(year, month - 6, 1);
 
-  const ownerContracts =
+  // Identifiant et bien du bail seulement : le résumé n'a besoin de rien d'autre, et la ligne entière porte les clauses, les mentions
+  // légales et deux images de signature (jusqu'à 500 000 caractères chacune), rechargées à chaque ouverture du tableau de bord.
+  const ownerContracts: Array<{ id: string; propertyId: string }> =
     propertyIds.length > 0
-      ? await db.select().from(contracts).where(inArray(contracts.propertyId, propertyIds))
+      ? await db.select({ id: contracts.id, propertyId: contracts.propertyId }).from(contracts).where(inArray(contracts.propertyId, propertyIds))
       : [];
-  const contractIdToPropertyId = new Map(
-    ownerContracts.map((c: typeof contracts.$inferSelect) => [c.id, c.propertyId])
-  );
-  const contractIds = ownerContracts.map((c: typeof contracts.$inferSelect) => c.id);
+  const contractIdToPropertyId = new Map(ownerContracts.map((c) => [c.id, c.propertyId] as const));
+  const contractIds = ownerContracts.map((c) => c.id);
 
   const [monthlyInvoices, recentPaidInvoices] =
     contractIds.length > 0

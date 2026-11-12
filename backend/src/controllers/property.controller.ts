@@ -73,7 +73,15 @@ export const getProperty = asyncHandler(async (req: Request, res: Response) => {
     .where(eq(contracts.propertyId, property.id))
     .orderBy(desc(contracts.createdAt));
 
-  res.json({ ...property, contracts: propertyContracts.map((r: { contract: typeof contracts.$inferSelect; tenant: typeof tenants.$inferSelect }) => ({ ...r.contract, tenant: r.tenant })) });
+  // Les images de signature (data URL jusqu'à 500 000 caractères chacune, deux par bail) ne font pas partie de la réponse : aucun écran
+  // ne les affiche et l'historique d'un bien en compte un bail par locataire passé. Les dates de signature restent renvoyées.
+  res.json({
+    ...property,
+    contracts: propertyContracts.map((r: { contract: typeof contracts.$inferSelect; tenant: typeof tenants.$inferSelect }) => {
+      const { managerSignatureUrl: _imageGestionnaire, tenantSignatureUrl: _imageLocataire, ...bail } = r.contract;
+      return { ...bail, tenant: r.tenant };
+    }),
+  });
 });
 
 export const createProperty = asyncHandler(async (req: Request, res: Response) => {
@@ -157,7 +165,6 @@ export const updateProperty = asyncHandler(async (req: Request, res: Response) =
   // simplement l'id du bien d'un AUTRE gestionnaire — le 404 n'arrivait
   // qu'après coup, une fois le fichier déjà écrit sans jamais être utilisé.
   assertFileContentMatchesDeclaredType(req.file);
-  const imageUrl = req.file ? await uploadPublicFile(req.file, "properties") : undefined;
 
   // Le statut d'un bien (AVAILABLE/OCCUPIED/MAINTENANCE) est normalement
   // synchronisé automatiquement par contract.controller.ts au gré des
@@ -203,6 +210,10 @@ export const updateProperty = asyncHandler(async (req: Request, res: Response) =
       );
     }
   }
+
+  // L'image n'est envoyée au stockage PUBLIC qu'ICI, une fois les refus ci-dessus écartés : sur un 409 (statut ou devise d'un
+  // bien sous contrat actif), le fichier déjà écrit n'aurait été rattaché à rien, jamais nettoyé, et resté accessible par son adresse.
+  const imageUrl = req.file ? await uploadPublicFile(req.file, "properties") : undefined;
 
   const [property] = await db
     .update(properties)
