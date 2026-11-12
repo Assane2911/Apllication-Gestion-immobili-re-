@@ -560,6 +560,15 @@ export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) 
         );
       }
 
+      // Ce compte est déjà lié à UN compte Google, et ce n'est pas celui-ci : même adresse, autre identité Google. C'est le cas
+      // d'une adresse d'entreprise (Workspace) réattribuée à quelqu'un d'autre, ou d'un compte Google recréé : Google atteste
+      // l'adresse, jamais que son détenteur actuel est le titulaire du compte d'ici. Lier silencieusement le nouveau compte
+      // Google à l'ancien compte le lui donnait. Le titulaire d'origine peut toujours entrer par son mot de passe (ou « mot de
+      // passe oublié ») ; la liaison se refuse, elle ne s'écrase pas.
+      if (user.googleId && user.googleId !== googleId) {
+        throw new ApiError(401, "Jeton Google invalide", "GOOGLE_TOKEN_INVALID");
+      }
+
       const updates: Partial<typeof users.$inferInsert> = { googleId };
       // Google vient de prouver la possession de cette adresse : si
       // l'inscription email/mot de passe d'origine n'avait jamais été
