@@ -547,7 +547,7 @@ describe("generateInvoicesForContract", () => {
 
     const lignes = await testDb.select().from(invoices).where(eq(invoices.contractId, contract.id));
     expect(lignes).toHaveLength(attendues);
-    const parId = new Map(lignes.map((l: typeof invoices.$inferSelect) => [l.id, l]));
+    const parId = new Map<string, typeof invoices.$inferSelect>(lignes.map((l: typeof invoices.$inferSelect) => [l.id, l]));
     const mois = ids.map((id: string) => {
       const l = parId.get(id)!;
       return l.periodYear * 12 + l.periodMonth;
