@@ -8,6 +8,7 @@ import {
   agencySettings,
   contracts,
   invoices,
+  leaseNotices,
   listingLeads,
   listings,
   platformSubscriptions,
@@ -207,6 +208,51 @@ describe("suppression d'un compte suspendu", () => {
     await supprimer(cible.id, token, { email: cible.email, reason: MOTIF });
 
     expect(deleteStorageObjectBestEffort).toHaveBeenCalledWith("https://stockage.test/biens/photo-1.jpg");
+  });
+
+  /**
+   * Audit RGPD : le scan d'un congé (acte d'huissier, lettre, accusé de réception) vit dans le stockage privé et nomme le locataire.
+   * Il partait quand on supprimait le bail, mais pas quand on supprimait tout le compte : le fichier survivait, sans plus aucune
+   * ligne en base pour le retrouver.
+   */
+  it("supprime aussi les scans de congé du stockage privé", async () => {
+    const token = await adminToken();
+    const cible = await suspendu();
+    const bien = await createProperty(cible.id);
+    const locataire = await createTenant(cible.id);
+    const bail = await createContract(bien.id, locataire.id, { status: "ACTIVE" });
+    await testDb.insert(leaseNotices).values({
+      contractId: bail.id,
+      managerId: cible.id,
+      givenBy: "TENANT",
+      deliveryMode: "REGISTERED_MAIL",
+      servedAt: new Date(),
+      periodValue: 3,
+      periodUnit: "MONTHS",
+      exitDate: new Date(Date.now() + 90 * 86_400_000),
+      documentUrl: "contracts/conge-scan.pdf",
+    });
+    const autre = await createManager();
+    const bienAutre = await createProperty(autre.id);
+    const locataireAutre = await createTenant(autre.id);
+    const bailAutre = await createContract(bienAutre.id, locataireAutre.id, { status: "ACTIVE" });
+    await testDb.insert(leaseNotices).values({
+      contractId: bailAutre.id,
+      managerId: autre.id,
+      givenBy: "TENANT",
+      deliveryMode: "REGISTERED_MAIL",
+      servedAt: new Date(),
+      periodValue: 3,
+      periodUnit: "MONTHS",
+      exitDate: new Date(Date.now() + 90 * 86_400_000),
+      documentUrl: "contracts/conge-autre-agence.pdf",
+    });
+
+    await supprimer(cible.id, token, { email: cible.email, reason: MOTIF });
+
+    expect(deleteStorageObjectBestEffort).toHaveBeenCalledWith("contracts/conge-scan.pdf");
+    // Le fichier d'une autre agence n'est jamais touché.
+    expect(deleteStorageObjectBestEffort).not.toHaveBeenCalledWith("contracts/conge-autre-agence.pdf");
   });
 
   it("supprime aussi le logo de l'agence du stockage public : il survivrait sinon, sans plus aucune référence pour le retrouver", async () => {
