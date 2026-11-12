@@ -7,6 +7,8 @@ import EmptyState from "../../components/EmptyState";
 import { Skeleton, StatCardSkeleton } from "../../components/Skeleton";
 import StatCard from "../../components/StatCard";
 import WhatsappPlateforme from "../../components/WhatsappPlateforme";
+import { AVIS } from "../../components/styleFormulaire";
+import { useAuth } from "../../context/auth";
 import { useCurrency } from "../../context/currency";
 import type { AdminDashboardStats } from "../../types";
 
@@ -36,6 +38,7 @@ export default function AdminDashboardPage() {
   // applique donc toujours la devise DE LA LIGNE (2ᵉ argument), jamais celle
   // de l'admin qui consulte ce tableau de bord.
   const { formatMoney } = useCurrency();
+  const { user } = useAuth();
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -131,6 +134,16 @@ export default function AdminDashboardPage() {
         <h2 className="text-2xl font-semibold text-slate-900">{t("admin.dashboard.title")}</h2>
         <p className="mt-1 text-sm text-slate-600">{t("admin.dashboard.subtitle")}</p>
       </div>
+
+      {/* Ce compte confirme les virements et supprime des agences : sans second facteur, un mot de passe volé suffit. */}
+      {user?.twoFactorEnabled === false && (
+        <p role="note" className={AVIS}>
+          {t("admin.dashboard.twoFactorWarning")}{" "}
+          <Link to="/admin/parametres#securite" className="font-semibold underline">
+            {t("admin.dashboard.twoFactorWarningLink")}
+          </Link>
+        </p>
+      )}
 
       {/* 01 — À traiter : le seul bloc qui demande une action, donc le premier. */}
       <Rubrique numero="01" titre={t("admin.dashboard.todo.title")} aide={t("admin.dashboard.todo.subtitle")}>

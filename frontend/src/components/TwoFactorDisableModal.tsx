@@ -15,7 +15,9 @@ interface TwoFactorDisableModalProps {
  * Désactivation de la double authentification — même principe de
  * confirmation que DeleteAccountModal (ressaisie du mot de passe, ou
  * reconnexion Google fraîche pour un compte Google-only) : un jeton déjà en
- * poche ne doit pas suffire, à lui seul, à annuler toute la protection.
+ * poche ne doit pas suffire, à lui seul, à annuler toute la protection —
+ * et le second facteur lui-même (code de l'application, ou code de secours)
+ * est exigé en plus.
  */
 export default function TwoFactorDisableModal({ onSuccess, onClose }: TwoFactorDisableModalProps) {
   const { t, i18n } = useTranslation();
@@ -24,10 +26,12 @@ export default function TwoFactorDisableModal({ onSuccess, onClose }: TwoFactorD
 
   const [password, setPassword] = useState("");
   const [googleCredential, setGoogleCredential] = useState<string | null>(null);
+  const [code, setCode] = useState("");
   const [disabling, setDisabling] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const preuveIdentiteFournie = isGoogleOnly ? googleCredential !== null : password.length > 0;
+  // Deux preuves : l'identité (mot de passe ou Google) ET le second facteur lui-même (code de l'application, ou code de secours).
+  const preuveIdentiteFournie = (isGoogleOnly ? googleCredential !== null : password.length > 0) && code.trim().length >= 6;
 
   async function handleDisable(e: React.FormEvent) {
     e.preventDefault();
@@ -35,7 +39,7 @@ export default function TwoFactorDisableModal({ onSuccess, onClose }: TwoFactorD
     setDisabling(true);
     setError(null);
     try {
-      await api.post("/auth/2fa/disable", isGoogleOnly ? { googleCredential } : { password });
+      await api.post("/auth/2fa/disable", isGoogleOnly ? { googleCredential, code: code.trim() } : { password, code: code.trim() });
       onSuccess();
     } catch (err) {
       setError(apiErrorMessage(err));
@@ -84,6 +88,24 @@ export default function TwoFactorDisableModal({ onSuccess, onClose }: TwoFactorD
             />
           </div>
         )}
+
+        <div>
+          <label htmlFor="two-factor-disable-code" className={ETIQUETTE}>
+            {t("components.twoFactorDisable.codeLabel")}
+          </label>
+          <input
+            id="two-factor-disable-code"
+            type="text"
+            inputMode="numeric"
+            required
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            autoComplete="one-time-code"
+            maxLength={12}
+            className={CHAMP}
+          />
+          <p className="mt-1 text-xs text-slate-600">{t("components.twoFactorDisable.codeHint")}</p>
+        </div>
 
         {error && (
           <p role="alert" className={ERREUR}>

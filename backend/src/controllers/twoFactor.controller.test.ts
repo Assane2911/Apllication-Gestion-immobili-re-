@@ -150,14 +150,14 @@ describe("POST /api/auth/2fa/disable", () => {
     expect(res.status).toBe(400);
   });
 
-  it("désactive la 2FA après vérification du mot de passe, et la connexion redevient directe", async () => {
+  it("désactive la 2FA après vérification du mot de passe ET d'un code du second facteur, et la connexion redevient directe", async () => {
     const manager = await createManager({ email: "2fa-disable@test.local" });
-    await activerDeuxFa(tokenFor(manager));
+    const { backupCodes } = await activerDeuxFa(tokenFor(manager));
 
     const disableRes = await request(app)
       .post("/api/auth/2fa/disable")
       .set(authHeader(tokenFor(manager)))
-      .send({ password: "Password123!" });
+      .send({ password: "Password123!", code: backupCodes[0] });
     expect(disableRes.status).toBe(200);
 
     const [row] = await testDb.select().from(users).where(eq(users.id, manager.id));
@@ -185,6 +185,60 @@ describe("POST /api/auth/2fa/disable", () => {
     const manager = await createManager();
     const res = await request(app).post("/api/auth/2fa/disable").set(authHeader(tokenFor(manager))).send({ password: "Password123!" });
     expect(res.status).toBe(409);
+  });
+
+  /**
+   * Audit de sécurité : le mot de passe seul permettait de retirer la 2FA. Un jeton de session volé et un mot de passe connu
+   * suffisaient à annuler la protection que le téléphone du titulaire apporte. Le second facteur lui-même est désormais exigé.
+   */
+  describe("code du second facteur exigé", () => {
+    const toujoursActive = async (id: string) => {
+      const [row] = await testDb.select().from(users).where(eq(users.id, id));
+      return row.totpEnabledAt !== null;
+    };
+
+    it("refuse le mot de passe seul, sans code, et laisse la 2FA active", async () => {
+      const manager = await createManager();
+      await activerDeuxFa(tokenFor(manager));
+
+      const res = await request(app).post("/api/auth/2fa/disable").set(authHeader(tokenFor(manager))).send({ password: "Password123!" });
+
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe("TWO_FACTOR_CODE_INVALID");
+      expect(await toujoursActive(manager.id)).toBe(true);
+    });
+
+    it("refuse un code faux, même avec le bon mot de passe, et laisse la 2FA active", async () => {
+      const manager = await createManager();
+      await activerDeuxFa(tokenFor(manager));
+
+      const res = await request(app).post("/api/auth/2fa/disable").set(authHeader(tokenFor(manager))).send({ password: "Password123!", code: "000000" });
+
+      expect(res.status).toBe(401);
+      expect(res.body.code).toBe("TWO_FACTOR_CODE_INVALID");
+      expect(await toujoursActive(manager.id)).toBe(true);
+    });
+
+    it("refuse un bon code avec un mauvais mot de passe : les deux preuves sont exigées", async () => {
+      const manager = await createManager();
+      const { backupCodes } = await activerDeuxFa(tokenFor(manager));
+
+      const res = await request(app).post("/api/auth/2fa/disable").set(authHeader(tokenFor(manager))).send({ password: "mauvais", code: backupCodes[0] });
+
+      expect(res.status).toBe(401);
+      expect(res.body.code).toBe("PASSWORD_INCORRECT");
+      expect(await toujoursActive(manager.id)).toBe(true);
+    });
+
+    it("accepte un code de secours (téléphone perdu), et la 2FA est retirée", async () => {
+      const manager = await createManager();
+      const { backupCodes } = await activerDeuxFa(tokenFor(manager));
+
+      const res = await request(app).post("/api/auth/2fa/disable").set(authHeader(tokenFor(manager))).send({ password: "Password123!", code: backupCodes[3] });
+
+      expect(res.status).toBe(200);
+      expect(await toujoursActive(manager.id)).toBe(false);
+    });
   });
 });
 
@@ -253,8 +307,8 @@ describe("l'état de la 2FA dans la réponse de connexion", () => {
 
   it("après désactivation, la connexion suivante annonce qu'elle n'est plus activée", async () => {
     const manager = await createManager({ email: "2fa-puis-off@test.local" });
-    await activerDeuxFa(tokenFor(manager));
-    await request(app).post("/api/auth/2fa/disable").set(authHeader(tokenFor(manager))).send({ password: "Password123!" });
+    const { backupCodes } = await activerDeuxFa(tokenFor(manager));
+    await request(app).post("/api/auth/2fa/disable").set(authHeader(tokenFor(manager))).send({ password: "Password123!", code: backupCodes[0] });
 
     const loginRes = await request(app).post("/api/auth/login").send({ email: "2fa-puis-off@test.local", password: "Password123!" });
 
