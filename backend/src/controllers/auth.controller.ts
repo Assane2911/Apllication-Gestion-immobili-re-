@@ -31,13 +31,14 @@ import { hashToken, RESET_TOKEN_TTL_MS } from "../utils/token";
 import { deviseSchema } from "../utils/devises";
 import { deviseDuPays, paysSchema } from "../utils/pays";
 import { roleEquipeEffectif } from "../utils/rolesEquipe";
+import { motDePasseSchema, refuserMotDePasseDeLAdresse } from "../utils/motDePasse";
 
 // Durée de validité du lien de confirmation d'email envoyé à l'inscription.
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 heures
 
 const registerManagerSchema = z.object({
   email: z.string().max(254, "L'adresse email est trop longue").email().transform((v) => v.trim().toLowerCase()),
-  password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères").max(128, "Le mot de passe ne peut pas dépasser 128 caractères"),
+  password: motDePasseSchema,
   // Pays de l'agence, dans la zone couverte (France et UEMOA, voir utils/pays.ts). Obligatoire : il fixe les règles de
   // location applicables à l'agence, et la devise de son compte. Vérifié ici, AVANT de regarder si l'adresse existe,
   // pour que la réponse reste la même qu'elle soit libre ou déjà prise.
@@ -204,6 +205,8 @@ const REPONSE_INSCRIPTION = {
 
 export const registerManager = asyncHandler(async (req: Request, res: Response) => {
   const body = registerManagerSchema.parse(req.body);
+  // Ne dépend que de la requête (jamais de l'existence du compte) : la réponse reste la même, adresse libre ou prise.
+  refuserMotDePasseDeLAdresse(body.password, body.email);
 
   // Reponse IDENTIQUE que l'adresse soit libre ou deja prise. Un 409
   // "Un compte existe deja avec cet email" laissait tester une liste
@@ -871,7 +874,7 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response) =
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1).max(512),
-  password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères").max(128, "Le mot de passe ne peut pas dépasser 128 caractères"),
+  password: motDePasseSchema,
 });
 
 /** Applique le nouveau mot de passe si le token reçu est valide et non expiré. */
@@ -884,6 +887,8 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response) =>
   if (!user || !user.resetPasswordExpiresAt || user.resetPasswordExpiresAt < new Date()) {
     throw new ApiError(400, "Ce lien de réinitialisation est invalide ou a expiré", "RESET_LINK_INVALID");
   }
+  // Après la validité du lien : sinon la réponse laisserait deviner l'adresse qu'un jeton inventé n'a pas.
+  refuserMotDePasseDeLAdresse(body.password, user.email);
 
   const passwordHash = await bcrypt.hash(body.password, 10);
 

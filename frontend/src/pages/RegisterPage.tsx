@@ -162,7 +162,7 @@ export default function RegisterPage() {
                 type={showPassword ? "text" : "password"}
                 required
                 minLength={8}
-                maxLength={128}
+                maxLength={72}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={t("auth.register.passwordPlaceholder")}
@@ -191,7 +191,7 @@ export default function RegisterPage() {
                 type={showPassword ? "text" : "password"}
                 required
                 minLength={8}
-                maxLength={128}
+                maxLength={72}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder={t("auth.register.passwordPlaceholder")}

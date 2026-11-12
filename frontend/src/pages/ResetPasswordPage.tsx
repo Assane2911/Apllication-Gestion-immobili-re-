@@ -98,7 +98,7 @@ export default function ResetPasswordPage() {
               icone={Lock}
               type={showPassword ? "text" : "password"}
               required
-              maxLength={128}
+              maxLength={72}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={t("auth.login.passwordPlaceholder")}
@@ -126,7 +126,7 @@ export default function ResetPasswordPage() {
               icone={Lock}
               type={showPassword ? "text" : "password"}
               required
-              maxLength={128}
+              maxLength={72}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder={t("auth.login.passwordPlaceholder")}
