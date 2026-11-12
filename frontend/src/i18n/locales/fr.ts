@@ -3623,7 +3623,7 @@ const fr = {
       },
       deletion: {
         title: "Suppression définitive",
-        description: "Efface définitivement le compte et tout l'espace de l'agence : biens, locataires, contrats, factures, annonces, historique d'abonnement et comptes des collaborateurs. Les comptes de connexion des locataires et bailleurs sont conservés. Si l'abonnement se renouvelle automatiquement (Stripe), il est résilié. Cette action est irréversible.",
+        description: "Efface définitivement le compte et tout l'espace de l'agence : biens, locataires, contrats, factures, annonces, historique d'abonnement et comptes des collaborateurs. Les comptes de connexion des locataires et bailleurs qu'elle seule rattachait sont effacés avec elle ; ceux encore rattachés à une autre agence sont conservés. Si l'abonnement se renouvelle automatiquement (Stripe), il est résilié. Cette action est irréversible.",
         button: "Supprimer définitivement…",
         warning: "Irréversible : rien ne pourra être restauré.",
         emailField: "Retapez l'email du compte pour confirmer ({{email}})",

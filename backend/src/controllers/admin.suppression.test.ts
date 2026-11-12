@@ -146,7 +146,7 @@ describe("garde-fous", () => {
 });
 
 describe("suppression d'un compte suspendu", () => {
-  it("supprime tout l'espace de l'agence et rien d'autre, en conservant les comptes portail", async () => {
+  it("supprime tout l'espace de l'agence et rien d'autre, comptes portail orphelins compris", async () => {
     const admin = await createAdmin();
     const cible = await suspendu();
     const autre = await createManager();
@@ -189,8 +189,9 @@ describe("suppression d'un compte suspendu", () => {
     expect(await testDb.select().from(listingLeads).where(eq(listingLeads.managerId, cible.id))).toHaveLength(0);
     expect(await testDb.select().from(platformSubscriptions).where(eq(platformSubscriptions.userId, cible.id))).toHaveLength(0);
 
-    // Le compte de connexion du locataire lui appartient : il survit à son ancienne agence.
-    expect(await existe(portail.id)).toBe(true);
+    // Le compte de connexion du locataire n'était rattaché qu'à cette agence : il part avec elle (adresse e-mail et
+    // empreinte du mot de passe ne serviraient plus à rien, et plus personne ne pourrait en demander l'effacement).
+    expect(await existe(portail.id)).toBe(false);
 
     // Le voisin est intact.
     expect(await existe(autre.id)).toBe(true);

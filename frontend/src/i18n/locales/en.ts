@@ -3622,7 +3622,7 @@ const en: TranslationSchema = {
       },
       deletion: {
         title: "Permanent deletion",
-        description: "Permanently erases the account and the agency's entire workspace: properties, tenants, contracts, invoices, listings, subscription history and collaborator accounts. Tenants' and owners' sign-in accounts are kept. If the subscription renews automatically (Stripe), it is cancelled. This cannot be undone.",
+        description: "Permanently erases the account and the agency's entire workspace: properties, tenants, contracts, invoices, listings, subscription history and collaborator accounts. Tenants' and owners' sign-in accounts that only this agency linked are erased with it; those still linked to another agency are kept. If the subscription renews automatically (Stripe), it is cancelled. This cannot be undone.",
         button: "Delete permanently…",
         warning: "Irreversible: nothing can be restored.",
         emailField: "Retype the account email to confirm ({{email}})",

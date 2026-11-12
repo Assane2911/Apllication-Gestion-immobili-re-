@@ -3622,7 +3622,7 @@ const pt: TranslationSchema = {
       },
       deletion: {
         title: "Eliminação definitiva",
-        description: "Apaga definitivamente a conta e todo o espaço da agência: imóveis, inquilinos, contratos, faturas, anúncios, histórico de subscrição e contas de colaboradores. As contas de acesso de inquilinos e proprietários são mantidas. Se a subscrição se renova automaticamente (Stripe), é cancelada. Esta ação é irreversível.",
+        description: "Apaga definitivamente a conta e todo o espaço da agência: imóveis, inquilinos, contratos, faturas, anúncios, histórico de subscrição e contas de colaboradores. As contas de acesso de inquilinos e proprietários que só esta agência associava são apagadas com ela; as que continuam associadas a outra agência são mantidas. Se a subscrição se renova automaticamente (Stripe), é cancelada. Esta ação é irreversível.",
         button: "Eliminar definitivamente…",
         warning: "Irreversível: nada poderá ser restaurado.",
         emailField: "Volte a escrever o email da conta para confirmar ({{email}})",
