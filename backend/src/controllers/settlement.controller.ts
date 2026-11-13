@@ -1,7 +1,7 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
-import { db } from "../db/client";
+import { db, Transaction } from "../db/client";
 import { contracts, leaseNotices, leaseSettlements, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { envoyerCopieAuxColocataires } from "../services/colocation.service";
@@ -10,6 +10,7 @@ import { generateSettlementHtml, generateSettlementPdfBuffer } from "../services
 import {
   calculerSolde,
   donneesDuSolde,
+  FENETRE_DOUBLON_SOLDE_HEURES,
   listerSoldes,
   MODES_DERNIER_MOIS,
   referenceSolde,
@@ -82,24 +83,77 @@ export const createSettlement = asyncHandler(async (req: Request, res: Response)
   }
 
   const calcul = await calculerSolde(contrat, { exitDate: body.exitDate ?? null, lastMonthMode: body.lastMonthMode as "FULL" | "PRORATA" });
-  const [solde] = await db
-    .insert(leaseSettlements)
-    .values({
-      contractId: contrat.id,
-      managerId: bien.managerId,
-      currency: calcul.currency,
-      exitDate: calcul.exitDate,
-      lastMonthMode: calcul.lastMonthMode,
-      depositAmount: calcul.depositAmount,
-      deductionsTotal: calcul.deductionsTotal,
-      depositRefunded: calcul.depositRefunded,
-      unpaidTotal: calcul.unpaidTotal,
-      creditTotal: calcul.creditTotal,
-      balance: calcul.balance,
-      details: JSON.stringify({ lignes: calcul.lignes, deductions: calcul.deductions, facturesApresSortie: calcul.facturesApresSortie }),
-      createdBy: req.user!.collaboratorId ?? req.user!.userId,
-    })
-    .returning();
+  const contenu = {
+    exitDate: calcul.exitDate.getTime(),
+    lastMonthMode: calcul.lastMonthMode,
+    depositAmount: calcul.depositAmount,
+    deductionsTotal: calcul.deductionsTotal,
+    depositRefunded: calcul.depositRefunded,
+    unpaidTotal: calcul.unpaidTotal,
+    creditTotal: calcul.creditTotal,
+    balance: calcul.balance,
+  };
+  // Verrou sur le bail, puis comparaison avec le dernier solde émis, DANS la même transaction : deux requêtes simultanées
+  // calculent le même contenu ; la seconde attend, voit la première et se voit refuser (ni second solde, ni second e-mail).
+  const solde = await db.transaction(async (tx: Transaction) => {
+    await tx.execute(sql`SELECT id FROM contracts WHERE id = ${contrat.id} FOR UPDATE`);
+    const [dernier] = await tx
+      .select({
+        id: leaseSettlements.id,
+        createdAt: leaseSettlements.createdAt,
+        exitDate: leaseSettlements.exitDate,
+        lastMonthMode: leaseSettlements.lastMonthMode,
+        depositAmount: leaseSettlements.depositAmount,
+        deductionsTotal: leaseSettlements.deductionsTotal,
+        depositRefunded: leaseSettlements.depositRefunded,
+        unpaidTotal: leaseSettlements.unpaidTotal,
+        creditTotal: leaseSettlements.creditTotal,
+        balance: leaseSettlements.balance,
+      })
+      .from(leaseSettlements)
+      .where(and(eq(leaseSettlements.contractId, contrat.id), gte(leaseSettlements.createdAt, new Date(Date.now() - FENETRE_DOUBLON_SOLDE_HEURES * 3_600_000))))
+      .orderBy(desc(leaseSettlements.createdAt))
+      .limit(1);
+    if (
+      dernier &&
+      dernier.exitDate.getTime() === contenu.exitDate &&
+      dernier.lastMonthMode === contenu.lastMonthMode &&
+      dernier.depositAmount === contenu.depositAmount &&
+      dernier.deductionsTotal === contenu.deductionsTotal &&
+      dernier.depositRefunded === contenu.depositRefunded &&
+      dernier.unpaidTotal === contenu.unpaidTotal &&
+      dernier.creditTotal === contenu.creditTotal &&
+      dernier.balance === contenu.balance
+    ) {
+      const reference = referenceSolde(dernier);
+      const date = new Date(dernier.createdAt).toLocaleDateString("fr-FR");
+      throw new ApiError(
+        409,
+        `Un solde de tout compte identique (réf. ${reference}) a déjà été émis le ${date} : rien n'a changé depuis.`,
+        "SETTLEMENT_DUPLICATE",
+        { reference, date }
+      );
+    }
+    const [cree] = await tx
+      .insert(leaseSettlements)
+      .values({
+        contractId: contrat.id,
+        managerId: bien.managerId,
+        currency: calcul.currency,
+        exitDate: calcul.exitDate,
+        lastMonthMode: calcul.lastMonthMode,
+        depositAmount: calcul.depositAmount,
+        deductionsTotal: calcul.deductionsTotal,
+        depositRefunded: calcul.depositRefunded,
+        unpaidTotal: calcul.unpaidTotal,
+        creditTotal: calcul.creditTotal,
+        balance: calcul.balance,
+        details: JSON.stringify({ lignes: calcul.lignes, deductions: calcul.deductions, facturesApresSortie: calcul.facturesApresSortie }),
+        createdBy: req.user!.collaboratorId ?? req.user!.userId,
+      })
+      .returning();
+    return cree;
+  });
 
   let emailEnvoye = false;
   let colocatairesPrevenus = 0;

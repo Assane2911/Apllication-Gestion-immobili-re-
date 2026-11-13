@@ -16,6 +16,12 @@ import { periodeCouverte } from "./invoice.service";
  * Aucun calcul ne s'ajoute à ceux qui existent : les restes dus viennent de `montantRegle` et de `arrondir` (paiements
  * partiels), la couverture d'un mois de `periodeCouverte` (prorata), les retenues de la restitution du dépôt.
  */
+/**
+ * Fenêtre pendant laquelle un solde IDENTIQUE (même sortie, même mode, mêmes montants) au précédent est refusé : un double clic ou un
+ * appel rejoué ne doit pas écrire deux soldes ni envoyer deux e-mails au locataire. Passé ce délai, ou dès qu'un montant change, un
+ * nouveau solde peut être émis.
+ */
+export const FENETRE_DOUBLON_SOLDE_HEURES = 24;
 export type ModeDernierMois = "FULL" | "PRORATA";
 export const MODES_DERNIER_MOIS: readonly ModeDernierMois[] = ["FULL", "PRORATA"];
 
