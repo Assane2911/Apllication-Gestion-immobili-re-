@@ -204,6 +204,7 @@ const en: TranslationSchema = {
       SETTLEMENT_CONTRACT_STILL_ACTIVE: "The lease is ongoing and no notice is recorded: the final settlement is done at move-out.",
       SETTLEMENT_TENANT_ANONYMIZED: "This lease's tenant has been anonymised: no document can be sent to them.",
       SETTLEMENT_ALREADY_SETTLED: "This final settlement is already settled.",
+      SETTLEMENT_DUPLICATE: "An identical final settlement (ref. {{reference}}) was already issued on {{date}}: nothing has changed since.",
       DEPOSIT_DEDUCTIONS_EXCEED: "The total deductions ({{total}}) exceed the deposit amount ({{deposit}}).",
       CONTRACT_HAS_SETTLED_INVOICES: "Cannot delete a contract that has paid, overdue or partially paid invoices. This history must be kept.",
       LEASE_RENEWED_OR_CLOSED: "This lease has just been renewed or closed. Reload the page before trying again.",

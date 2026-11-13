@@ -204,6 +204,7 @@ const pt: TranslationSchema = {
       SETTLEMENT_CONTRACT_STILL_ACTIVE: "O contrato está em curso e não há aviso prévio registado: o acerto de contas final faz-se à saída.",
       SETTLEMENT_TENANT_ANONYMIZED: "O inquilino deste contrato foi anonimizado: nenhum documento lhe pode ser enviado.",
       SETTLEMENT_ALREADY_SETTLED: "Este acerto de contas final já está liquidado.",
+      SETTLEMENT_DUPLICATE: "Já foi emitido um acerto de contas final idêntico (ref. {{reference}}) em {{date}}: nada mudou desde então.",
       DEPOSIT_DEDUCTIONS_EXCEED: "O total das retenções ({{total}}) excede o montante da caução ({{deposit}}).",
       CONTRACT_HAS_SETTLED_INVOICES: "Não é possível eliminar um contrato com faturas pagas, em atraso ou parcialmente pagas. Este histórico deve ser conservado.",
       LEASE_RENEWED_OR_CLOSED: "Este contrato acabou de ser renovado ou encerrado. Recarregue a página antes de tentar novamente.",

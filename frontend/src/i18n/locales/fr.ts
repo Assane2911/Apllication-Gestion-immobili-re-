@@ -202,6 +202,7 @@ const fr = {
       SETTLEMENT_CONTRACT_STILL_ACTIVE: "Le bail est en cours et aucun congé n'est enregistré : le solde de tout compte se fait à la sortie.",
       SETTLEMENT_TENANT_ANONYMIZED: "Le locataire de ce bail a été anonymisé : aucun document ne peut lui être adressé.",
       SETTLEMENT_ALREADY_SETTLED: "Ce solde de tout compte est déjà réglé.",
+      SETTLEMENT_DUPLICATE: "Un solde de tout compte identique (réf. {{reference}}) a déjà été émis le {{date}} : rien n'a changé depuis.",
       DEPOSIT_DEDUCTIONS_EXCEED: "Le total des retenues ({{total}}) dépasse le montant du dépôt de garantie ({{deposit}}).",
       CONTRACT_HAS_SETTLED_INVOICES: "Impossible de supprimer un contrat ayant des factures réglées, en retard ou partiellement payées. Cet historique doit être conservé.",
       LEASE_RENEWED_OR_CLOSED: "Ce bail vient d'être renouvelé ou clôturé. Rechargez la page avant de réessayer.",
