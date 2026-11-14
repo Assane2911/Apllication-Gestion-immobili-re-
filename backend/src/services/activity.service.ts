@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/node";
+import { erreurSansDonnees } from "../utils/erreurSansDonnees";
 import { eq, sql } from "drizzle-orm";
 import { Request } from "express";
 import { db } from "../db/client";
@@ -55,7 +56,7 @@ export async function logActivity(params: LogActivityParams) {
     // une panne DB qui casse l'écriture du journal d'audit (traçabilité
     // légale des actions gestionnaire/locataire) restait invisible en prod
     // hors lecture manuelle des logs serveur (audit sept. 2026).
-    console.error("[activity] Échec de l'enregistrement du journal d'activité:", err);
+    console.error("[activity] Échec de l'enregistrement du journal d'activité:", erreurSansDonnees(err));
     Sentry.captureException(err, { tags: { source: "activity.service.logActivity" } });
   }
 }
