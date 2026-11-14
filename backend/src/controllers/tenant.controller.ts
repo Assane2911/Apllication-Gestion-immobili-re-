@@ -499,7 +499,21 @@ export const deleteTenant = asyncHandler(async (req: Request, res: Response) => 
 
   // Ses documents rangés partent avec la fiche (cascade en base) : on relève leurs fichiers avant.
   const documentsRanges = await cheminsDocumentsDuLocataire(req.params.id);
-  await db.delete(tenants).where(eq(tenants.id, req.params.id));
+  try {
+    await db.delete(tenants).where(eq(tenants.id, req.params.id));
+  } catch (err) {
+    // Un bail créé pour ce locataire entre les contrôles ci-dessus et cette écriture : la clé étrangère le refuse (23503). C'est
+    // le même refus que celui du contrôle, pas une panne : 409, et le locataire reste en place avec son nouveau bail.
+    const code = (err as { code?: string; cause?: { code?: string } })?.code ?? (err as { cause?: { code?: string } })?.cause?.code;
+    if (code === "23503") {
+      throw new ApiError(
+        409,
+        "Impossible de supprimer un locataire associé à un historique de contrats. Veuillez d'abord supprimer les contrats associés.",
+        "TENANT_HAS_CONTRACT_HISTORY"
+      );
+    }
+    throw err;
+  }
 
   // Le fichier doit partir avec la ligne qui le référence : une fois celle-ci
   // supprimée, plus rien ne permet de le retrouver pour le purger ensuite.

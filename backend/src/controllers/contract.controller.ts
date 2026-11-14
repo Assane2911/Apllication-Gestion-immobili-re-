@@ -646,12 +646,34 @@ export const deleteContract = asyncHandler(async (req: Request, res: Response) =
   // pour ne jamais laisser un contrat supprimé avec un bien resté OCCUPIED
   // (ou l'inverse) si une étape échoue en cours de route.
   await db.transaction(async (tx: Transaction) => {
+    // Les contrôles ci-dessus ont été faits AVANT la transaction : un paiement en ligne reçu, ou un bail redevenu actif, entre
+    // leur lecture et cette écriture passait au travers, et la suppression effaçait alors une facture réglée (la preuve de
+    // l'encaissement). Ils sont redits ici, sous verrou : le bail, puis TOUTES ses factures (un paiement concurrent attend la
+    // fin de la suppression au lieu de s'écrire sur une facture qui va disparaître).
+    const [courant] = await tx.select({ status: contracts.status }).from(contracts).where(eq(contracts.id, req.params.id)).for("update");
+    if (!courant) throw new ApiError(404, "Contrat introuvable", "CONTRACT_NOT_FOUND");
+    if (courant.status === "ACTIVE") {
+      throw new ApiError(409, "Impossible de supprimer un contrat actif. Veuillez d'abord le résilier.", "CONTRACT_ACTIVE_NO_DELETE");
+    }
+    const factures = await tx
+      .select({ status: invoices.status, amountPaid: invoices.amountPaid })
+      .from(invoices)
+      .where(eq(invoices.contractId, req.params.id))
+      .for("update");
+    if (factures.some((f: { status: string; amountPaid: number }) => f.status === "PAID" || f.status === "LATE" || f.amountPaid > 0)) {
+      throw new ApiError(
+        409,
+        "Impossible de supprimer un contrat ayant des factures réglées, en retard ou partiellement payées. Cet historique doit être conservé.",
+        "CONTRACT_HAS_SETTLED_INVOICES"
+      );
+    }
+
     await tx.delete(invoices).where(eq(invoices.contractId, req.params.id));
     await tx.delete(issueReports).where(eq(issueReports.contractId, req.params.id));
     await tx.delete(contracts).where(eq(contracts.id, req.params.id));
 
-    const propertyContracts = await tx.select().from(contracts).where(eq(contracts.propertyId, existing.propertyId));
-    const stillActive = propertyContracts.filter((c: typeof contracts.$inferSelect) => c.status === "ACTIVE").length;
+    const baux = await tx.select({ status: contracts.status }).from(contracts).where(eq(contracts.propertyId, existing.propertyId));
+    const stillActive = baux.filter((c: { status: string }) => c.status === "ACTIVE").length;
     if (stillActive === 0) {
       await tx.update(properties).set({ status: "AVAILABLE" }).where(eq(properties.id, existing.propertyId));
     }
