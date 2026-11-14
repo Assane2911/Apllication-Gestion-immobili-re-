@@ -205,6 +205,7 @@ const fr = {
       SETTLEMENT_DUPLICATE: "Un solde de tout compte identique (réf. {{reference}}) a déjà été émis le {{date}} : rien n'a changé depuis.",
       DEPOSIT_DEDUCTIONS_EXCEED: "Le total des retenues ({{total}}) dépasse le montant du dépôt de garantie ({{deposit}}).",
       CONTRACT_HAS_SETTLED_INVOICES: "Impossible de supprimer un contrat ayant des factures réglées, en retard ou partiellement payées. Cet historique doit être conservé.",
+      CONTRACT_HAS_PENDING_PAYMENT: "Impossible de supprimer un contrat dont une facture attend la confirmation d'un paiement déjà lancé. Attendez son règlement ou annulez la facture.",
       LEASE_RENEWED_OR_CLOSED: "Ce bail vient d'être renouvelé ou clôturé. Rechargez la page avant de réessayer.",
       COTENANT_LIMIT: "Un bail compte au plus {{max}} colocataires en plus du titulaire.",
       GUARANTOR_LIMIT: "Un bail compte au plus {{max}} garants.",

@@ -95,6 +95,58 @@ describe("DELETE /api/contracts/:id — les contrôles sont redits dans l'écrit
     expect(await testDb.select().from(contracts).where(eq(contracts.id, contract.id))).toHaveLength(1);
   });
 
+  it("refuse la suppression d'un bail dont une facture attend la confirmation d'un paiement en ligne déjà lancé", async () => {
+    const { property, tenant, h } = await agence();
+    const contract = await createContract(property.id, tenant.id, { status: "ENDED" });
+    const facture = await createInvoice(contract.id, {
+      status: "PENDING",
+      amountPaid: 0,
+      dueDate: new Date(Date.now() + 5 * 86_400_000),
+      paymentMethod: "STRIPE",
+      paymentRef: "cs_test_session_en_cours",
+    });
+
+    const res = await request(app).delete(`/api/contracts/${contract.id}`).set(h);
+
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe("CONTRACT_HAS_PENDING_PAYMENT");
+    expect(await testDb.select().from(contracts).where(eq(contracts.id, contract.id))).toHaveLength(1);
+    expect(await testDb.select().from(invoices).where(eq(invoices.id, facture.id))).toHaveLength(1);
+  });
+
+  it("autorise la suppression une fois la facture au paiement en attente annulée", async () => {
+    const { property, tenant, h } = await agence();
+    const contract = await createContract(property.id, tenant.id, { status: "ENDED" });
+    await createInvoice(contract.id, {
+      status: "CANCELLED",
+      amountPaid: 0,
+      dueDate: new Date(Date.now() + 5 * 86_400_000),
+      paymentMethod: "PAYDUNYA",
+      paymentRef: "token_abandonne",
+    });
+
+    const res = await request(app).delete(`/api/contracts/${contract.id}`).set(h);
+
+    expect(res.status).toBe(204);
+    expect(await testDb.select().from(contracts).where(eq(contracts.id, contract.id))).toHaveLength(0);
+  });
+
+  it("refuse la suppression si le locataire lance un paiement en ligne entre le contrôle et l'écriture", async () => {
+    const { property, tenant, h } = await agence();
+    const contract = await createContract(property.id, tenant.id, { status: "ENDED" });
+    const facture = await createInvoice(contract.id, { status: "PENDING", amountPaid: 0, dueDate: new Date(Date.now() + 5 * 86_400_000) });
+    entreLesControlesEtLEcriture(
+      (colonnes) => "photoUrl" in colonnes,
+      () => testDb.update(invoices).set({ paymentMethod: "STRIPE", paymentRef: "cs_test_lance_entre_temps" }).where(eq(invoices.id, facture.id))
+    );
+
+    const res = await request(app).delete(`/api/contracts/${contract.id}`).set(h);
+
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe("CONTRACT_HAS_PENDING_PAYMENT");
+    expect(await testDb.select().from(invoices).where(eq(invoices.id, facture.id))).toHaveLength(1);
+  });
+
   it("garde le bien occupé quand un autre bail y est encore actif", async () => {
     const { property, tenant, h } = await agence();
     const autre = await createTenant(property.managerId, { firstName: "Moussa", lastName: "Fall" });

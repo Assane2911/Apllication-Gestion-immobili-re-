@@ -207,6 +207,7 @@ const pt: TranslationSchema = {
       SETTLEMENT_DUPLICATE: "Já foi emitido um acerto de contas final idêntico (ref. {{reference}}) em {{date}}: nada mudou desde então.",
       DEPOSIT_DEDUCTIONS_EXCEED: "O total das retenções ({{total}}) excede o montante da caução ({{deposit}}).",
       CONTRACT_HAS_SETTLED_INVOICES: "Não é possível eliminar um contrato com faturas pagas, em atraso ou parcialmente pagas. Este histórico deve ser conservado.",
+      CONTRACT_HAS_PENDING_PAYMENT: "Não é possível eliminar um contrato com uma fatura à espera da confirmação de um pagamento já iniciado. Aguarde a liquidação ou anule a fatura.",
       LEASE_RENEWED_OR_CLOSED: "Este contrato acabou de ser renovado ou encerrado. Recarregue a página antes de tentar novamente.",
       COTENANT_LIMIT: "Um contrato pode ter no máximo {{max}} co-inquilinos além do titular.",
       GUARANTOR_LIMIT: "Um contrato pode ter no máximo {{max}} fiadores.",
