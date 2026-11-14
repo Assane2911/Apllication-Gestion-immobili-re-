@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/node";
+import { erreurSansDonnees } from "../utils/erreurSansDonnees";
 import { eq } from "drizzle-orm";
 import { Request } from "express";
 import { db } from "../db/client";
@@ -94,7 +95,7 @@ export async function logAdminAction(params: LogAdminActionParams) {
       details: params.details,
     });
   } catch (err) {
-    console.error("[admin-audit] Échec de l'enregistrement du journal d'audit:", err);
+    console.error("[admin-audit] Échec de l'enregistrement du journal d'audit:", erreurSansDonnees(err));
     Sentry.captureException(err, { tags: { source: "adminAudit.service.logAdminAction" } });
   }
 }

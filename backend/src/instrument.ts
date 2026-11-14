@@ -3,6 +3,7 @@
 // choses possible (voir https://docs.sentry.io/platforms/javascript/guides/express/).
 import * as Sentry from "@sentry/node";
 import { env } from "./config/env";
+import { masquerValeursSqlDansJson } from "./utils/erreurSansDonnees";
 
 // DSN vide (par défaut si SENTRY_DSN n'est pas configuré sur Vercel) : Sentry
 // reste totalement inactif, aucune donnée n'est envoyée nulle part. Ça permet
@@ -55,12 +56,22 @@ export function masquerJetonsAgenda<T>(evenement: T): T {
   return JSON.parse(texte.replace(JETON_AGENDA_DANS_ADRESSE, "$1[masqué]")) as T;
 }
 
+/** Les valeurs d'une requête en échec (ligne `params:` d'une erreur de base, valeur citée par une contrainte) ne partent pas vers Sentry. */
+export function masquerValeursSqlDansEvenement<T>(evenement: T): T {
+  return JSON.parse(masquerValeursSqlDansJson(JSON.stringify(evenement))) as T;
+}
+
+/** Tout ce qui ne doit pas quitter la plateforme dans un événement Sentry : jetons d'agenda, valeurs de requêtes en échec. */
+export function masquerDonneesSensibles<T>(evenement: T): T {
+  return masquerValeursSqlDansEvenement(masquerJetonsAgenda(evenement));
+}
+
 if (env.sentryDsn) {
   Sentry.init({
     dsn: env.sentryDsn,
     environment: env.nodeEnv,
-    beforeSend: (evenement) => masquerJetonsAgenda(evenement),
-    beforeSendTransaction: (evenement) => masquerJetonsAgenda(evenement),
+    beforeSend: (evenement) => masquerDonneesSensibles(evenement),
+    beforeSendTransaction: (evenement) => masquerDonneesSensibles(evenement),
     integrations: [Sentry.expressIntegration({ shouldHandleError: shouldReportToSentry })],
     // Pourcentage de requêtes tracées en plus des erreurs (0 à 1). 0.1 = 10%,
     // suffisant pour repérer les lenteurs sans consommer tout le quota gratuit.

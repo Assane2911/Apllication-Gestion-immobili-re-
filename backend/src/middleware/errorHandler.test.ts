@@ -206,8 +206,9 @@ describe("errorHandler", () => {
     const body = JSON.stringify(res.json.mock.calls[0][0]);
     expect(body).not.toContain("users_email_unique");
     expect(body).not.toContain("client.ts");
-    // Le détail complet reste disponible dans les logs serveur pour le débogage.
-    expect(console.error).toHaveBeenCalledWith(fuite);
+    // Le détail reste disponible dans les logs serveur pour le débogage (une copie : les valeurs d'une requête en échec en sont
+    // retirées, voir erreurSansDonnees.test.ts).
+    expect(console.error).toHaveBeenCalledWith(expect.objectContaining({ message: fuite.message }));
   });
 
   it("répond 500 générique même si la valeur levée n'est pas une Error", async () => {

@@ -3,6 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import multer from "multer";
 import { ZodError } from "zod";
 import { ApiError } from "../utils/asyncHandler";
+import { erreurSansDonnees } from "../utils/erreurSansDonnees";
 import { MAX_LOGO_SIZE_MB, MAX_UPLOAD_SIZE_MB } from "./upload";
 
 /** Marqueur posé par la vérification d'origine (voir app.ts) pour une origine non autorisée. */
@@ -137,7 +138,8 @@ export async function errorHandler(err: unknown, req: Request, res: Response, ne
     return res.status(clientError.status).json({ error: clientError.message, code: clientError.code });
   }
 
-  console.error(err);
+  // Sans les valeurs de la requête : une erreur de base les cite (ligne `params:`), voir utils/erreurSansDonnees.ts.
+  console.error(erreurSansDonnees(err));
 
   // Sur Vercel (serverless), l'execution peut s'arreter juste apres l'envoi
   // de la reponse, avant que Sentry ait fini d'envoyer l'evenement en tache

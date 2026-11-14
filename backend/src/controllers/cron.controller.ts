@@ -15,6 +15,7 @@ import { runRecurringExpenseGeneration } from "../services/recurringExpense.serv
 import { runOverdueReminders } from "../services/relances.service";
 import { budgetTemps } from "../utils/budgetTemps";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
+import { erreurSansDonnees } from "../utils/erreurSansDonnees";
 
 /**
  * Vérifie l'autorisation d'un appel aux routes cron. Si CRON_SECRET est
@@ -107,7 +108,7 @@ async function executerEtape<T>(nom: string, echecs: EtapeEnEchec[], tache: () =
   try {
     return await tache();
   } catch (err) {
-    console.error(`[cron] Étape « ${nom} » en échec :`, err);
+    console.error(`[cron] Étape « ${nom} » en échec :`, erreurSansDonnees(err));
     try {
       Sentry.captureException(err, { tags: { source: "cron.daily", etape: nom } });
     } catch {
