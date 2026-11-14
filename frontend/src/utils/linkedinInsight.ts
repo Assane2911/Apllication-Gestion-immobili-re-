@@ -1,4 +1,4 @@
-import { estPagePublique } from "./analytics";
+import { estPagePublique, estTraficInterne } from "./analytics";
 
 declare global {
   interface Window {
@@ -37,6 +37,9 @@ export function loadLinkedInInsightTag(chemin: string = window.location.pathname
   const id = idPartenaire();
   if (chargee || !id) return;
   if (!estPagePublique(chemin)) return;
+  // Un navigateur marqué comme trafic interne (voir analytics.ts) ne charge pas la balise : ses visites fausseraient les audiences de
+  // reciblage. La marque retirée, la balise se charge au prochain appel.
+  if (estTraficInterne()) return;
   chargee = true;
 
   window._linkedin_partner_id = id;
