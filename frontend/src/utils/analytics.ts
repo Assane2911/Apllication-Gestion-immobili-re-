@@ -18,6 +18,48 @@ export function isAnalyticsConfigured(): boolean {
 let chargee = false;
 
 /**
+ * Interrupteur du trafic interne (l'équipe, les essais) : une adresse IP change (réseau mobile, box) et ne suffit pas à écarter
+ * ses propres visites des statistiques. Ouvrir une fois le site avec `?trafic_interne=1` marque CE navigateur ; `?trafic_interne=0`
+ * retire la marque. Un navigateur marqué envoie `traffic_type: internal` à Google Analytics, que le filtre « Trafic interne » de GA4
+ * écarte. Un visiteur ordinaire n'a pas cette marque : elle n'est posée que par celui qui connaît l'adresse, et elle ne concerne
+ * que ses propres visites.
+ */
+const CLE_TRAFIC_INTERNE = "trafic_interne";
+const PARAMETRE_TRAFIC_INTERNE = "trafic_interne";
+
+/** Ce navigateur est-il marqué comme trafic interne ? Faux si le stockage est indisponible. */
+export function estTraficInterne(): boolean {
+  try {
+    return localStorage.getItem(CLE_TRAFIC_INTERNE) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * À appeler au démarrage de l'application, AVANT tout consentement : lit `?trafic_interne=1|0` dans l'adresse, pose ou retire la
+ * marque, et retire le paramètre de l'adresse affichée (le reste de l'adresse est conservé). Une autre valeur est ignorée. Ne lève
+ * jamais : un stockage bloqué laisse simplement le navigateur non marqué.
+ */
+export function appliquerInterrupteurTraficInterne(): void {
+  try {
+    const adresse = new URL(window.location.href);
+    const valeur = adresse.searchParams.get(PARAMETRE_TRAFIC_INTERNE);
+    if (valeur !== "1" && valeur !== "0") return;
+    try {
+      if (valeur === "1") localStorage.setItem(CLE_TRAFIC_INTERNE, "1");
+      else localStorage.removeItem(CLE_TRAFIC_INTERNE);
+    } catch {
+      // Stockage indisponible : le navigateur reste non marqué.
+    }
+    adresse.searchParams.delete(PARAMETRE_TRAFIC_INTERNE);
+    window.history.replaceState(window.history.state, "", `${adresse.pathname}${adresse.search}${adresse.hash}`);
+  } catch {
+    // Adresse illisible ou historique indisponible : sans importance.
+  }
+}
+
+/**
  * Pages sur lesquelles la mesure d'audience s'applique : le site public (accueil, annonces, connexion, inscription, pages
  * légales). Tout le reste — tableau de bord, biens, locataires, factures, portails, administration — est l'usage de
  * l'application par ses utilisateurs, et rien n'en part vers Google. C'est ce que dit la politique de confidentialité
@@ -85,7 +127,8 @@ export function loadGoogleAnalytics(): void {
   // send_page_view à false : la première vue et celles liées à la navigation
   // interne (SPA, pas de rechargement de page) sont toutes envoyées
   // explicitement par trackPageView, pour ne jamais en perdre ni en dupliquer.
-  window.gtag("config", id, { send_page_view: false });
+  // `traffic_type: internal` pour un navigateur marqué (voir estTraficInterne) : le filtre « Trafic interne » de GA4 l'écarte.
+  window.gtag("config", id, { send_page_view: false, ...(estTraficInterne() ? { traffic_type: "internal" } : {}) });
   trackPageView(window.location.pathname);
 }
 

@@ -14,6 +14,7 @@ import '@fontsource/dm-mono/500.css'
 import './index.css'
 import { i18nPret } from './i18n'
 import App from './App.tsx'
+import { appliquerInterrupteurTraficInterne } from './utils/analytics'
 import { installerRechargementAutomatique } from './utils/rechargementApresDeploiement'
 
 // Le thème sombre n'existe plus : on oublie le réglage mémorisé par les anciennes versions.
@@ -22,6 +23,9 @@ try {
 } catch {
   // stockage indisponible : sans importance
 }
+
+// `?trafic_interne=1` marque ce navigateur comme trafic interne (écarté des statistiques) ; voir utils/analytics.ts.
+appliquerInterrupteurTraficInterne()
 
 // Onglet resté ouvert pendant un déploiement : les fichiers qu'il réclame n'existent plus, on recharge (une fois).
 installerRechargementAutomatique()

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { _resetAnalyticsStateForTests, estPagePublique, isAnalyticsConfigured, loadGoogleAnalytics, trackEvent, trackPageView } from "./analytics";
+import { _resetAnalyticsStateForTests, appliquerInterrupteurTraficInterne, estPagePublique, estTraficInterne, isAnalyticsConfigured, loadGoogleAnalytics, trackEvent, trackPageView } from "./analytics";
 
 /** Les appels poussés dans dataLayer sont des objets Arguments : on les relit comme des tableaux pour les comparer. */
 function lireAppels(): unknown[][] {
@@ -174,6 +174,100 @@ describe("analytics", () => {
       } finally {
         window.history.pushState({}, "", "/");
       }
+    });
+  });
+
+  describe("interrupteur du trafic interne", () => {
+    const adresseInitiale = window.location.href;
+
+    beforeEach(() => {
+      localStorage.removeItem("trafic_interne");
+    });
+
+    afterEach(() => {
+      localStorage.removeItem("trafic_interne");
+      window.history.replaceState(null, "", adresseInitiale);
+      vi.restoreAllMocks();
+    });
+
+    it("n'est pas marqué par défaut, et le tag de configuration n'envoie alors aucun traffic_type", () => {
+      vi.stubEnv("VITE_GA_MEASUREMENT_ID", "G-TEST123");
+      expect(estTraficInterne()).toBe(false);
+
+      loadGoogleAnalytics();
+
+      const config = lireAppels().find((appel) => appel[0] === "config");
+      expect(config).toEqual(["config", "G-TEST123", { send_page_view: false }]);
+    });
+
+    it("?trafic_interne=1 marque ce navigateur et retire le paramètre de l'adresse, en gardant le reste", () => {
+      window.history.replaceState(null, "", "/landing?ref=pub&trafic_interne=1#tarifs");
+
+      appliquerInterrupteurTraficInterne();
+
+      expect(estTraficInterne()).toBe(true);
+      expect(window.location.pathname + window.location.search + window.location.hash).toBe("/landing?ref=pub#tarifs");
+    });
+
+    it("une fois marqué, le tag de configuration envoie traffic_type=internal, que Google range dans le trafic interne", () => {
+      vi.stubEnv("VITE_GA_MEASUREMENT_ID", "G-TEST123");
+      window.history.replaceState(null, "", "/?trafic_interne=1");
+      appliquerInterrupteurTraficInterne();
+
+      loadGoogleAnalytics();
+
+      const config = lireAppels().find((appel) => appel[0] === "config");
+      expect(config).toEqual(["config", "G-TEST123", { send_page_view: false, traffic_type: "internal" }]);
+    });
+
+    it("la marque survit à la navigation : elle est relue du stockage, pas de l'adresse", () => {
+      window.history.replaceState(null, "", "/?trafic_interne=1");
+      appliquerInterrupteurTraficInterne();
+      window.history.replaceState(null, "", "/login");
+
+      expect(estTraficInterne()).toBe(true);
+    });
+
+    it("?trafic_interne=0 retire la marque", () => {
+      localStorage.setItem("trafic_interne", "1");
+      window.history.replaceState(null, "", "/?trafic_interne=0");
+
+      appliquerInterrupteurTraficInterne();
+
+      expect(estTraficInterne()).toBe(false);
+      expect(window.location.search).toBe("");
+    });
+
+    it("sans paramètre, ne touche ni à la marque ni à l'adresse", () => {
+      localStorage.setItem("trafic_interne", "1");
+      window.history.replaceState(null, "", "/landing?ref=pub");
+
+      appliquerInterrupteurTraficInterne();
+
+      expect(estTraficInterne()).toBe(true);
+      expect(window.location.search).toBe("?ref=pub");
+    });
+
+    it("une valeur inconnue est ignorée : ni marque, ni adresse modifiée", () => {
+      window.history.replaceState(null, "", "/?trafic_interne=peut-etre");
+
+      appliquerInterrupteurTraficInterne();
+
+      expect(estTraficInterne()).toBe(false);
+      expect(window.location.search).toBe("?trafic_interne=peut-etre");
+    });
+
+    it("un stockage indisponible ne casse rien : pas de marque, pas d'exception", () => {
+      vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+        throw new Error("stockage bloqué");
+      });
+      vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+        throw new Error("stockage bloqué");
+      });
+      window.history.replaceState(null, "", "/?trafic_interne=1");
+
+      expect(() => appliquerInterrupteurTraficInterne()).not.toThrow();
+      expect(estTraficInterne()).toBe(false);
     });
   });
 });
