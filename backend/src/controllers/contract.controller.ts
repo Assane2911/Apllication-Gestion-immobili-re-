@@ -656,7 +656,7 @@ export const deleteContract = asyncHandler(async (req: Request, res: Response) =
       throw new ApiError(409, "Impossible de supprimer un contrat actif. Veuillez d'abord le résilier.", "CONTRACT_ACTIVE_NO_DELETE");
     }
     const factures = await tx
-      .select({ status: invoices.status, amountPaid: invoices.amountPaid })
+      .select({ status: invoices.status, amountPaid: invoices.amountPaid, paymentRef: invoices.paymentRef })
       .from(invoices)
       .where(eq(invoices.contractId, req.params.id))
       .for("update");
@@ -665,6 +665,17 @@ export const deleteContract = asyncHandler(async (req: Request, res: Response) =
         409,
         "Impossible de supprimer un contrat ayant des factures réglées, en retard ou partiellement payées. Cet historique doit être conservé.",
         "CONTRACT_HAS_SETTLED_INVOICES"
+      );
+    }
+    // Une facture non annulée qui porte une référence de paiement (session Stripe ou PayDunya ouverte, virement déclaré par le
+    // locataire) a peut-être déjà été payée : la confirmation du prestataire n'est pas encore arrivée. Supprimer le bail effacerait
+    // la facture, et l'encaissement qui arrive ensuite ne retrouverait plus rien à rapprocher : l'argent serait perçu sans trace.
+    // Le gestionnaire règle ou annule la facture d'abord (une facture annulée ne bloque pas).
+    if (factures.some((f: { status: string; paymentRef: string | null }) => f.status !== "CANCELLED" && f.paymentRef)) {
+      throw new ApiError(
+        409,
+        "Impossible de supprimer un contrat dont une facture attend la confirmation d'un paiement déjà lancé. Attendez son règlement ou annulez la facture.",
+        "CONTRACT_HAS_PENDING_PAYMENT"
       );
     }
 

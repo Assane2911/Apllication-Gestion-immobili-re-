@@ -207,6 +207,7 @@ const en: TranslationSchema = {
       SETTLEMENT_DUPLICATE: "An identical final settlement (ref. {{reference}}) was already issued on {{date}}: nothing has changed since.",
       DEPOSIT_DEDUCTIONS_EXCEED: "The total deductions ({{total}}) exceed the deposit amount ({{deposit}}).",
       CONTRACT_HAS_SETTLED_INVOICES: "Cannot delete a contract that has paid, overdue or partially paid invoices. This history must be kept.",
+      CONTRACT_HAS_PENDING_PAYMENT: "Cannot delete a contract with an invoice awaiting confirmation of a payment already started. Wait for it to be settled or cancel the invoice.",
       LEASE_RENEWED_OR_CLOSED: "This lease has just been renewed or closed. Reload the page before trying again.",
       COTENANT_LIMIT: "A lease can have at most {{max}} co-tenants in addition to the holder.",
       GUARANTOR_LIMIT: "A lease can have at most {{max}} guarantors.",
