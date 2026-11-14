@@ -1,4 +1,4 @@
-import { estPagePublique } from "./analytics";
+import { estPagePublique, estTraficInterne } from "./analytics";
 
 declare global {
   interface Window {
@@ -40,6 +40,9 @@ function reglerMesurePour(chemin: string): void {
 export function loadMetaPixel(chemin: string = window.location.pathname): void {
   const id = idPixel();
   if (chargee || !id) return;
+  // Un navigateur marqué comme trafic interne (voir analytics.ts) n'envoie rien à Meta : ses visites fausseraient les
+  // audiences de reciblage. Rien n'est chargé ; la marque retirée, le pixel se charge au prochain appel.
+  if (estTraficInterne()) return;
   chargee = true;
 
   const queue: unknown[] = [];

@@ -107,4 +107,47 @@ describe("metaPixel", () => {
       ["track", "PageView"],
     ]);
   });
+
+  describe("trafic interne", () => {
+    afterEach(() => {
+      localStorage.removeItem("trafic_interne");
+    });
+
+    it("un navigateur marqué comme trafic interne ne charge pas le pixel : ses visites n'alimentent pas le reciblage", () => {
+      vi.stubEnv("VITE_META_PIXEL_ID", "123456789");
+      localStorage.setItem("trafic_interne", "1");
+
+      loadMetaPixel();
+      trackMetaPageView();
+
+      expect(document.head.querySelector("script[src*='fbevents']")).toBeNull();
+      expect(window.fbq).toBeUndefined();
+    });
+
+    it("un navigateur non marqué charge le pixel comme avant", () => {
+      vi.stubEnv("VITE_META_PIXEL_ID", "123456789");
+      localStorage.removeItem("trafic_interne");
+
+      loadMetaPixel();
+
+      expect(document.head.querySelector("script[src*='fbevents']")).not.toBeNull();
+      expect(window.fbq!.queue).toEqual([
+        ["consent", "grant"],
+        ["init", "123456789"],
+        ["track", "PageView"],
+      ]);
+    });
+
+    it("retirer la marque (?trafic_interne=0) rétablit le chargement du pixel", () => {
+      vi.stubEnv("VITE_META_PIXEL_ID", "123456789");
+      localStorage.setItem("trafic_interne", "1");
+      loadMetaPixel();
+      expect(window.fbq).toBeUndefined();
+
+      localStorage.removeItem("trafic_interne");
+      loadMetaPixel();
+
+      expect(window.fbq).toBeTypeOf("function");
+    });
+  });
 });

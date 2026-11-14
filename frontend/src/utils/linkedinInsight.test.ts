@@ -67,4 +67,43 @@ describe("linkedinInsight", () => {
     expect(document.head.querySelectorAll("script[src*='licdn']").length).toBe(1);
     expect(window._linkedin_data_partner_ids).toEqual(["1234567"]);
   });
+
+  describe("trafic interne", () => {
+    afterEach(() => {
+      localStorage.removeItem("trafic_interne");
+    });
+
+    it("un navigateur marqué comme trafic interne ne charge pas la balise : ses visites n'alimentent pas le reciblage", () => {
+      vi.stubEnv("VITE_LINKEDIN_PARTNER_ID", "1234567");
+      localStorage.setItem("trafic_interne", "1");
+
+      loadLinkedInInsightTag("/landing");
+
+      expect(document.head.querySelector("script[src*='licdn']")).toBeNull();
+      expect(window.lintrk).toBeUndefined();
+      expect(window._linkedin_data_partner_ids).toBeUndefined();
+    });
+
+    it("un navigateur non marqué charge la balise comme avant", () => {
+      vi.stubEnv("VITE_LINKEDIN_PARTNER_ID", "1234567");
+      localStorage.removeItem("trafic_interne");
+
+      loadLinkedInInsightTag("/landing");
+
+      expect(document.head.querySelector("script[src*='licdn']")).not.toBeNull();
+      expect(window._linkedin_data_partner_ids).toEqual(["1234567"]);
+    });
+
+    it("retirer la marque rétablit le chargement de la balise", () => {
+      vi.stubEnv("VITE_LINKEDIN_PARTNER_ID", "1234567");
+      localStorage.setItem("trafic_interne", "1");
+      loadLinkedInInsightTag("/landing");
+      expect(window.lintrk).toBeUndefined();
+
+      localStorage.removeItem("trafic_interne");
+      loadLinkedInInsightTag("/landing");
+
+      expect(window.lintrk).toBeTypeOf("function");
+    });
+  });
 });
