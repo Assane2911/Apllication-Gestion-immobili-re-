@@ -44,7 +44,7 @@ export async function runOverdueReminders(budget: BudgetTemps = SANS_LIMITE, mai
   const aujourdhui = debutDeLaJournee(maintenant);
   const plusAncienne = new Date(aujourdhui.getTime() - RETARD_MAXIMAL_JOURS * 86_400_000);
   const lignes = await db
-    .select({ invoice: invoices, contract: contracts, property: properties, tenant: tenants })
+    .select({ invoice: invoices, contract: { id: contracts.id }, property: properties, tenant: tenants })
     .from(invoices)
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(properties, eq(contracts.propertyId, properties.id))
