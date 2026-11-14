@@ -182,7 +182,8 @@ export async function runContractEndingReminders(budget: BudgetTemps = SANS_LIMI
 
   const toutesLesLignes = await db
     .select({
-      contract: contracts,
+      // Colonnes ciblées : un bail entier porte ses clauses et deux signatures en base64, relues ici pour toute la plateforme.
+      contract: { id: contracts.id, endDate: contracts.endDate },
       tenant: tenants,
       property: properties,
       managerEmail: users.email,
@@ -509,13 +510,25 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
 
   // 1. S'assure que les factures du mois en cours sont générées pour les contrats actifs
   //    (scopés au gestionnaire si managerId est fourni, sinon tous les contrats actifs de la plateforme)
+  // Colonnes ciblées (celles de la facturation, voir ContratFacturable) : sur toute la plateforme, relire chaque bail actif en
+  // entier chargeait ses clauses et ses deux signatures en base64, des centaines de mégaoctets que la génération n'utilise pas.
+  const colonnesFacturation = {
+    id: contracts.id,
+    propertyId: contracts.propertyId,
+    startDate: contracts.startDate,
+    endDate: contracts.endDate,
+    billingFrom: contracts.billingFrom,
+    paymentDay: contracts.paymentDay,
+    rent: contracts.rent,
+    currency: contracts.currency,
+  };
   const activeContractsQuery = managerId
     ? db
-        .select({ contract: contracts })
+        .select({ contract: colonnesFacturation })
         .from(contracts)
         .innerJoin(properties, eq(contracts.propertyId, properties.id))
         .where(and(eq(contracts.status, "ACTIVE"), eq(properties.managerId, managerId)))
-    : db.select({ contract: contracts }).from(contracts).where(eq(contracts.status, "ACTIVE"));
+    : db.select({ contract: colonnesFacturation }).from(contracts).where(eq(contracts.status, "ACTIVE"));
 
   const activeContractRows = await activeContractsQuery;
 
@@ -616,10 +629,10 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
   // envoyé en son nom (voir AGENCE_ACTIVE).
   conditions.push(AGENCE_ACTIVE);
 
+  // Le bail sert seulement à joindre (statut, locataire, bien) : il n'est pas relu.
   const rows = await db
     .select({
       invoice: invoices,
-      contract: contracts,
       tenant: tenants,
       property: properties,
     })
@@ -791,7 +804,7 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
   const targetEnd = finDeLaJournee(jourDecale(daysBefore, now));
 
   const rows = await db
-    .select({ invoice: invoices, contract: contracts, tenant: tenants, property: properties })
+    .select({ invoice: invoices, tenant: tenants, property: properties })
     .from(invoices)
     .innerJoin(contracts, eq(invoices.contractId, contracts.id))
     .innerJoin(tenants, eq(contracts.tenantId, tenants.id))

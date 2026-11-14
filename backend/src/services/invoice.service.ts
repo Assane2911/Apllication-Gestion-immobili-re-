@@ -7,6 +7,8 @@ import { arrondirPourDevise } from "../utils/montants";
 import { echeanceDuMois, jourEcheanceDuContrat } from "../utils/jourEcheance";
 
 type Contract = typeof contracts.$inferSelect;
+/** Les seules colonnes d'un bail dont la facturation se sert : le cron en charge des milliers, sans clauses ni signatures. */
+export type ContratFacturable = Pick<Contract, "id" | "propertyId" | "startDate" | "endDate" | "billingFrom" | "paymentDay" | "rent" | "currency">;
 
 /** Jours d'un mois réellement couverts par une période contractuelle. */
 export interface PeriodeCouverte {
@@ -94,7 +96,7 @@ export type FactureExistantePourGeneration = {
  * pourquoi cette fraîcheur est indispensable à la correction du calcul.
  */
 export async function generateInvoicesForContract(
-  contract: Contract,
+  contract: ContratFacturable,
   dbClient: DbClient = db,
   existingInvoicesHint?: FactureExistantePourGeneration[]
 ) {
