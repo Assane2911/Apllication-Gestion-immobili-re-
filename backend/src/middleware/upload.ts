@@ -30,18 +30,32 @@ function fileFilter(_req: unknown, file: Express.Multer.File, cb: multer.FileFil
 
 const limits = { fileSize: MAX_UPLOAD_SIZE_MB * 1024 * 1024 };
 
+/**
+ * Photos (bien, annonce, incident) : une IMAGE, jamais un PDF. Le site n'envoie que des images à ces trois endroits, mais le serveur
+ * acceptait aussi les PDF : un gestionnaire pouvait ainsi faire héberger n'importe quel PDF à l'adresse publique de notre stockage
+ * (les biens et les annonces vont dans le bucket PUBLIC, lisible par tous sans compte), et une « photo » PDF s'affichait comme une image cassée.
+ */
+const ALLOWED_IMAGE_MIME = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
+
+function fileFilterImage(_req: unknown, file: Express.Multer.File, cb: multer.FileFilterCallback) {
+  if (!ALLOWED_IMAGE_MIME.has(file.mimetype)) {
+    return cb(new ApiError(400, "Photo non autorisée (image PNG, JPEG, WebP ou GIF uniquement)", "FILE_IMAGE_ONLY"));
+  }
+  cb(null, true);
+}
+
 // Stockage en mémoire (buffer) : les fichiers sont uploadés vers Supabase
 // Storage juste après, aucun disque local n'est utilisé (nécessaire sur
 // Vercel, dont les fonctions serverless n'ont pas de disque persistant).
 const storage = multer.memoryStorage();
 
-export const uploadPropertyImage = multer({ storage, fileFilter, limits });
+export const uploadPropertyImage = multer({ storage, fileFilter: fileFilterImage, limits });
 export const uploadTenantDocument = multer({ storage, fileFilter, limits });
-export const uploadIssuePhoto = multer({ storage, fileFilter, limits });
+export const uploadIssuePhoto = multer({ storage, fileFilter: fileFilterImage, limits });
 export const uploadContractScan = multer({ storage, fileFilter, limits });
 export const uploadLeaseNoticeDocument = multer({ storage, fileFilter, limits });
 export const uploadStoredDocument = multer({ storage, fileFilter, limits });
-export const uploadListingImage = multer({ storage, fileFilter, limits });
+export const uploadListingImage = multer({ storage, fileFilter: fileFilterImage, limits });
 
 /**
  * Messages vocaux : WebM, Ogg (Chrome, Firefox) ou MP4 (Safari), 4 Mo au plus (même plafond que les photos : voir

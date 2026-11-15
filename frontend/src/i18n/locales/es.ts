@@ -144,6 +144,7 @@ const es: TranslationSchema = {
       ISSUE_PHOTO_REQUIRED: "Se requiere una foto del problema",
       ISSUE_CONTRACT_NOT_ACTIVE: "Las incidencias solo pueden crearse sobre un contrato activo",
       FILE_TYPE_NOT_ALLOWED: "Tipo de archivo no permitido (solo imagen o PDF)",
+      FILE_IMAGE_ONLY: "Foto no permitida (solo imagen PNG, JPEG, WebP o GIF)",
       FILE_CONTENT_MISMATCH: "El contenido del archivo no coincide con el tipo de archivo declarado",
       AUDIO_TYPE_NOT_ALLOWED: "Tipo de grabación no permitido (solo WebM, Ogg o MP4)",
       AUDIO_CONTENT_MISMATCH: "El contenido de la grabación no coincide con el tipo declarado",

@@ -142,6 +142,7 @@ const fr = {
       ISSUE_PHOTO_REQUIRED: "Une photo du problème est requise",
       ISSUE_CONTRACT_NOT_ACTIVE: "Les signalements d'incidents ne peuvent être créés que sur un contrat actif",
       FILE_TYPE_NOT_ALLOWED: "Type de fichier non autorisé (image ou PDF uniquement)",
+      FILE_IMAGE_ONLY: "Photo non autorisée (image PNG, JPEG, WebP ou GIF uniquement)",
       FILE_CONTENT_MISMATCH: "Le contenu du fichier ne correspond pas au type de fichier déclaré",
       AUDIO_TYPE_NOT_ALLOWED: "Type d'enregistrement non autorisé (WebM, Ogg ou MP4 uniquement)",
       AUDIO_CONTENT_MISMATCH: "Le contenu de l'enregistrement ne correspond pas au type déclaré",
