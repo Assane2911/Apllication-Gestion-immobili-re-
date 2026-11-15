@@ -7,7 +7,7 @@ import { db } from "../db/client";
 import { tenants, users } from "../db/schema";
 import { ApiError } from "../utils/asyncHandler";
 import { AUTH_COOKIE_NAME, CSRF_HEADER_NAME } from "../utils/authCookie";
-import { CODE_COMPTE_SUSPENDU, MESSAGE_COMPTE_SUSPENDU } from "../utils/compteSuspendu";
+import { CODE_COMPTE_SUSPENDU, MESSAGE_COLLABORATEUR_FORMULE, MESSAGE_COMPTE_SUSPENDU } from "../utils/compteSuspendu";
 import { type RoleEquipe, roleEquipeEffectif, verifierAutorisationEquipe } from "../utils/rolesEquipe";
 import { NOM_FORMULE } from "../utils/formules";
 
@@ -135,6 +135,13 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
     // la raison interne n'est jamais renvoyée.
     if (user.suspendedAt) {
       return next(new ApiError(401, MESSAGE_COMPTE_SUSPENDU, CODE_COMPTE_SUSPENDU));
+    }
+
+    // Multi-utilisateurs : fonctionnalité de la formule Entreprise. Un collaborateur travaille sous l'identité du propriétaire, donc son
+    // accès suit la formule de CE compte : sous Entreprise, il est suspendu (rien n'est effacé, et il revient au retour en Entreprise).
+    // 401 pour que l'intercepteur du frontend vide la session, comme pour un compte suspendu. Le propriétaire n'est jamais concerné.
+    if (payload.collaboratorId && !planAuMoins(user, "ENTERPRISE")) {
+      return next(new ApiError(401, MESSAGE_COLLABORATEUR_FORMULE, "COLLABORATOR_PLAN_REQUIRED"));
     }
 
     // Multi-utilisateurs : `user` ci-dessus est le PROPRIÉTAIRE de l'agence

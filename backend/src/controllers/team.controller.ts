@@ -1,10 +1,10 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
-import { db } from "../db/client";
+import { db, Transaction } from "../db/client";
 import { agencySettings, users } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { sendEmail, teamInvitationEmail } from "../services/email.service";
@@ -12,6 +12,7 @@ import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { assertOwnership } from "../utils/authorization";
 import {
   LIBELLES_ROLES_EQUIPE,
+  MAX_COLLABORATEURS,
   ROLES_EQUIPE,
   ROLE_EQUIPE_INVITATION_PAR_DEFAUT,
   roleEquipeEffectif,
@@ -127,23 +128,38 @@ export const inviteTeamMember = asyncHandler(async (req: Request, res: Response)
   // que inviteOwnerPortalAccount.
   const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 10);
 
-  const [collaborateur] = await db
-    .insert(users)
-    .values({
-      email: body.email,
-      passwordHash,
-      role: "MANAGER",
-      teamOwnerId: req.user!.userId,
-      teamRole: body.role,
-      hasPassword: false,
-      // Confiance faite au gestionnaire propriétaire, qui a saisi cet email
-      // lui-même — même principe que les comptes portail locataire/
-      // propriétaire, jamais de double confirmation par email pour eux.
-      emailVerifiedAt: new Date(),
-      resetPasswordTokenHash,
-      resetPasswordExpiresAt,
-    })
-    .returning();
+  // Plafond de collaborateurs par agence, invitations en attente comprises (des comptes déjà créés). Le propriétaire est verrouillé le
+  // temps de compter et d'écrire : deux invitations simultanées à une place de la limite ne passent pas toutes les deux.
+  const collaborateur = await db.transaction(async (tx: Transaction) => {
+    await tx.execute(sql`SELECT id FROM users WHERE id = ${req.user!.userId} FOR UPDATE`);
+    const existants = await tx.select({ id: users.id }).from(users).where(eq(users.teamOwnerId, req.user!.userId));
+    if (existants.length >= MAX_COLLABORATEURS) {
+      throw new ApiError(
+        409,
+        `Limite de ${MAX_COLLABORATEURS} collaborateurs atteinte pour cette agence. Contactez le support pour en ajouter davantage.`,
+        "TEAM_MEMBER_LIMIT_REACHED",
+        { max: MAX_COLLABORATEURS }
+      );
+    }
+    const [cree] = await tx
+      .insert(users)
+      .values({
+        email: body.email,
+        passwordHash,
+        role: "MANAGER",
+        teamOwnerId: req.user!.userId,
+        teamRole: body.role,
+        hasPassword: false,
+        // Confiance faite au gestionnaire propriétaire, qui a saisi cet email
+        // lui-même — même principe que les comptes portail locataire/
+        // propriétaire, jamais de double confirmation par email pour eux.
+        emailVerifiedAt: new Date(),
+        resetPasswordTokenHash,
+        resetPasswordExpiresAt,
+      })
+      .returning();
+    return cree;
+  });
 
   await envoyerInvitationEquipe(req.user!.userId, body.email, rawToken, langueDeLaRequete(req));
 

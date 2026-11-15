@@ -96,6 +96,8 @@ const fr = {
       LISTING_NOT_FOUND: "Annonce introuvable",
       VENDOR_NOT_FOUND: "Prestataire introuvable",
       COLLABORATOR_NOT_FOUND: "Collaborateur introuvable",
+      TEAM_MEMBER_LIMIT_REACHED: "Limite de {{max}} collaborateurs atteinte pour cette agence. Contactez le support pour en ajouter davantage.",
+      COLLABORATOR_PLAN_REQUIRED: "L'agence n'est plus sur la formule Agence & Multi-Comptes : l'accès des collaborateurs est suspendu. Il reviendra dès que l'agence repasse sur cette formule.",
       ISSUE_NOT_FOUND: "Signalement introuvable",
       REVISION_NOT_FOUND: "Révision introuvable",
       INSURANCE_POLICY_NOT_FOUND: "Police d'assurance introuvable",

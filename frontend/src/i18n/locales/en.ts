@@ -98,6 +98,8 @@ const en: TranslationSchema = {
       LISTING_NOT_FOUND: "Listing not found",
       VENDOR_NOT_FOUND: "Service provider not found",
       COLLABORATOR_NOT_FOUND: "Team member not found",
+      TEAM_MEMBER_LIMIT_REACHED: "Limit of {{max}} team members reached for this agency. Contact support to add more.",
+      COLLABORATOR_PLAN_REQUIRED: "The agency is no longer on the Agency & Multi-Accounts plan: team member access is suspended. It will come back as soon as the agency returns to that plan.",
       ISSUE_NOT_FOUND: "Report not found",
       REVISION_NOT_FOUND: "Revision not found",
       INSURANCE_POLICY_NOT_FOUND: "Insurance policy not found",

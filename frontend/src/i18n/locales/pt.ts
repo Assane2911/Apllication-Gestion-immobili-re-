@@ -98,6 +98,8 @@ const pt: TranslationSchema = {
       LISTING_NOT_FOUND: "Anúncio não encontrado",
       VENDOR_NOT_FOUND: "Prestador não encontrado",
       COLLABORATOR_NOT_FOUND: "Colaborador não encontrado",
+      TEAM_MEMBER_LIMIT_REACHED: "Limite de {{max}} colaboradores atingido para esta agência. Contacte o suporte para adicionar mais.",
+      COLLABORATOR_PLAN_REQUIRED: "A agência já não está no plano Agência e Multicontas: o acesso dos colaboradores está suspenso. Voltará assim que a agência regresse a esse plano.",
       ISSUE_NOT_FOUND: "Ocorrência não encontrada",
       REVISION_NOT_FOUND: "Reajuste não encontrado",
       INSURANCE_POLICY_NOT_FOUND: "Apólice de seguro não encontrada",

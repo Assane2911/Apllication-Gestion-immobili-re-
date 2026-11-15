@@ -20,7 +20,8 @@ import { accorderRecompenseParrainage, trouverParrainParCode } from "../services
 import { supprimerCompteGestionnaire } from "../services/suppressionCompte.service";
 import { consommerCodeSecours, consommerPasTotp, verifierCodeTotpAvecPas } from "../services/totp.service";
 import { chiffrerSecretTotp, dechiffrerSecretTotp, secretTotpEstChiffre } from "../services/secretTotpChiffre";
-import { CODE_COMPTE_SUSPENDU, MESSAGE_COMPTE_SUSPENDU } from "../utils/compteSuspendu";
+import { CODE_COMPTE_SUSPENDU, MESSAGE_COLLABORATEUR_FORMULE, MESSAGE_COMPTE_SUSPENDU } from "../utils/compteSuspendu";
+import { planAuMoins } from "../middleware/auth";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { chargerCompteCourant } from "../utils/authorization";
 import { enArrierePlan } from "../utils/arrierePlan";
@@ -366,6 +367,12 @@ async function finalizeLogin(user: typeof users.$inferSelect, res: Response, lan
   // message à la connexion plutôt qu'une session aussitôt fermée.
   if (compteFacturation?.suspendedAt) {
     throw new ApiError(403, MESSAGE_COMPTE_SUSPENDU, CODE_COMPTE_SUSPENDU);
+  }
+
+  // Même règle que authenticate : l'accès d'un collaborateur suit la formule Entreprise de l'agence. Refus à la connexion, avec le
+  // même code, plutôt qu'une session aussitôt fermée.
+  if (identite.collaboratorId && compteFacturation && !planAuMoins(compteFacturation, "ENTERPRISE")) {
+    throw new ApiError(403, MESSAGE_COLLABORATEUR_FORMULE, "COLLABORATOR_PLAN_REQUIRED");
   }
 
   const claims = {

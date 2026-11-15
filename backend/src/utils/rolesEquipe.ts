@@ -23,6 +23,12 @@
  *
  * Le propriétaire de l'agence (jeton sans collaboratorId) n'est jamais concerné.
  */
+/**
+ * Plafond de collaborateurs par agence (formule Entreprise), invitations en attente comprises : des comptes déjà créés. Un garde-fou
+ * contre la création en masse de comptes, que personne n'atteint en usage normal ; au-delà, le support en ouvre davantage.
+ */
+export const MAX_COLLABORATEURS = 25;
+
 export const ROLES_EQUIPE = ["FULL", "AGENT", "ACCOUNTANT", "READ_ONLY"] as const;
 export type RoleEquipe = (typeof ROLES_EQUIPE)[number];
 
