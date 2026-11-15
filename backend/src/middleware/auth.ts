@@ -267,12 +267,17 @@ export async function requireActiveSubscription(req: Request, _res: Response, ne
   const accesOuvert = abonnementEnCours(user);
 
   if (!accesOuvert) {
-    return next(
-      new ApiError(
-        402,
-        "Votre période d'essai de 15 jours est terminée. Veuillez souscrire à un abonnement pour continuer.", "TRIAL_ENDED"
-      )
-    );
+    // Un client qui a payé et dont la période est échue n'a pas fini un « essai » : lui dire que sa période d'essai est
+    // terminée était faux, et le renvoyait chercher une offre d'essai plutôt que renouveler. Deux messages, deux codes.
+    if (user.subscriptionStatus === "TRIAL") {
+      return next(
+        new ApiError(
+          402,
+          "Votre période d'essai de 15 jours est terminée. Veuillez souscrire à un abonnement pour continuer.", "TRIAL_ENDED"
+        )
+      );
+    }
+    return next(new ApiError(402, "Votre abonnement est arrivé à échéance. Renouvelez-le pour continuer.", "SUBSCRIPTION_ENDED"));
   }
 
   next();

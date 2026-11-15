@@ -71,6 +71,7 @@ const es: TranslationSchema = {
       OWNER_ONLY_COUNTRY: "Solo el propietario de la agencia, o un colaborador con todos los derechos, puede elegir el país de la agencia.",
       ROLE_EQUIPE_INSUFFISANT: "Su rol en el equipo no permite esta acción. Pida al gestor propietario de la agencia que modifique su rol.",
       TRIAL_ENDED: "Su período de prueba de 15 días ha terminado. Suscríbase a un plan para continuar.",
+      SUBSCRIPTION_ENDED: "Su suscripción ha vencido. Renuévela para continuar.",
       PLAN_REQUIRED: "Esta función está reservada al plan {{plan}} o superior. Cambie a un plan superior para acceder.",
       AUTORENEW_CARD_ONLY: "La renovación automática solo está disponible para el pago con tarjeta (Stripe).",
       UNLIMITED_NO_SUBSCRIBE: "Su cuenta tiene acceso ilimitado: no hay ninguna suscripción que contratar.",
