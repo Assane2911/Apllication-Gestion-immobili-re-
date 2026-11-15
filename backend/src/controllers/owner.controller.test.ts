@@ -19,6 +19,14 @@ import {
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";
 
+/** Fait dater l'invitation en attente d'il y a 10 minutes : le délai minimal entre deux invitations est passé (voir owner.invitationDelai.test.ts). */
+async function invitationDejaAncienne(email: string) {
+  await testDb
+    .update(users)
+    .set({ resetPasswordExpiresAt: new Date(Date.now() - 10 * 60_000 + 7 * 24 * 60 * 60 * 1000) })
+    .where(eq(users.email, email));
+}
+
 describe("POST /api/owners", () => {
   it("crée une fiche propriétaire pour le gestionnaire connecté, avec les champs enrichis (IBAN, commission...)", async () => {
     const manager = await createManager();
@@ -257,6 +265,7 @@ describe("GET /api/owners & GET /api/owners/:id — portalStatus dérivé", () =
     const h = authHeader(tokenFor(manager));
 
     await request(app).post(`/api/owners/${owner.id}/invite`).set(h);
+    await invitationDejaAncienne(owner.email);
     expect((await request(app).post(`/api/owners/${owner.id}/invite`).set(h)).status).toBe(200);
 
     expect((await request(app).get(`/api/owners/${owner.id}`).set(h)).body.portalStatus).toBe("PENDING");
@@ -380,6 +389,7 @@ describe("POST /api/owners/:id/invite", () => {
     const first = await request(app).post(`/api/owners/${owner.id}/invite`).set(authHeader(tokenFor(manager)));
     expect(first.status).toBe(200);
     const [userAfterFirst] = await testDb.select().from(users).where(eq(users.email, "relance@test.local"));
+    await invitationDejaAncienne("relance@test.local");
 
     const second = await request(app).post(`/api/owners/${owner.id}/invite`).set(authHeader(tokenFor(manager)));
     expect(second.status).toBe(200);

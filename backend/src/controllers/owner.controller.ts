@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { and, desc, eq, gt, gte, inArray, isNotNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, gte, inArray, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
@@ -356,6 +356,13 @@ export const anonymiserOwner = asyncHandler(async (req: Request, res: Response) 
  * régénéré et renvoyé) ; une fois le mot de passe défini (tokenVersion incrémenté,
  * voir resetPassword), une nouvelle invitation est refusée.
  */
+/**
+ * Délai minimal entre deux invitations à un MÊME propriétaire. Chaque invitation envoie un e-mail depuis le serveur de la plateforme à
+ * une adresse saisie librement par le gestionnaire : sans délai, répéter l'appel inondait une boîte de réception et abîmait la
+ * réputation d'envoi (les invitations d'équipe sont limitées à 30 par heure, les rappels de loyer ont leur délai de réclamation).
+ */
+const DELAI_MIN_REINVITATION_MS = 5 * 60 * 1000;
+
 export const inviteOwnerPortalAccount = asyncHandler(async (req: Request, res: Response) => {
   const [owner] = await db.select().from(owners).where(eq(owners.id, req.params.id));
   assertOwnership(owner, (o) => o.managerId, req.user!.userId, "Propriétaire introuvable", 404, "OWNER_NOT_FOUND");
@@ -373,10 +380,22 @@ export const inviteOwnerPortalAccount = asyncHandler(async (req: Request, res: R
     if (!invitationEnAttente(existingUser)) {
       throw new ApiError(409, "Un accès au portail existe déjà pour ce propriétaire", "OWNER_PORTAL_EXISTS");
     }
-    await db
+    // Réclamation ATOMIQUE du renvoi, avant l'envoi : le lien vit 7 jours, donc sa date d'envoi se lit sur son échéance. Un renvoi
+    // exige que la précédente invitation date d'au moins DELAI_MIN_REINVITATION_MS — deux requêtes simultanées ne passent pas toutes deux.
+    const seuilRenvoi = new Date(Date.now() + INVITATION_TOKEN_TTL_MS - DELAI_MIN_REINVITATION_MS);
+    const [reclame] = await db
       .update(users)
       .set({ resetPasswordTokenHash, resetPasswordExpiresAt })
-      .where(eq(users.id, existingUser.id));
+      .where(and(eq(users.id, existingUser.id), or(isNull(users.resetPasswordExpiresAt), lt(users.resetPasswordExpiresAt, seuilRenvoi))))
+      .returning({ id: users.id });
+    if (!reclame) {
+      throw new ApiError(
+        429,
+        `Une invitation vient d'être envoyée à ce propriétaire. Patientez ${DELAI_MIN_REINVITATION_MS / 60_000} minutes avant d'en renvoyer une.`,
+        "OWNER_INVITE_TOO_SOON",
+        { minutes: DELAI_MIN_REINVITATION_MS / 60_000 }
+      );
+    }
     targetUserId = existingUser.id;
   } else {
     const [existingUserWithEmail] = await db.select().from(users).where(eq(users.email, owner.email));
