@@ -58,7 +58,7 @@ describe("filtre d'upload", () => {
     expect(res.status).toBe(201);
   });
 
-  it("accepte aussi un PDF (pièce d'identité, justificatif)", async () => {
+  it("refuse un PDF sur une photo : une photo est une image (400 explicite)", async () => {
     const { contract, token } = await tenantWithContract();
 
     const res = await postIssueWith(contract.id, token).attach("photo", Buffer.from("%PDF-1.4"), {
@@ -66,7 +66,8 @@ describe("filtre d'upload", () => {
       contentType: "application/pdf",
     });
 
-    expect(res.status).toBe(201);
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe("FILE_IMAGE_ONLY");
   });
 
   it("refuse un exécutable avec un 400 explicite, et non un 500 opaque", async () => {
@@ -78,7 +79,7 @@ describe("filtre d'upload", () => {
     });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toContain("Type de fichier non autorisé");
+    expect(res.body.code).toBe("FILE_IMAGE_ONLY");
     // Un refus attendu n'est pas une panne : ni trace d'erreur, ni remontée.
     expect(console.error).not.toHaveBeenCalled();
   });
@@ -92,7 +93,20 @@ describe("filtre d'upload", () => {
     });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toContain("Type de fichier non autorisé");
+    expect(res.body.code).toBe("FILE_IMAGE_ONLY");
+  });
+
+  it("là où un justificatif est attendu (pièce d'identité), le PDF reste accepté et un exécutable refusé", async () => {
+    const manager = await createManager();
+    const tenant = await createTenant(manager.id);
+    const h = authHeader(tokenFor(manager));
+
+    const pdf = await request(app).put(`/api/tenants/${tenant.id}`).set(h).attach("idDocument", Buffer.from("%PDF-1.4"), { filename: "piece.pdf", contentType: "application/pdf" });
+    const exe = await request(app).put(`/api/tenants/${tenant.id}`).set(h).attach("idDocument", Buffer.from("MZ"), { filename: "virus.exe", contentType: "application/x-msdownload" });
+
+    expect(pdf.status).toBe(200);
+    expect(exe.status).toBe(400);
+    expect(exe.body.error).toContain("Type de fichier non autorisé");
   });
 
   // Le backend tourne comme fonction Vercel, dont le corps de requête est limité à 4,5 Mo : au-delà, Vercel répond
