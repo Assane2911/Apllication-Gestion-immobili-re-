@@ -248,6 +248,7 @@ const pt: TranslationSchema = {
       TENANT_ALREADY_ANONYMIZED: "Este inquilino já foi anonimizado: não resta nenhum dado identificativo a apagar.",
       OWNER_PORTAL_ACCOUNT_NOT_FOUND: "Conta do portal do proprietário não encontrada",
       OWNER_PORTAL_EXISTS: "Já existe um acesso ao portal para este proprietário",
+      OWNER_INVITE_TOO_SOON: "Acabou de ser enviado um convite a este proprietário. Aguarde {{minutes}} minutos antes de enviar outro.",
       PORTAL_EMAIL_EXISTS: "Já existe uma conta com este email — não é possível criar o acesso ao portal",
       TENANT_HAS_CONTRACT_HISTORY: "Não é possível eliminar um inquilino associado a um histórico de contratos. Elimine primeiro os contratos associados.",
       TENANT_HAS_ISSUES: "Não é possível eliminar um inquilino com ocorrências registadas.",

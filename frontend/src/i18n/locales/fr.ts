@@ -246,6 +246,7 @@ const fr = {
       TENANT_ALREADY_ANONYMIZED: "Ce locataire a déjà été anonymisé : il ne reste aucune donnée identifiante à effacer.",
       OWNER_PORTAL_ACCOUNT_NOT_FOUND: "Compte du portail propriétaire introuvable",
       OWNER_PORTAL_EXISTS: "Un accès au portail existe déjà pour ce propriétaire",
+      OWNER_INVITE_TOO_SOON: "Une invitation vient d'être envoyée à ce propriétaire. Patientez {{minutes}} minutes avant d'en renvoyer une.",
       PORTAL_EMAIL_EXISTS: "Un compte existe déjà avec cet email — impossible de créer l'accès portail",
       TENANT_HAS_CONTRACT_HISTORY: "Impossible de supprimer un locataire associé à un historique de contrats. Veuillez d'abord supprimer les contrats associés.",
       TENANT_HAS_ISSUES: "Impossible de supprimer un locataire ayant des signalements d'incidents enregistrés.",

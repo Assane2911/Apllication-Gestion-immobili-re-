@@ -248,6 +248,7 @@ const en: TranslationSchema = {
       TENANT_ALREADY_ANONYMIZED: "This tenant has already been anonymised: there is no identifying data left to erase.",
       OWNER_PORTAL_ACCOUNT_NOT_FOUND: "Owner portal account not found",
       OWNER_PORTAL_EXISTS: "A portal access already exists for this owner",
+      OWNER_INVITE_TOO_SOON: "An invitation was just sent to this owner. Wait {{minutes}} minutes before sending another.",
       PORTAL_EMAIL_EXISTS: "An account already exists with this email — the portal access cannot be created",
       TENANT_HAS_CONTRACT_HISTORY: "Cannot delete a tenant linked to a contract history. Please delete the associated contracts first.",
       TENANT_HAS_ISSUES: "Cannot delete a tenant who has recorded incident reports.",
