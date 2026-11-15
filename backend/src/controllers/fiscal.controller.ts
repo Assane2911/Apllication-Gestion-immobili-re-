@@ -1,8 +1,8 @@
-import { and, eq, gte, lte } from "drizzle-orm";
+import { and, eq, exists, gte, lte, notExists, or, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
-import { agencySettings, contracts, expenses, invoices, properties, tenants } from "../db/schema";
+import { agencySettings, contracts, expenses, invoicePayments, invoices, properties, tenants } from "../db/schema";
 import { developperEncaissements, factureEncaissee } from "../services/encaissements.service";
 import { asyncHandler } from "../utils/asyncHandler";
 import { csvEscape, csvMontant, CSV_BOM, fecEscapeText, fecMontant, versLatin1Fec } from "../utils/csv";
@@ -50,6 +50,24 @@ type PaidInvoiceRow = {
 };
 type ExpenseRow = { expense: typeof expenses.$inferSelect; property: Pick<typeof properties.$inferSelect, "id" | "title"> };
 
+/**
+ * Ne garde, côté base, que les factures susceptibles d'avoir un encaissement dans l'année : un paiement daté de l'année, ou (facture
+ * réglée d'un coup) une date d'encaissement dans l'année. Sans cela, chaque bilan relisait TOUT l'historique du gestionnaire pour n'en
+ * garder qu'une année : 18 000 factures (300 biens, 5 ans) coûtaient 1,6 s à chaque requête, et ce coût grandissait chaque année.
+ * Le filtre exact reste fait ensuite, ligne par ligne, sur la date de chaque encaissement : celui-ci n'écarte que ce qui ne peut pas compter.
+ */
+function encaisseeDansLAnnee(start: Date, end: Date) {
+  return or(
+    exists(
+      db
+        .select({ un: sql`1` })
+        .from(invoicePayments)
+        .where(and(eq(invoicePayments.invoiceId, invoices.id), gte(invoicePayments.paidAt, start), lte(invoicePayments.paidAt, end)))
+    ),
+    and(sql`coalesce(${invoices.paidAt}, ${invoices.dueDate}) >= ${start}`, sql`coalesce(${invoices.paidAt}, ${invoices.dueDate}) <= ${end}`)
+  );
+}
+
 async function loadYearData(managerId: string, year: number) {
   const { start, end } = yearBounds(year);
 
@@ -69,7 +87,7 @@ async function loadYearData(managerId: string, year: number) {
       .innerJoin(contracts, eq(invoices.contractId, contracts.id))
       .innerJoin(tenants, eq(contracts.tenantId, tenants.id))
       .innerJoin(properties, eq(contracts.propertyId, properties.id))
-      .where(and(factureEncaissee, eq(properties.managerId, managerId))),
+      .where(and(factureEncaissee, eq(properties.managerId, managerId), encaisseeDansLAnnee(start, end))),
     db
       .select({ expense: expenses, property: { id: properties.id, title: properties.title } })
       .from(expenses)
@@ -95,28 +113,41 @@ async function loadYearData(managerId: string, year: number) {
  * en cours.
  */
 async function availableYears(managerId: string): Promise<number[]> {
-  const [paidInvoiceRows, expenseRows] = await Promise.all([
+  // Les années seules sont lues (DISTINCT), pas les lignes : un sélecteur d'année n'a pas à relire tout l'historique.
+  const anneeFacture = sql<number>`extract(year from coalesce(${invoices.paidAt}, ${invoices.dueDate}))::int`;
+  const anneePaiement = sql<number>`extract(year from ${invoicePayments.paidAt})::int`;
+  const anneeDepense = sql<number>`extract(year from ${expenses.expenseDate})::int`;
+  const [anneesFactures, anneesPaiements, anneesDepenses] = await Promise.all([
     db
-      .select({ invoice: invoices })
+      // Facture réglée d'un coup, sans ligne de paiement : un seul encaissement, à sa date (les autres comptent à la date de CHAQUE paiement).
+      .selectDistinct({ annee: anneeFacture })
       .from(invoices)
       .innerJoin(contracts, eq(invoices.contractId, contracts.id))
       .innerJoin(properties, eq(contracts.propertyId, properties.id))
-      .where(and(factureEncaissee, eq(properties.managerId, managerId))),
+      .where(
+        and(
+          eq(invoices.status, "PAID"),
+          eq(properties.managerId, managerId),
+          notExists(db.select({ un: sql`1` }).from(invoicePayments).where(eq(invoicePayments.invoiceId, invoices.id)))
+        )
+      ),
     db
-      .select({ expense: expenses })
+      .selectDistinct({ annee: anneePaiement })
+      .from(invoicePayments)
+      .innerJoin(invoices, eq(invoicePayments.invoiceId, invoices.id))
+      .innerJoin(contracts, eq(invoices.contractId, contracts.id))
+      .innerJoin(properties, eq(contracts.propertyId, properties.id))
+      .where(eq(properties.managerId, managerId)),
+    db
+      .selectDistinct({ annee: anneeDepense })
       .from(expenses)
       .innerJoin(properties, eq(expenses.propertyId, properties.id))
       .where(eq(properties.managerId, managerId)),
   ]);
 
   const years = new Set<number>([new Date().getFullYear()]);
-  for (const r of await developperEncaissements(paidInvoiceRows as { invoice: typeof invoices.$inferSelect }[])) {
-    years.add(new Date(r.invoice.paidAt ?? r.invoice.dueDate).getFullYear());
-  }
-  for (const r of expenseRows as { expense: typeof expenses.$inferSelect }[]) {
-    years.add(new Date(r.expense.expenseDate).getFullYear());
-  }
-  return Array.from(years).sort((a, b) => b - a);
+  for (const ligne of [...anneesFactures, ...anneesPaiements, ...anneesDepenses]) years.add(Number(ligne.annee));
+  return Array.from(years).sort((x, y) => y - x);
 }
 
 export const getAnnualSynthesis = asyncHandler(async (req: Request, res: Response) => {
