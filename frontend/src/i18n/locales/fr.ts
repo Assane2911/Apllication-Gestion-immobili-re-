@@ -69,6 +69,7 @@ const fr = {
       OWNER_ONLY_COUNTRY: "Seul le propriétaire de l'agence, ou un collaborateur « tous droits », peut choisir le pays de l'agence.",
       ROLE_EQUIPE_INSUFFISANT: "Votre rôle dans l'équipe ne permet pas cette action. Demandez au gestionnaire propriétaire de l'agence de modifier votre rôle.",
       TRIAL_ENDED: "Votre période d'essai de 15 jours est terminée. Veuillez souscrire à un abonnement pour continuer.",
+      SUBSCRIPTION_ENDED: "Votre abonnement est arrivé à échéance. Renouvelez-le pour continuer.",
       PLAN_REQUIRED: "Cette fonctionnalité est réservée à la formule {{plan}} ou supérieure. Passez à une formule supérieure pour y accéder.",
       AUTORENEW_CARD_ONLY: "Le renouvellement automatique n'est disponible que pour le paiement par carte (Stripe).",
       UNLIMITED_NO_SUBSCRIBE: "Votre compte a un accès illimité : il n'y a aucun abonnement à souscrire.",

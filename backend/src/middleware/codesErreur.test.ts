@@ -35,6 +35,17 @@ describe("codes d'erreur des parcours critiques", () => {
     expect(res.body.code).toBe("TRIAL_ENDED");
   });
 
+  it("abonnement payant échu : SUBSCRIPTION_ENDED (402), et non « essai terminé »", async () => {
+    const echu = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO", trialEndsAt: null, subscriptionEndsAt: new Date(Date.now() - 86_400_000) });
+    const resilie = await createManager({ subscriptionStatus: "CANCELLED", subscriptionPlan: "PRO", trialEndsAt: null, subscriptionEndsAt: new Date(Date.now() - 86_400_000) });
+    for (const manager of [echu, resilie]) {
+      const res = await request(app).get("/api/properties").set(authHeader(tokenFor({ id: manager.id, role: "MANAGER" })));
+      expect(res.status).toBe(402);
+      expect(res.body.code).toBe("SUBSCRIPTION_ENDED");
+      expect(res.body.error).not.toContain("essai");
+    }
+  });
+
   it("fonction réservée à une formule supérieure : PLAN_REQUIRED, avec le nom de la formule en paramètre", async () => {
     const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER", subscriptionEndsAt: new Date(Date.now() + 86_400_000 * 30) });
     const res = await request(app).get("/api/expenses").set(authHeader(tokenFor({ id: manager.id, role: "MANAGER" })));
