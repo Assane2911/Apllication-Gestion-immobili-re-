@@ -25,6 +25,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
+import BoutonHautDePage from "../components/BoutonHautDePage";
 import Logo from "../components/Logo";
 import JsonLd from "../components/JsonLd";
 import LanguageSwitcher from "../components/LanguageSwitcher";
@@ -299,31 +300,6 @@ function BarreProgression() {
     <div aria-hidden="true" className="fixed inset-x-0 top-0 z-[60] h-[3px] bg-slate-300/40">
       <div ref={ref} className="h-full origin-left bg-ocre" style={{ transform: "scaleX(0)" }} />
     </div>
-  );
-}
-
-/** Bouton « haut de page », qui n'apparaît qu'une fois l'accroche dépassée. */
-function BoutonHautDePage({ libelle }: { libelle: string }) {
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const auDefilement = () => setVisible(window.scrollY > 900);
-    window.addEventListener("scroll", auDefilement, { passive: true });
-    auDefilement();
-    return () => window.removeEventListener("scroll", auDefilement);
-  }, []);
-  return (
-    <a
-      href="#top"
-      aria-label={libelle}
-      title={libelle}
-      className={`fixed bottom-20 right-4 z-40 flex h-11 w-11 lg:bottom-6 lg:right-6 items-center justify-center border-2 border-ink-900 bg-white text-ink-900  transition-all duration-300 hover:bg-ink-900 hover:text-white motion-reduce:transition-none ${
-        visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
-      }`}
-    >
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <path d="M8 13V3M3 7.5 8 3l5 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" />
-      </svg>
-    </a>
   );
 }
 
@@ -677,7 +653,7 @@ export default function LandingPage() {
               <li key={cle} className="flex items-start gap-4 p-6">
                 <span aria-hidden="true" className="font-display text-4xl font-extrabold leading-none text-ocre">{String(i + 1).padStart(2, "0")}</span>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">{t(`landing.steps.${cle}.title`)}</h3>
+                  <h2 className="text-sm font-bold text-slate-900">{t(`landing.steps.${cle}.title`)}</h2>
                   <p className="mt-1 text-xs leading-relaxed text-slate-700">{t(`landing.steps.${cle}.desc`)}</p>
                 </div>
               </li>
@@ -899,7 +875,7 @@ export default function LandingPage() {
             <span aria-hidden="true" className="font-mono text-xs tracking-widest text-orange-700">05 ——</span>
             <h2 className="mt-2 text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">{t("landing.trust.title")}</h2>
             <p className="text-sm text-slate-700 mt-3 leading-relaxed">{t("landing.trust.subtitle")}</p>
-            <Link to="/confidentialite" className="mt-5 inline-block text-xs font-semibold text-brand-700 underline underline-offset-4 hover:text-brand-800">
+            <Link to="/confidentialite" className="mt-5 inline-flex min-h-6 items-center text-xs font-semibold text-brand-700 underline underline-offset-4 hover:text-brand-800">
               {t("landing.trust.linkLabel")}
             </Link>
           </Reveal>
@@ -1155,6 +1131,7 @@ export default function LandingPage() {
 
       {!user && (
         <div
+          aria-hidden={essaiFixe && !menuOuvert ? undefined : true}
           className={`fixed inset-x-0 bottom-0 z-40 border-t-[1.5px] border-ink-900 bg-white px-4 py-3 transition-transform duration-300 lg:hidden motion-reduce:transition-none ${
             essaiFixe && !menuOuvert ? "translate-y-0" : "translate-y-full"
           }`}

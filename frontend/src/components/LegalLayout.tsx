@@ -182,7 +182,7 @@ export default function LegalLayout({ title, description, children }: LegalLayou
             <Logo taille={28} />
             <span className="font-mono text-sm font-semibold uppercase tracking-wider text-ink-900">{COMPANY.tradeName}</span>
           </Link>
-          <Link to="/" className="border-b border-ink-900/40 pb-0.5 text-xs font-semibold text-ink-900 transition-colors hover:border-orange-700 hover:text-orange-700">
+          <Link to="/" className="inline-flex min-h-6 items-end border-b border-ink-900/40 pb-0.5 text-xs font-semibold text-ink-900 transition-colors hover:border-orange-700 hover:text-orange-700">
             ← Retour à l'accueil
           </Link>
         </div>

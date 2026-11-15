@@ -111,7 +111,7 @@ export default function ReferralPage() {
             </div>
 
             <div className="relative flex flex-col items-center justify-center gap-1 border-t-2 border-dashed border-ink-900 bg-orange-700 px-6 py-6 text-center text-white md:border-l-2 md:border-t-0">
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-white/90">{t("manager.referral.reward.label")}</p>
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-white">{t("manager.referral.reward.label")}</p>
               <p className="text-5xl font-extrabold tabular-nums">+{info.rewardDays}</p>
               <p className="font-mono text-xs uppercase tracking-wider">{t("manager.referral.reward.days")}</p>
             </div>
