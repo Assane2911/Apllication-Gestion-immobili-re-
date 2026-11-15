@@ -956,6 +956,7 @@ export async function initDb() {
     `);
     await creerIndex("owner_messages_owner_id_idx", sql`CREATE INDEX IF NOT EXISTS owner_messages_owner_id_idx ON owner_messages (owner_id)`);
     await creerIndex("owner_messages_manager_id_idx", sql`CREATE INDEX IF NOT EXISTS owner_messages_manager_id_idx ON owner_messages (manager_id)`);
+    await creerIndex("owner_messages_sender_id_idx", sql`CREATE INDEX IF NOT EXISTS owner_messages_sender_id_idx ON owner_messages (sender_id)`);
 
     await creerTable("agency_settings", sql`
       CREATE TABLE IF NOT EXISTS agency_settings (

@@ -1135,6 +1135,8 @@ export const ownerMessages = pgTable(
   (table) => ({
     ownerIdIdx: index("owner_messages_owner_id_idx").on(table.ownerId),
     managerIdIdx: index("owner_messages_manager_id_idx").on(table.managerId),
+    // La clé étrangère senderId : sans index, supprimer un compte parcourait toute la table pour vérifier qu'aucun message ne le référence.
+    senderIdIdx: index("owner_messages_sender_id_idx").on(table.senderId),
   })
 );
 
