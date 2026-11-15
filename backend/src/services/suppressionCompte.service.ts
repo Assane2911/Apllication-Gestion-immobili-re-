@@ -1,6 +1,6 @@
-import { and, eq, inArray, isNotNull, notExists, or, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, ne, notExists, or, sql } from "drizzle-orm";
 import { db, Transaction } from "../db/client";
-import { agencySettings, contracts, invoices, issueReports, leaseNotices, listings, messages, owners, ownerMessages, properties, storedDocuments, tenants, users } from "../db/schema";
+import { agencySettings, contracts, invoices, issueReports, leaseNotices, listings, messages, owners, ownerMessages, properties, storedDocuments, suggestions, tenants, users } from "../db/schema";
 import { cancelStripeSubscriptionNow } from "./payment.service";
 import { deleteStorageObjectBestEffort } from "./storage.service";
 
@@ -40,8 +40,8 @@ function comptesPortailOrphelins(identifiants: string[]) {
  * Portée (choix explicite) : biens, locataires, propriétaires, contrats,
  * factures, signalements, annonces (+ leurs demandes), états des lieux,
  * messages, journal d'activité, paramètres d'agence, historique des
- * abonnements SaaS et comptes des collaborateurs invités sont supprimés sans
- * anonymisation ni conservation.
+ * abonnements SaaS, suggestions de leurs auteurs et comptes des collaborateurs
+ * invités sont supprimés sans anonymisation ni conservation.
  *
  * Les comptes de connexion « portail » d'un locataire/propriétaire (users liés
  * via tenants.userId / owners.userId) que CETTE agence était seule à rattacher
@@ -143,6 +143,32 @@ export async function supprimerCompteGestionnaire(user: typeof users.$inferSelec
 
     // Le rattachement à users.id n'est pas une clé étrangère : les documents rangés sont supprimés explicitement.
     await tx.delete(storedDocuments).where(eq(storedDocuments.managerId, user.id));
+
+    // Les suggestions recopient l'adresse e-mail de leur auteur (authorLabel) et survivraient à son compte : la clé étrangère
+    // passe seulement authorId à NULL. Elles partent avec les comptes qui disparaissent (le gestionnaire, ses collaborateurs et les
+    // comptes portail orphelins), AVANT la suppression de ces comptes, tant que le lien existe encore.
+    const auteursSupprimes = new Set<string>([user.id]);
+    const collaborateursRows = await tx.select({ id: users.id }).from(users).where(eq(users.teamOwnerId, user.id));
+    for (const ligne of collaborateursRows as { id: string }[]) auteursSupprimes.add(ligne.id);
+    for (let i = 0; i < comptesPortail.length; i += TAILLE_LOT_COMPTES) {
+      const orphelins = await tx
+        .select({ id: users.id })
+        .from(users)
+        .where(
+          and(
+            inArray(users.id, comptesPortail.slice(i, i + TAILLE_LOT_COMPTES)),
+            inArray(users.role, ["TENANT", "OWNER"]),
+            // Les fiches de CETTE agence partent avec elle : seules celles des autres agences gardent un compte en vie.
+            notExists(db.select({ un: sql`1` }).from(tenants).where(and(eq(tenants.userId, users.id), ne(tenants.managerId, user.id)))),
+            notExists(db.select({ un: sql`1` }).from(owners).where(and(eq(owners.userId, users.id), ne(owners.managerId, user.id))))
+          )
+        );
+      for (const ligne of orphelins as { id: string }[]) auteursSupprimes.add(ligne.id);
+    }
+    const auteurs = [...auteursSupprimes];
+    for (let i = 0; i < auteurs.length; i += TAILLE_LOT_COMPTES) {
+      await tx.delete(suggestions).where(inArray(suggestions.authorId, auteurs.slice(i, i + TAILLE_LOT_COMPTES)));
+    }
 
     // Le reste (biens, locataires, propriétaires, annonces + leurs demandes,
     // états des lieux, messages, journal d'activité, paramètres d'agence,
