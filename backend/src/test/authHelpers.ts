@@ -391,6 +391,19 @@ export async function tokenProprietaire(owner: { id: string; email: string }) {
  * token) : ces tests portent sur l'autorisation, pas sur l'activation.
  */
 export async function createTeamMember(ownerId: string, overrides: Partial<typeof users.$inferInsert> = {}) {
+  // Un collaborateur n'existe que dans une agence sur la formule Entreprise : son accès en dépend (voir middleware/auth.ts). Le
+  // propriétaire passe donc en Entreprise (hors essai, qui vaut Pro) ; un test qui veut une agence rétrogradée l'écrit APRÈS.
+  const [proprietaire] = await testDb.select().from(users).where(eq(users.id, ownerId));
+  if (proprietaire && (proprietaire.subscriptionPlan !== "ENTERPRISE" || proprietaire.subscriptionStatus === "TRIAL")) {
+    await testDb
+      .update(users)
+      .set({
+        subscriptionPlan: "ENTERPRISE",
+        subscriptionStatus: "ACTIVE",
+        subscriptionEndsAt: proprietaire.subscriptionEndsAt && proprietaire.subscriptionEndsAt > new Date() ? proprietaire.subscriptionEndsAt : new Date(Date.now() + 30 * 24 * 3600 * 1000),
+      })
+      .where(eq(users.id, ownerId));
+  }
   const id = createId();
   const passwordHash = await bcrypt.hash("Password123!", 10);
   const [collaborateur] = await testDb

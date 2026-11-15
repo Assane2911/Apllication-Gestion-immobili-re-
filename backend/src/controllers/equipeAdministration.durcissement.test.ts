@@ -22,6 +22,9 @@ describe("Équipe — les e-mails d'invitation sont plafonnés", () => {
     for (let i = 0; i < 30; i++) {
       const res = await request(app).post("/api/team").set(h).send({ email: `collab${i}@test.local`, role: "AGENT" });
       expect(res.status, `invitation ${i + 1}`).toBe(201);
+      // Le plafond de 25 collaborateurs (voir equipePlafondFormule.test.ts) est plus bas que la limite de débit : on retire le compte créé
+      // pour que seule la limite de débit, par heure et par propriétaire, soit éprouvée ici.
+      await testDb.delete(users).where(eq(users.teamOwnerId, manager.id));
     }
     envoi.mockClear();
 

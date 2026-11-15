@@ -1,7 +1,8 @@
+import { eq } from "drizzle-orm";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
-import { activityLogs, agencySettings } from "../db/schema";
+import { activityLogs, agencySettings, users } from "../db/schema";
 import {
   authHeader,
   createAdmin,
@@ -39,6 +40,8 @@ describe("GET /api/admin/managers", () => {
     const token = await adminToken();
     const manager = await createManager({ email: "agence-a@test.local", subscriptionPlan: "PRO" });
     await createTeamMember(manager.id);
+    // createTeamMember met l'agence en Entreprise active : la situation voulue par le test (Pro, en essai) est réécrite après.
+    await testDb.update(users).set({ subscriptionPlan: manager.subscriptionPlan, subscriptionStatus: manager.subscriptionStatus, subscriptionEndsAt: manager.subscriptionEndsAt }).where(eq(users.id, manager.id));
     await testDb.insert(agencySettings).values({ userId: manager.id, agencyName: "Agence Alpha" });
     await createProperty(manager.id);
     await createProperty(manager.id);
@@ -178,6 +181,7 @@ describe("GET /api/admin/managers/:id", () => {
     await createOwner(manager.id);
     await createContract(property.id, tenant.id, { status: "ACTIVE" });
     await createTeamMember(manager.id);
+    await testDb.update(users).set({ subscriptionPlan: "PRO" }).where(eq(users.id, manager.id));
     await createPlatformSubscription(manager.id, { plan: "PRO", amount: 29, paymentRef: "REF-42" });
     await testDb.insert(activityLogs).values({
       managerId: manager.id,
