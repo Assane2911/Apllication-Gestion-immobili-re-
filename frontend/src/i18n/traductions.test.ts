@@ -201,3 +201,19 @@ describe("Traductions — le portugais vouvoie", () => {
     expect(fautes, fautes.slice(0, 10).join(" | ")).toEqual([]);
   });
 });
+
+/**
+ * L'espagnol s'adresse à l'utilisateur de « usted » (« su cuenta », « inicie sesión »), comme le français le vouvoie et le
+ * portugais le traite de « o senhor ». Une centaine de textes — connexion, inscription, accueil, portail locataire —
+ * tutoyaient (« tu cuenta », « revisa tu correo », « puedes ») : deux registres dans le même parcours. Les info-bulles
+ * des boutons (« Abre le panneau… »), à la troisième personne, ne sont pas concernées.
+ */
+describe("Traductions — l'espagnol traite de « usted »", () => {
+  const TU = /(?<![\p{L}@])(tu|tus|tienes|puedes|eres|estás|quieres|necesitas|ti|tendrás|podrás|recibirás|tendrás|podrás)(?![\p{L}@])/iu;
+  const IMPERATIFS_TU = /^(Inicia|Revisa|Haz|Introduce|Elige|Indica|Comprueba|Vuelve|Consulta|Disfruta|Escribe|Añade|Descubre|Traza|Anota|Comparte|Personaliza|Comienza|Chatea|Declara)(?![\p{L}])/u;
+
+  it("n'emploie aucun pronom, possessif ni impératif de tutoiement", () => {
+    const fautes = valeursDe(es).filter((v) => TU.test(v.replace("tu@ejemplo.com", "")) || IMPERATIFS_TU.test(v));
+    expect(fautes, fautes.slice(0, 10).join(" | ")).toEqual([]);
+  });
+});
