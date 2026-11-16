@@ -1,4 +1,5 @@
 import PDFDocument from "pdfkit";
+import "./pdfPolices";
 import { formaterMontant, symboleDevise } from "../utils/montant";
 import { libelleMoyenPaiement } from "../utils/moyenPaiement";
 import { libelleEcheance } from "../utils/jourEcheance";
