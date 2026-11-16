@@ -82,6 +82,22 @@ describe("sendEmail", () => {
     );
   });
 
+  /**
+   * Un message uniquement HTML est une marque classique de courrier indésirable, et un répondeur automatique qui répond à un
+   * message automatique crée des échanges inutiles : chaque envoi porte donc une partie texte et les en-têtes « message automatique ».
+   */
+  it("joint une partie texte brute et marque le message comme automatique", async () => {
+    env.smtp.user = "agence@test.local";
+    env.smtp.appPassword = "un-mot-de-passe-app";
+    sendMail.mockResolvedValueOnce({ messageId: "msg-texte" });
+
+    await sendEmail("locataire@test.local", "Sujet", `<p>Bonjour</p><a href="https://app.example/x">Régler</a>`);
+
+    const envoye = sendMail.mock.calls[0][0];
+    expect(envoye.text).toBe("Bonjour\nRégler (https://app.example/x)");
+    expect(envoye.headers).toEqual({ "Auto-Submitted": "auto-generated", "X-Auto-Response-Suppress": "OOF, AutoReply" });
+  });
+
   it("renvoie simulated:false et error:true (sans jeter) si l'envoi SMTP échoue", async () => {
     env.smtp.user = "agence@test.local";
     env.smtp.appPassword = "un-mot-de-passe-app";

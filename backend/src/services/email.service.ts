@@ -2,6 +2,7 @@ import * as Sentry from "@sentry/node";
 import nodemailer from "nodemailer";
 import { env } from "../config/env";
 import { escapeHtml } from "../utils/html";
+import { htmlEnTexte } from "../utils/htmlEnTexte";
 import { formaterMontant } from "../utils/montant";
 import { formaterDate, formaterDateHeure, LANGUE_PAR_DEFAUT, nomDuMois, type Langue } from "../utils/langue";
 import { libelleMoyenPaiement } from "../utils/moyenPaiement";
@@ -157,6 +158,10 @@ export async function sendEmail(to: string, subject: string, html: string, attac
         to: destinataire,
         subject: sujet,
         html,
+        // Partie texte : un message uniquement HTML est une marque classique de courrier indésirable.
+        text: htmlEnTexte(html),
+        // Messages automatiques : les répondeurs (« absent du bureau ») ne doivent pas leur répondre en boucle.
+        headers: { "Auto-Submitted": "auto-generated", "X-Auto-Response-Suppress": "OOF, AutoReply" },
         attachments,
       });
       return { simulated: false, messageId: info.messageId };
