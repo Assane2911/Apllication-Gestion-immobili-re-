@@ -72,7 +72,7 @@ describe("VitrinePage (vitrine publique)", () => {
     mockedApi.get.mockResolvedValueOnce({ data: { countries: ["SN"] } });
     renderPage();
 
-    await waitFor(() => expect(document.title).toBe("Annonces immobilières — Locations, ventes, terrains | ImmoPlatform Pro"));
+    await waitFor(() => expect(document.title).toBe("Annonces immobilières : locations, ventes | ImmoPlatform Pro"));
     expect(document.querySelector('meta[name="description"]')?.getAttribute("content")).toBe(
       "Parcourez les annonces publiées par nos agences partenaires : locations, ventes, terrains et promotions immobilières en France et en Afrique francophone."
     );

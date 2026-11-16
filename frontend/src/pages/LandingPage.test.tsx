@@ -48,7 +48,7 @@ describe("LandingPage", () => {
 
   it("définit un titre d'onglet et une meta description propres à la page", () => {
     renderPage();
-    expect(document.title).toBe("ImmoPlatform Pro — Gestion locative et immobilière intelligente");
+    expect(document.title).toBe("ImmoPlatform Pro — Gestion locative intelligente");
     expect(document.querySelector('meta[name="description"]')?.getAttribute("content")).toBe(
       "Quittances PDF automatiques, signature électronique des baux, relances automatiques, tableau de bord en temps réel. Essai gratuit de 15 jours sans engagement."
     );

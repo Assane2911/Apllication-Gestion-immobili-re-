@@ -126,6 +126,9 @@ export default function VitrineListingPage() {
   if (notFound || !listing) {
     return (
       <div className="min-h-screen">
+        {/* Annonce retirée ou jamais publiée : l'adresse répond quand même 200 (le site est une seule page), donc sans « noindex »
+            un moteur de recherche garderait longtemps dans ses résultats une page qui dit « annonce introuvable ». */}
+        <Seo title={t("vitrine.brand")} noindex />
         <VitrineHeader />
         <main className="mx-auto max-w-2xl space-y-4 px-4 py-16 text-center sm:px-6">
           <p className="text-sm text-slate-600">{t("vitrine.notFound")}</p>

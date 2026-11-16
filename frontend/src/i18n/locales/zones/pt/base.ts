@@ -1341,7 +1341,7 @@ const zone: ZoneBase = {
   },
   seo: {
     landing: {
-      title: "ImmoPlatform Pro — Gestão imobiliária e de arrendamentos inteligente",
+      title: "ImmoPlatform Pro — Gestão de arrendamentos inteligente",
       description:
         "Recibos de renda em PDF automáticos, assinatura eletrónica de contratos, lembretes automáticos, painel em tempo real. Teste gratuito de 15 dias sem compromisso.",
     },
@@ -1367,7 +1367,7 @@ const zone: ZoneBase = {
       title: "Confirmação do email",
     },
     vitrine: {
-      title: "Anúncios imobiliários — Arrendamentos, vendas, terrenos | ImmoPlatform Pro",
+      title: "Anúncios imobiliários: arrendar, comprar | ImmoPlatform Pro",
       description:
         "Consulte os anúncios publicados pelas nossas agências parceiras: arrendamentos, vendas, terrenos e promoções imobiliárias em França e na África francófona.",
     },

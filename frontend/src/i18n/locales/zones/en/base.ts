@@ -1367,7 +1367,7 @@ const zone: ZoneBase = {
       title: "Email confirmation",
     },
     vitrine: {
-      title: "Property Listings — Rentals, Sales, Land | ImmoPlatform Pro",
+      title: "Property listings: rentals, sales | ImmoPlatform Pro",
       description:
         "Browse listings published by our partner agencies: rentals, sales, land and new developments across France and francophone Africa.",
     },
