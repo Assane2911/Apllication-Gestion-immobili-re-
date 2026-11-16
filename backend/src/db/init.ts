@@ -355,6 +355,27 @@ async function elargirMoyensDePaiement(): Promise<void> {
 }
 
 /**
+ * Tables d'un ancien état de l'application que plus aucun code ne lit ni n'écrit. `rate_limits` (key, hits, expires_at) précédait
+ * `rate_limit_hits` (voir middleware/rateLimitStore.ts) : restée en production, vide, avec la protection par lignes activée.
+ *
+ * Supprimées SEULEMENT si elles existent ET sont vides, sans CASCADE (une table encore référencée par autre chose fait échouer
+ * l'instruction, qui reste non bloquante) : jamais une ligne n'est perdue. Quand la table n'existe pas — le cas courant —,
+ * aucune instruction n'est émise.
+ */
+const TABLES_OBSOLETES = ["rate_limits"] as const;
+
+async function supprimerTablesObsoletes(): Promise<void> {
+  for (const nom of TABLES_OBSOLETES) {
+    if (!etat.tables.has(nom)) continue;
+    await alterSiBesoin(() =>
+      executerDdl(
+        sql.raw(`DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM ${nom}) THEN DROP TABLE ${nom}; END IF; END $$`)
+      )
+    );
+  }
+}
+
+/**
  * Les paiements d'abonnement sont conservés ANONYMISÉS quand le compte est supprimé (obligation comptable) : `user_id` doit
  * pouvoir passer à NULL. Une base créée avant ce choix a `user_id NOT NULL` et `ON DELETE CASCADE` : la suppression d'un
  * compte effaçait alors son historique. `CREATE TABLE IF NOT EXISTS` ne corrige pas une table existante : cette migration
@@ -1100,6 +1121,7 @@ export async function initDb() {
     // tables visées n'existaient pas encore quand ce bloc était placé plus
     // haut, donc chaque ALTER échouait silencieusement (try/catch) et les
     await conserverAbonnementsSansCompte();
+    await supprimerTablesObsoletes();
 
     // colonnes ci-dessous — dont manager_id, indispensable à l'isolation par
     // gestionnaire — n'étaient jamais créées, faisant échouer les CREATE

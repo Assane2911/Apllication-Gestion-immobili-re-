@@ -143,6 +143,44 @@ describe("initDb : idempotence sans verrou inutile", () => {
     expect(emises.filter((q) => /platform_subscriptions/i.test(q) && /\b(ALTER|DROP)\b|ADD CONSTRAINT/i.test(q))).toEqual([]);
   });
 
+  describe("table obsolète rate_limits", () => {
+    const existe = async (nom: string) => {
+      const r = await testDb.execute(sql`SELECT to_regclass(${nom}) IS NOT NULL AS existe`);
+      return ((Array.isArray(r) ? r : ((r as { rows: unknown[] }).rows ?? [])) as Array<{ existe: boolean }>)[0].existe;
+    };
+    const creerAncienne = () => testDb.execute(sql`CREATE TABLE IF NOT EXISTS rate_limits (key TEXT PRIMARY KEY, hits INTEGER NOT NULL, expires_at TIMESTAMP NOT NULL)`);
+
+    it("la supprime quand elle existe et qu'elle est vide, sans toucher à rate_limit_hits", async () => {
+      await initDb();
+      await creerAncienne();
+
+      await initDb();
+
+      expect(await existe("rate_limits")).toBe(false);
+      expect(await existe("rate_limit_hits")).toBe(true);
+    });
+
+    it("la garde, intacte, dès qu'elle contient une ligne (jamais de perte de données)", async () => {
+      await initDb();
+      await creerAncienne();
+      await testDb.execute(sql`INSERT INTO rate_limits (key, hits, expires_at) VALUES ('x', 1, now())`);
+
+      await initDb();
+
+      expect(await existe("rate_limits")).toBe(true);
+      await testDb.execute(sql`DROP TABLE rate_limits`);
+    });
+
+    it("n'émet aucune instruction à son sujet quand elle n'existe pas", async () => {
+      await initDb();
+      const emises = enregistrerInstructions();
+
+      await initDb();
+
+      expect(emises.filter((q) => /rate_limits\b/i.test(q))).toEqual([]);
+    });
+  });
+
   it("repose une contrainte de rôle absente", async () => {
     await initDb();
     await testDb.execute(sql`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`);
