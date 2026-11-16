@@ -62,6 +62,21 @@ export const ADMIN_AUDIT_ACTION_LABELS: Record<AdminAuditAction, string> = {
   "export.audit": "Export du journal d'audit",
 };
 
+/**
+ * Entrées du journal d'audit qui sont des PIÈCES FINANCIÈRES : virements confirmés ou rejetés, changements de formule, jours ou accès
+ * accordés ou retirés, coordonnées bancaires de la plateforme. Elles se conservent pendant la durée comptable, comme les paiements
+ * d'abonnement qu'elles justifient : la purge d'un an (voir conservation.service.ts) ne les touche jamais. Toutes les autres actions
+ * (maintenance, suspension, annonces, exports…) sont effacées au-delà d'un an.
+ *
+ * Reconnues par préfixe plutôt que par liste : une action financière ajoutée demain (`subscription.…`) est protégée sans qu'il faille
+ * y penser, alors qu'oublier de la lister l'aurait fait effacer.
+ */
+export const PREFIXES_ACTIONS_FINANCIERES = ["subscription.", "platform.bank_details."] as const;
+
+export function actionFinanciere(action: string): boolean {
+  return PREFIXES_ACTIONS_FINANCIERES.some((prefixe) => action.startsWith(prefixe));
+}
+
 export interface LogAdminActionParams {
   req?: Request;
   action: AdminAuditAction;

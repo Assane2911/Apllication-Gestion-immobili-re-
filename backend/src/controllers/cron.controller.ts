@@ -226,7 +226,7 @@ export function ligneDeResume(corps: {
   success: boolean;
   etapesEnEchec: EtapeEnEchec[];
   facturesPasseesEnRetard: number;
-  purge: { jetonsEffaces: number; journauxEffaces: number; compteursEfface: number } | null;
+  purge: { jetonsEffaces: number; journauxEffaces: number; journauxAdminEfface?: number; compteursEfface: number } | null;
   contractEndingRemindersSent: number;
   upcomingRentDueRemindersSent: number;
   overdueRemindersSent: number;
@@ -241,7 +241,7 @@ export function ligneDeResume(corps: {
     ? "OK"
     : `ÉCHEC de ${corps.etapesEnEchec.length} étape(s) : ${corps.etapesEnEchec.map((e) => e.etape).join(", ")}`;
   const purge = corps.purge
-    ? `${corps.purge.jetonsEffaces} jeton(s), ${corps.purge.journauxEffaces} journal(aux), ${corps.purge.compteursEfface} compteur(s)`
+    ? `${corps.purge.jetonsEffaces} jeton(s), ${corps.purge.journauxEffaces} journal(aux), ${corps.purge.journauxAdminEfface ?? 0} journal(aux) d'administration, ${corps.purge.compteursEfface} compteur(s)`
     : "non faite";
   return (
     `[cron] Résumé du jour — ${statut} | ` +

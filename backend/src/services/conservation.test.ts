@@ -1,6 +1,6 @@
 import { eq, isNull } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { activityLogs, contracts, listingLeads, listings, rateLimitHits, tenants, users } from "../db/schema";
+import { activityLogs, adminAuditLogs, contracts, listingLeads, listings, rateLimitHits, tenants, users } from "../db/schema";
 import {
   createContract,
   createManager,
@@ -112,6 +112,63 @@ describe("Purge automatique des données de la plateforme", () => {
     const restantes = await testDb.select().from(activityLogs).where(eq(activityLogs.managerId, manager.id));
     expect(restantes).toHaveLength(1);
     expect(resultat.journauxEffaces).toBe(1);
+  });
+
+  describe("journal d'audit de l'administration", () => {
+    const ilYa = (jours: number) => new Date(Date.now() - jours * 24 * 3_600_000);
+    const entree = (action: string, createdAt: Date) => ({ adminEmail: "admin@test.local", action, targetLabel: "agence@test.local", details: "x", createdAt });
+    const restantes = async () => (await testDb.select().from(adminAuditLogs)).map((l: { action: string }) => l.action).sort();
+
+    it("efface après un an les entrées NON financières (maintenance, suspension, annonces, exports)", async () => {
+      await testDb.insert(adminAuditLogs).values([
+        entree("platform.maintenance.schedule", ilYa(400)),
+        entree("manager.suspend", ilYa(400)),
+        entree("listing.hide", ilYa(400)),
+        entree("export.managers", ilYa(400)),
+      ]);
+
+      const resultat = await purgerDonneesDeLaPlateforme();
+
+      expect(await restantes()).toEqual([]);
+      expect(resultat.journauxAdminEfface).toBe(4);
+    });
+
+    it("garde TOUJOURS les entrées financières, même de plusieurs années (virements, formules, accès accordés, coordonnées bancaires)", async () => {
+      await testDb.insert(adminAuditLogs).values([
+        entree("subscription.bank_transfer.confirm", ilYa(3000)),
+        entree("subscription.bank_transfer.reject", ilYa(3000)),
+        entree("subscription.change_plan", ilYa(3000)),
+        entree("subscription.grant_days", ilYa(3000)),
+        entree("subscription.grant_unlimited", ilYa(3000)),
+        entree("subscription.revoke_unlimited", ilYa(3000)),
+        entree("platform.bank_details.update", ilYa(3000)),
+      ]);
+
+      const resultat = await purgerDonneesDeLaPlateforme();
+
+      expect(await restantes()).toHaveLength(7);
+      expect(resultat.journauxAdminEfface).toBe(0);
+    });
+
+    it("garde les entrées non financières de moins d'un an", async () => {
+      await testDb.insert(adminAuditLogs).values([entree("manager.suspend", ilYa(364)), entree("listing.hide", ilYa(10))]);
+
+      await purgerDonneesDeLaPlateforme();
+
+      expect(await restantes()).toEqual(["listing.hide", "manager.suspend"]);
+    });
+
+    it("mélange : seules les anciennes non financières partent", async () => {
+      await testDb.insert(adminAuditLogs).values([
+        entree("manager.suspend", ilYa(500)),
+        entree("subscription.change_plan", ilYa(500)),
+        entree("listing.hide", ilYa(5)),
+      ]);
+
+      await purgerDonneesDeLaPlateforme();
+
+      expect(await restantes()).toEqual(["listing.hide", "subscription.change_plan"]);
+    });
   });
 
   it("efface les compteurs de tentatives expirés depuis plus d'un jour, garde les autres", async () => {
