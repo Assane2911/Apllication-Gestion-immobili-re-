@@ -241,6 +241,41 @@ Le défaut du code (`smtp.gmail.com`) ne convient **pas** à un expéditeur en `
 
 ---
 
+## Reprise après sinistre : quoi faire, dans quel ordre
+
+### Selon la panne
+
+| Ce qui arrive | Que faire |
+|---|---|
+| Un déploiement casse le site (500 partout) | Vercel → *Deployments* → le dernier déploiement sain → **Instant Rollback**, puis corriger (voir « Le site entier est en panne »). Quelques minutes. |
+| La base est abîmée ou vidée par erreur | Restaurer la dernière copie chiffrée (section « Sauvegarde et restauration »). **Perte possible : jusqu'à 24 h**, plus le retard de lancement du workflow (GitHub le déclenche parfois plusieurs heures après 02 h 43 UTC). |
+| Le projet Supabase est en pause ou supprimé | Plan gratuit : un projet sans activité pendant 7 jours est mis en pause. Dans Supabase, *Restore project* le réveille (possible plusieurs semaines après). Si le projet n'existe plus : nouveau projet + restauration d'une copie. |
+| Le compte Vercel est perdu | Recréer les deux projets (racines `backend` et `frontend`), leurs variables, puis les domaines (voir plus bas). |
+| Le compte GitHub est perdu | Le code **et** les copies de la base disparaissent avec lui : gardez ailleurs une copie du dépôt et, une fois par trimestre, une copie chiffrée téléchargée. |
+
+### Les secrets qu'on ne peut PAS recréer
+
+Perdus, ils rendent des données illisibles à jamais. Gardez-les dans un gestionnaire de mots de passe, **hors de GitHub et de Vercel** (Vercel ne réaffiche jamais une variable « sensible ») :
+
+- `PAYMENT_KEYS_ENCRYPTION_KEY` : chiffre les identifiants de paiement de chaque agence. Sans elle, chaque agence doit ressaisir les siens.
+- `TOTP_ENCRYPTION_KEY` : chiffre les secrets de double authentification. Sans elle, il faut remettre à zéro la double authentification de chaque compte (voir « Chiffrement du secret de double authentification »).
+- `BACKUP_PASSPHRASE` : sans elle, **toutes les copies de la base sont illisibles**.
+- Le mot de passe de la base Supabase et les clés du projet (`SUPABASE_SERVICE_ROLE_KEY`).
+
+Se recréent sans perte de données : `JWT_SECRET` (tout le monde est simplement déconnecté), `CRON_SECRET`, les clés SMTP, le jeton WhatsApp, `SENTRY_DSN`.
+
+### Reconstruire de zéro, dans l'ordre
+
+1. **Base** : nouveau projet Supabase (région `eu-west-3`, PostgreSQL 17), puis restauration de la dernière copie (section « Sauvegarde et restauration »).
+2. **Fichiers** : recréer les deux espaces de stockage `public-uploads` (public) et `private-uploads` (privé). Leur contenu n'est **pas** sauvegardé (voir « Ce que cette sauvegarde ne couvre pas ») : les pièces déposées sont à redemander.
+3. **Backend (Vercel)** : toutes les variables de `backend/.env.example` (liste de référence, vérifiée par un test), puis `FRONTEND_URL` et `PUBLIC_BACKEND_URL`.
+4. **Frontend (Vercel)** : les variables de `frontend/.env.example` (au minimum `VITE_API_URL`).
+5. **Domaines et DNS** : `www.immoplatformpro.com` (frontend), `api.immoplatformpro.com` (backend), l'apex qui redirige vers `www`, et les enregistrements du courrier (SPF, DKIM, DMARC : voir « Délivrabilité des e-mails »). **Gardez une copie de la zone DNS** : sans elle, le courrier sort en courrier indésirable le temps de la reconstituer.
+6. **Services à repointer vers la nouvelle adresse du backend** : notifications de paiement (PayDunya, Stripe), webhook WhatsApp (Meta), origines et redirections autorisées de la connexion Google, `SENTRY_DSN`, et les trois sondes UptimeRobot.
+7. **Vérifier** : `/api/health` et `/api/health/ready` répondent 200, une connexion fonctionne (gestionnaire, locataire, administrateur), puis lancer à la main la tâche quotidienne (`/api/cron/daily`, avec `CRON_SECRET`) et lire son bilan.
+
+---
+
 ## Application Android — la reconstruire
 
 L'application Android (Capacitor, projet dans `frontend/android/`) embarque une COPIE du site : elle ne se met pas à jour toute seule quand le site est déployé. À chaque nouvelle version à publier :
