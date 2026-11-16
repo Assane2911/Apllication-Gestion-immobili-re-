@@ -1,3 +1,4 @@
+import { useSeoLangues } from "../hooks/useSeoLangues";
 import { Heart, SearchX } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -16,6 +17,7 @@ const PAGE_SIZE = 12;
 
 export default function VitrinePage() {
   const { t, i18n } = useTranslation();
+  const seoLangues = useSeoLangues("/vitrine");
   const [listings, setListings] = useState<Listing[]>([]);
   const [countries, setCountries] = useState<string[]>([]);
   const [countryFilter, setCountryFilter] = useState("ALL");
@@ -89,7 +91,7 @@ export default function VitrinePage() {
 
   return (
     <div className="min-h-screen">
-      <Seo title={t("seo.vitrine.title")} description={t("seo.vitrine.description")} canonical="/vitrine" />
+      <Seo title={t("seo.vitrine.title")} description={t("seo.vitrine.description")} {...seoLangues} />
       <VitrineHeader />
 
       <main className="mx-auto max-w-6xl space-y-6 px-4 py-10 sm:px-6">

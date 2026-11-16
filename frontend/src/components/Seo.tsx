@@ -12,6 +12,11 @@ interface SeoProps {
   canonical?: string;
   /** Page à ne pas indexer (jeton dans l'adresse, écran de passage). */
   noindex?: boolean;
+  /**
+   * Les versions de la page dans chaque langue (adresse de chacune) : annoncées aux moteurs de recherche par des balises
+   * `hreflang`, avec le français en `x-default`. Seulement pour une page qui existe vraiment dans plusieurs langues.
+   */
+  alternates?: Record<string, string>;
 }
 
 /**
@@ -21,13 +26,16 @@ interface SeoProps {
  * remonté automatiquement dans <head>, et retiré au démontage — pas besoin de
  * react-helmet-async ni de useEffect manuel.
  */
-export default function Seo({ title, description, canonical, noindex }: SeoProps) {
+export default function Seo({ title, description, canonical, noindex, alternates }: SeoProps) {
   return (
     <>
       <title>{title}</title>
       {description && <meta name="description" content={description} />}
       {canonical && <link rel="canonical" href={`${SITE_URL}${canonical}`} />}
       {noindex && <meta name="robots" content="noindex" />}
+      {alternates &&
+        Object.entries(alternates).map(([langue, chemin]) => <link key={langue} rel="alternate" hrefLang={langue} href={`${SITE_URL}${chemin}`} />)}
+      {alternates?.fr && <link rel="alternate" hrefLang="x-default" href={`${SITE_URL}${alternates.fr}`} />}
     </>
   );
 }

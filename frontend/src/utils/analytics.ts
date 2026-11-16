@@ -1,3 +1,5 @@
+import { sansPrefixeLangue } from "./langueUrl";
+
 declare global {
   interface Window {
     dataLayer?: unknown[];
@@ -70,6 +72,7 @@ const PAGES_PUBLIQUES = ["/", "/landing", "/login", "/inscription", "/mot-de-pas
 
 /** Cette adresse (chemin seul) fait-elle partie du site public ? Une page de l'application, non. */
 export function estPagePublique(chemin: string): boolean {
+  chemin = sansPrefixeLangue(chemin);
   return PAGES_PUBLIQUES.some((page) => chemin === page || (page !== "/" && chemin.startsWith(`${page}/`)));
 }
 

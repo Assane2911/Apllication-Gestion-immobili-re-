@@ -1,3 +1,4 @@
+import { useCheminPublic, useSeoLangues } from "../hooks/useSeoLangues";
 import {
   Apple,
   ArrowRight,
@@ -348,6 +349,8 @@ const NUMERO_MENU = "font-mono text-[10px] text-orange-700";
 
 export default function LandingPage() {
   const { t, i18n } = useTranslation();
+  const seoLangues = useSeoLangues("/");
+  const chemin = useCheminPublic();
   const { user } = useAuth();
   // Sous 640 px, l'en-tête ne tient qu'en version resserrée (voir LandingPage.mobile.test.tsx).
   const telephone = useMediaQuery("(max-width: 639px)");
@@ -453,7 +456,7 @@ export default function LandingPage() {
       <BarreProgression />
       <IndexFeuilles sections={sectionsSuivies} actif={sectionActive} />
       <BoutonHautDePage libelle={t("landing.nav.top")} />
-      <Seo title={t("seo.landing.title")} description={t("seo.landing.description")} canonical="/" />
+      <Seo title={t("seo.landing.title")} description={t("seo.landing.description")} {...seoLangues} />
       <JsonLd data={buildOrganizationJsonLd()} />
       <JsonLd data={buildSoftwareApplicationJsonLd()} />
       {/* Navigation */}
@@ -475,7 +478,7 @@ export default function LandingPage() {
               annonces étaient donc publiées et servies correctement, et
               simplement invisibles pour qui ne tapait pas l'adresse à la main.
             */}
-            <Link to="/vitrine" className={LIEN_MENU}>
+            <Link to={chemin("/vitrine")} className={LIEN_MENU}>
               {t("landing.nav.vitrine")}
             </Link>
             {[
@@ -1147,7 +1150,7 @@ export default function LandingPage() {
       <PiedDeSite
         accroche={t("landing.footer.tagline")}
         liens={[
-          { to: "/vitrine", libelle: t("landing.nav.vitrine") },
+          { to: chemin("/vitrine"), libelle: t("landing.nav.vitrine") },
           { to: "/mentions-legales", libelle: t("landing.footer.legal") },
           { to: "/cgu", libelle: t("landing.footer.terms") },
           { to: "/confidentialite", libelle: t("landing.footer.privacy") },
