@@ -95,7 +95,8 @@ export default function TenantInvoicesPage() {
         return;
       }
 
-      setMessage(data.payment.message);
+      // Le texte vient d'ici, dans la langue de l'interface : celui du serveur est en français pour tout le monde.
+      setMessage(data.payment.status === "PENDING_VALIDATION" ? t("tenant.invoices.transferDeclared") : data.payment.message);
       setPayingId(null);
       setBankRef("");
       load();
@@ -173,7 +174,7 @@ export default function TenantInvoicesPage() {
           {
             libelle: t("tenant.invoices.summary.late"),
             valeur: situation.enRetard,
-            aide: situation.enRetard > 0 ? t("tenant.invoices.summary.lateHint", { days: situation.retardMax }) : t("tenant.invoices.summary.lateNone"),
+            aide: situation.enRetard > 0 ? t("tenant.invoices.summary.lateHint", { count: situation.retardMax }) : t("tenant.invoices.summary.lateNone"),
             ton: situation.enRetard > 0 ? "alerte" : "normal",
           },
           {
@@ -182,10 +183,10 @@ export default function TenantInvoicesPage() {
             aide: !situation.prochaine
               ? t("tenant.invoices.summary.nextNone")
               : situation.prochaine.jours < 0
-              ? t("tenant.invoices.summary.nextOverdue", { days: -situation.prochaine.jours })
+              ? t("tenant.invoices.summary.nextOverdue", { count: -situation.prochaine.jours })
               : situation.prochaine.jours === 0
               ? t("tenant.invoices.summary.nextToday")
-              : t("tenant.invoices.summary.nextSoon", { days: situation.prochaine.jours }),
+              : t("tenant.invoices.summary.nextSoon", { count: situation.prochaine.jours }),
             ton: situation.prochaine && situation.prochaine.jours < 0 ? "alerte" : "normal",
           },
           {

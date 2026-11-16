@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
 import { CurrencyProvider } from "../../context/CurrencyContext";
+import { changerLangue } from "../../i18n";
 import type { Invoice, PaginatedResponse } from "../../types";
 import InvoicesPage from "./InvoicesPage";
 
@@ -222,7 +223,7 @@ describe("InvoicesPage (manager)", () => {
   it("relancer une facture individuellement : envoie la requête et affiche le message de confirmation", async () => {
     const user = userEvent.setup();
     getFactures.mockResolvedValue(paginated([invoice({ id: "inv-1", status: "PENDING" })]));
-    mockedApi.post.mockResolvedValueOnce({ data: { message: "Relance envoyée à Awa Diallo." } });
+    mockedApi.post.mockResolvedValueOnce({ data: { success: true, tenantName: "Awa Diallo", tenantEmail: "awa@example.com", message: "Texte du serveur, ignoré." } });
 
     renderPage();
     await waitFor(() => expect(screen.getAllByRole("button", { name: /Relancer/ }).length).toBeGreaterThan(0));
@@ -231,7 +232,7 @@ describe("InvoicesPage (manager)", () => {
     await user.click(buttons[0]);
 
     await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/invoices/inv-1/send-reminder"));
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/Relance envoyée à Awa Diallo\./));
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Rappel d'échéance envoyé à Awa Diallo (awa@example.com)."));
   });
 
   /**
@@ -304,7 +305,7 @@ describe("InvoicesPage (manager)", () => {
   it("envoyer les alertes mensuelles : demande confirmation puis envoie la requête", async () => {
     const user = userEvent.setup();
     getFactures.mockResolvedValue(paginated([invoice({ id: "inv-1", status: "PENDING" })]));
-    mockedApi.post.mockResolvedValueOnce({ data: { message: "12 avis envoyés.", sent: 12 } });
+    mockedApi.post.mockResolvedValueOnce({ data: { message: "Texte du serveur, ignoré.", sent: 12, echecs: 0, whatsappEchecs: 0 } });
 
     renderPage();
     await waitFor(() =>
@@ -315,7 +316,54 @@ describe("InvoicesPage (manager)", () => {
 
     expect(window.confirm).toHaveBeenCalled();
     await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/invoices/send-monthly-reminders"));
-    await waitFor(() => expect(screen.getByText(/12 avis envoyés\./)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("12 avis d'échéance envoyés avec succès aux locataires.")).toBeInTheDocument());
+  });
+
+  it("alertes mensuelles : le bilan est écrit par le site, avec les échecs et les messages WhatsApp non délivrés", async () => {
+    const user = userEvent.setup();
+    getFactures.mockResolvedValue(paginated([invoice({ id: "inv-1", status: "PENDING" })]));
+    mockedApi.post.mockResolvedValueOnce({ data: { message: "Texte du serveur, ignoré.", sent: 1, echecs: 2, whatsappEchecs: 1 } });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("button", { name: /Envoyer alertes du 1er du mois/ })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: /Envoyer alertes du 1er du mois/ }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "1 avis d'échéance envoyé, 2 en échec — ils seront retentés automatiquement. (1 message WhatsApp non délivré — voir le journal d'activité)"
+      )
+    );
+  });
+
+  it("rappel individuel : l'échec et l'échec WhatsApp ont chacun leur texte", async () => {
+    const user = userEvent.setup();
+    getFactures.mockResolvedValue(paginated([invoice({ id: "inv-1", status: "PENDING" })]));
+    mockedApi.post.mockResolvedValueOnce({ data: { success: false, tenantName: "Awa Diallo", tenantEmail: "awa@example.com", message: "x" } });
+
+    renderPage();
+    await waitFor(() => expect(screen.getAllByRole("button", { name: /Relancer/ }).length).toBeGreaterThan(0));
+    await user.click(screen.getAllByRole("button", { name: /Relancer/ })[0]);
+
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("L'envoi vers awa@example.com a échoué. Vérifiez l'adresse du locataire, puis réessayez.")
+    );
+  });
+
+  it("alertes mensuelles : le bilan s'écrit dans la langue de l'interface, pas en français", async () => {
+    const user = userEvent.setup();
+    await changerLangue("en");
+    try {
+      getFactures.mockResolvedValue(paginated([invoice({ id: "inv-1", status: "PENDING" })]));
+      mockedApi.post.mockResolvedValueOnce({ data: { message: "Texte du serveur en français, ignoré.", sent: 3, echecs: 0, whatsappEchecs: 0 } });
+
+      renderPage();
+      await user.click(await screen.findByRole("button", { name: /Send 1st-of-month alerts/ }));
+
+      await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("3 due-date notices sent successfully to the tenants."));
+      expect(screen.getByRole("status")).not.toHaveTextContent("français");
+    } finally {
+      await changerLangue("fr");
+    }
   });
 
   it("n'envoie pas les alertes mensuelles si la confirmation est annulée", async () => {
@@ -527,7 +575,7 @@ describe("InvoicesPage — mises en demeure à émettre", () => {
 
     const encart = await screen.findByRole("heading", { name: "Mises en demeure à émettre (1)" });
     const section = encart.closest("section")!;
-    expect(section).toHaveTextContent(/2 loyer\(s\) impayé\(s\) · 900\s€ · plus ancien : 40 j de retard · 1 déjà réclamé\(s\)/);
+    expect(section).toHaveTextContent(/2 loyers impayés · 900\s€ · plus ancien : 40 j de retard · 1 déjà réclamé/);
 
     await user.click(within(section).getByRole("button", { name: "Préparer la mise en demeure" }));
     const dialogue = screen.getByRole("dialog", { name: "Mise en demeure de payer" });
@@ -599,7 +647,7 @@ describe("InvoicesPage — mises en demeure à émettre", () => {
       const synthese = screen.getByLabelText("Synthèse des loyers");
       expect(within(synthese).getByText("900 €")).toBeInTheDocument(); // reste à encaisser (500 + 400)
       expect(within(synthese).getByText("500 €")).toBeInTheDocument(); // dont en retard
-      expect(within(synthese).getByText("1 facture(s)")).toBeInTheDocument();
+      expect(within(synthese).getByText("1 facture")).toBeInTheDocument();
       expect(within(synthese).getByText("300 €")).toBeInTheDocument(); // encaissé
       expect(within(synthese).getByText("25 %")).toBeInTheDocument(); // 300 / 1200
     });
@@ -632,14 +680,14 @@ describe("InvoicesPage — mises en demeure à émettre", () => {
       // Seules les factures dues se cochent : pas la facture réglée.
       expect(within(tableau).getAllByRole("checkbox")).toHaveLength(3); // « tout » + 2 factures dues
       await user.click(within(tableau).getByRole("checkbox", { name: "Tout sélectionner" }));
-      expect(screen.getByText("2 facture(s) sélectionnée(s)")).toBeInTheDocument();
+      expect(screen.getByText("2 factures sélectionnées")).toBeInTheDocument();
 
       await user.click(screen.getByRole("button", { name: "Relancer la sélection" }));
       await waitFor(() => expect(mockedApi.post).toHaveBeenCalledTimes(2));
       expect(mockedApi.post).toHaveBeenCalledWith("/invoices/i1/send-reminder");
       expect(mockedApi.post).toHaveBeenCalledWith("/invoices/i2/send-reminder");
-      expect(await screen.findByText("2 relance(s) envoyée(s).")).toBeInTheDocument();
-      expect(screen.queryByText("2 facture(s) sélectionnée(s)")).not.toBeInTheDocument();
+      expect(await screen.findByText("2 relances envoyées.")).toBeInTheDocument();
+      expect(screen.queryByText("2 factures sélectionnées")).not.toBeInTheDocument();
     });
 
     it("continue la relance groupée quand l'une des factures échoue, et le dit", async () => {
@@ -649,7 +697,7 @@ describe("InvoicesPage — mises en demeure à émettre", () => {
 
       await user.click(within(screen.getByRole("table")).getByRole("checkbox", { name: "Tout sélectionner" }));
       await user.click(screen.getByRole("button", { name: "Relancer la sélection" }));
-      expect(await screen.findByText("1 relance(s) envoyée(s), 1 en échec.")).toBeInTheDocument();
+      expect(await screen.findByText("1 relance envoyée, 1 en échec.")).toBeInTheDocument();
       expect(mockedApi.post).toHaveBeenCalledTimes(2);
     });
 

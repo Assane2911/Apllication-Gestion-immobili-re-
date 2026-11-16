@@ -145,7 +145,7 @@ export default function AdminAuditPage() {
         <BoutonExportCsv chemin="/admin/exports/audit-logs.csv" params={action ? { action } : undefined} prefixeFichier="journal-audit" />
       </BarreListe>
       {donnees && filtre && donnees.items.length > 0 && (
-        <p className="font-mono text-xs uppercase tracking-wider text-slate-600">{t("admin.audit.shown", { shown: visibles.length, total: donnees.items.length })}</p>
+        <p className="font-mono text-xs uppercase tracking-wider text-slate-600">{t("admin.audit.shown", { count: visibles.length, total: donnees.items.length })}</p>
       )}
 
       {erreur && (

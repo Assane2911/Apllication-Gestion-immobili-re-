@@ -60,7 +60,7 @@ describe("ImportPage", () => {
     expect(within(lignes[1]).getByText("Prête")).toBeInTheDocument();
     expect(within(lignes[2]).getByText("Erreur")).toBeInTheDocument();
     expect(within(lignes[3]).getByText("Doublon")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Importer 1 ligne(s) valide(s)" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Importer 1 ligne valide" })).toBeEnabled();
   });
 
   it("traduit les messages de chaque ligne dans la langue de l'interface, avec la valeur lue dans le fichier", async () => {
@@ -116,8 +116,8 @@ describe("ImportPage", () => {
     await user.click(await screen.findByRole("button", { name: /Importer 1 ligne/ }));
 
     await waitFor(() => expect(mockedApi.post).toHaveBeenLastCalledWith("/import", { type: "properties", csv: CSV }));
-    expect(await screen.findByText("1 biens importé(s).")).toBeInTheDocument();
-    expect(screen.getByText(/1 doublon\(s\) et 1 ligne\(s\) en erreur ont été ignorés/)).toBeInTheDocument();
+    expect(await screen.findByText("1 biens importé.")).toBeInTheDocument();
+    expect(screen.getByText(/Lignes ignorées — doublons : 1, en erreur : 1/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Voir les biens" })).toHaveAttribute("href", "/properties");
     expect(screen.queryByRole("button", { name: /Importer 1 ligne/ })).not.toBeInTheDocument();
   });
@@ -129,7 +129,7 @@ describe("ImportPage", () => {
     });
     renderPage();
     await deposer(user);
-    expect(await screen.findByRole("button", { name: "Importer 0 ligne(s) valide(s)" })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: "Importer 0 ligne valide" })).toBeDisabled();
   });
 
   it("affiche l'erreur de format renvoyée par le serveur (colonnes manquantes)", async () => {
@@ -175,7 +175,7 @@ describe("ImportPage", () => {
     mockedApi.post.mockResolvedValueOnce({ data: analyse({ capacite: { maximum: 5, existants: 2, restant: 3 } }) });
     renderPage();
     await deposer(user);
-    expect(await screen.findByText(/2 bien\(s\) sur 5 autorisés, 3 place\(s\) restante\(s\)/)).toBeInTheDocument();
+    expect(await screen.findByText(/2 sur 5 biens autorisés, 3 places restantes/)).toBeInTheDocument();
   });
 
   it("télécharge le modèle du type choisi", async () => {
@@ -261,7 +261,7 @@ describe("ImportPage — filtre des lignes et rapport à corriger", () => {
     expect(screen.getAllByRole("row")).toHaveLength(2);
     expect(screen.getByText("Villa B")).toBeInTheDocument();
     expect(screen.queryByText("Studio A — 1 rue X")).not.toBeInTheDocument();
-    expect(screen.getByText("1 ligne(s) affichée(s) sur 3")).toBeInTheDocument();
+    expect(screen.getByText("1 ligne affichée sur 3")).toBeInTheDocument();
 
     await user.click(within(groupe).getByRole("button", { name: "Doublons 1" }));
     expect(screen.getByText("Loft C — 8 quai")).toBeInTheDocument();

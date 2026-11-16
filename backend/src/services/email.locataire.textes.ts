@@ -74,7 +74,7 @@ const fr: TextesLocataire = {
     pied: "Cet email vous a été envoyé automatiquement par votre agence de gestion immobilière.",
   },
   rappelAvantEcheance: {
-    sujet: (mois, jours) => `⏰ Rappel : votre loyer de ${mois} arrive à échéance dans ${jours} jour(s)`,
+    sujet: (mois, jours) => `⏰ Rappel : votre loyer de ${mois} arrive à échéance dans ${jours} jour${jours > 1 ? "s" : ""}`,
     bandeau: "⏰ Rappel avant échéance",
     bonjour: (nom) => `Bonjour <strong>${nom}</strong>,`,
     intro: (mois, annee, bien, date, jours) =>
@@ -94,7 +94,7 @@ const fr: TextesLocataire = {
     },
     bonjour: (nom) => `Bonjour <strong>${nom}</strong>,`,
     resteAPayer: "Reste à payer",
-    echeance: (date, jours) => `Échéance du ${date} — dépassée de ${jours} jour(s)`,
+    echeance: (date, jours) => `Échéance du ${date} — dépassée de ${jours} jour${jours > 1 ? "s" : ""}`,
     instruction: "Vous pouvez régler ce loyer depuis votre espace locataire.",
   },
   quittance: {
@@ -133,7 +133,7 @@ const en: TextesLocataire = {
     pied: "This email was sent to you automatically by your property management agency.",
   },
   rappelAvantEcheance: {
-    sujet: (mois, jours) => `⏰ Reminder: your ${mois} rent is due in ${jours} day(s)`,
+    sujet: (mois, jours) => `⏰ Reminder: your ${mois} rent is due in ${jours} day${jours === 1 ? "" : "s"}`,
     bandeau: "⏰ Reminder before the due date",
     bonjour: (nom) => `Hello <strong>${nom}</strong>,`,
     intro: (mois, annee, bien, date, jours) =>
@@ -153,7 +153,7 @@ const en: TextesLocataire = {
     },
     bonjour: (nom) => `Hello <strong>${nom}</strong>,`,
     resteAPayer: "Amount remaining",
-    echeance: (date, jours) => `Due on ${date} — ${jours} day(s) overdue`,
+    echeance: (date, jours) => `Due on ${date} — ${jours} day${jours === 1 ? "" : "s"} overdue`,
     instruction: "You can pay this rent from your tenant portal.",
   },
   quittance: {
@@ -192,7 +192,7 @@ const es: TextesLocataire = {
     pied: "Este correo se le ha enviado automáticamente desde su agencia de gestión inmobiliaria.",
   },
   rappelAvantEcheance: {
-    sujet: (mois, jours) => `⏰ Recordatorio: su alquiler de ${mois} vence en ${jours} día(s)`,
+    sujet: (mois, jours) => `⏰ Recordatorio: su alquiler de ${mois} vence en ${jours} ${jours === 1 ? "día" : "días"}`,
     bandeau: "⏰ Recordatorio antes del vencimiento",
     bonjour: (nom) => `Hola <strong>${nom}</strong>,`,
     intro: (mois, annee, bien, date, jours) =>
@@ -212,7 +212,7 @@ const es: TextesLocataire = {
     },
     bonjour: (nom) => `Hola <strong>${nom}</strong>,`,
     resteAPayer: "Pendiente de pago",
-    echeance: (date, jours) => `Vencimiento el ${date} — con ${jours} día(s) de retraso`,
+    echeance: (date, jours) => `Vencimiento el ${date} — con ${jours} ${jours === 1 ? "día" : "días"} de retraso`,
     instruction: "Puede pagar este alquiler desde su espacio de inquilino.",
   },
   quittance: {
@@ -251,7 +251,7 @@ const pt: TextesLocataire = {
     pied: "Este e-mail foi enviado automaticamente pela sua imobiliária.",
   },
   rappelAvantEcheance: {
-    sujet: (mois, jours) => `⏰ Lembrete: seu aluguel de ${mois} vence em ${jours} dia(s)`,
+    sujet: (mois, jours) => `⏰ Lembrete: seu aluguel de ${mois} vence em ${jours} ${jours === 1 ? "dia" : "dias"}`,
     bandeau: "⏰ Lembrete antes do vencimento",
     bonjour: (nom) => `Olá <strong>${nom}</strong>,`,
     intro: (mois, annee, bien, date, jours) =>
@@ -271,7 +271,7 @@ const pt: TextesLocataire = {
     },
     bonjour: (nom) => `Olá <strong>${nom}</strong>,`,
     resteAPayer: "Valor em aberto",
-    echeance: (date, jours) => `Vencimento em ${date} — ${jours} dia(s) de atraso`,
+    echeance: (date, jours) => `Vencimento em ${date} — ${jours} ${jours === 1 ? "dia" : "dias"} de atraso`,
     instruction: "Você pode pagar este aluguel pelo seu espaço do inquilino.",
   },
   quittance: {

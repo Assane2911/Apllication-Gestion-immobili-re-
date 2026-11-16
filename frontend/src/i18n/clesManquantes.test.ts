@@ -23,7 +23,9 @@ describe("clés de traduction", () => {
     for (const fichier of fichiersSource(resolve(__dirname, ".."))) {
       const texte = readFileSync(fichier, "utf8");
       for (const m of texte.matchAll(/[^\w.]t\(\s*["']([a-zA-Z][\w]*(?:\.[\w]+)+)["']/g)) {
-        if (!i18n.exists(m[1], { lng: "fr" })) manquantes.push(`${fichier.replace(resolve(__dirname, "..") + "/", "")} → ${m[1]}`);
+        // Une clé au pluriel n'existe que sous « clé_one » / « clé_other » : on la reconnaît à sa forme « autre ».
+        const existe = i18n.exists(m[1], { lng: "fr" }) || i18n.exists(`${m[1]}_other`, { lng: "fr" });
+        if (!existe) manquantes.push(`${fichier.replace(resolve(__dirname, "..") + "/", "")} → ${m[1]}`);
       }
     }
     expect(manquantes).toEqual([]);

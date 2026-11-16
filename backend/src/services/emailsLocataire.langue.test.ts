@@ -83,7 +83,7 @@ describe("rappel avant échéance et rappel manuel", () => {
 
     await runUpcomingRentDueReminders();
 
-    expect(messagesVers("awa@test.local")[0].sujet).toContain("Recordatorio: su alquiler de agosto vence en 3 día(s)");
+    expect(messagesVers("awa@test.local")[0].sujet).toContain("Recordatorio: su alquiler de agosto vence en 3 días");
   });
 
   it("rappel manuel du gestionnaire : dans la langue de la fiche", async () => {

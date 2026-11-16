@@ -76,7 +76,7 @@ describe("AdminManagersPage", () => {
     const tableau = within(screen.getByRole("table"));
     expect(tableau.getByText("Professionnel")).toBeInTheDocument();
     expect(tableau.getByText("Actif")).toBeInTheDocument();
-    expect(tableau.getByText("3 bien(s) · 2 locataire(s)")).toBeInTheDocument();
+    expect(tableau.getByText("Biens : 3 · Locataires : 2")).toBeInTheDocument();
   });
 
   it("affiche un badge « Suspendu » en plus du statut d'abonnement", async () => {
@@ -227,8 +227,8 @@ describe("AdminManagersPage", () => {
     renderPage();
 
     const tableau = within(await screen.findByRole("table"));
-    expect(tableau.getByRole("meter", { name: "5 bien(s) sur 5 inclus dans la formule" })).toHaveAttribute("aria-valuenow", "5");
-    expect(tableau.getByRole("meter", { name: "3 bien(s) sur 25 inclus dans la formule" })).toBeInTheDocument();
+    expect(tableau.getByRole("meter", { name: "5 biens sur 5 inclus dans la formule" })).toHaveAttribute("aria-valuenow", "5");
+    expect(tableau.getByRole("meter", { name: "3 biens sur 25 inclus dans la formule" })).toBeInTheDocument();
     // Formule illimitée : aucune jauge, et aucune alerte.
     expect(tableau.getAllByRole("meter")).toHaveLength(2);
     expect(tableau.getAllByText("Proche du plafond")).toHaveLength(1);
@@ -250,6 +250,6 @@ describe("AdminManagersPage", () => {
     mockedApi.get.mockResolvedValueOnce(page([ligne({ status: "TRIAL", trialEndsAt: dansDeuxJours, subscriptionEndsAt: null })]));
     renderPage();
 
-    expect(await screen.findByText("dans 2 jour(s)")).toBeInTheDocument();
+    expect(await screen.findByText("dans 2 jours")).toBeInTheDocument();
   });
 });

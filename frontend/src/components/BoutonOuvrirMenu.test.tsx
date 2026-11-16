@@ -16,7 +16,7 @@ describe("BoutonOuvrirMenu", () => {
   it("affiche le total en attente et le dit aux lecteurs d'écran dans le nom du bouton", () => {
     afficher(4);
     expect(screen.getByTestId("pastille-bouton-menu")).toHaveTextContent("4");
-    expect(screen.getByRole("button", { name: "Ouvrir le menu, 4 élément(s) en attente" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ouvrir le menu, 4 éléments en attente" })).toBeInTheDocument();
   });
 
   it("plafonne l'affichage à 99+", () => {

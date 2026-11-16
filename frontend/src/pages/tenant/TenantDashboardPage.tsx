@@ -323,7 +323,7 @@ export default function TenantDashboardPage() {
                   {factures.length > 0 && (
                     <div className="min-w-48 flex-1 bg-slate-50 p-3.5">
                       <p className={ETIQUETTE}>{t("tenant.dashboard.nextRent.history")}</p>
-                      <p className="mt-1.5 text-sm font-bold text-slate-900">{t("tenant.dashboard.nextRent.paid", { paid: reglees, total: factures.length })}</p>
+                      <p className="mt-1.5 text-sm font-bold text-slate-900">{t("tenant.dashboard.nextRent.paid", { count: reglees, total: factures.length })}</p>
                       <div aria-hidden="true" className="mt-2 h-1.5 bg-slate-200">
                         <div className="h-full bg-ink-900" style={{ width: `${(reglees / factures.length) * 100}%` }} />
                       </div>

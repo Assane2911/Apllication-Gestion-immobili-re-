@@ -170,7 +170,7 @@ export default function AdminDashboardPage() {
               ? t("admin.dashboard.stats.managersHintSuspended", {
                   trial: managers.trialActive,
                   expired: managers.expired,
-                  suspended: managers.suspended,
+                  count: managers.suspended,
                 })
               : t("admin.dashboard.stats.managersHint", { trial: managers.trialActive, expired: managers.expired })
           }
@@ -181,7 +181,7 @@ export default function AdminDashboardPage() {
           icon={CreditCard}
           label={t("admin.dashboard.stats.subscriptionActive")}
           value={managers.subscriptionActive}
-          hint={t("admin.dashboard.stats.subscriptionActiveHint", { total: managers.total })}
+          hint={t("admin.dashboard.stats.subscriptionActiveHint", { count: managers.total })}
           accent="green"
           progress={tauxAbonnes}
         />

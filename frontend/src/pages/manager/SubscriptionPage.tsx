@@ -167,7 +167,8 @@ export default function SubscriptionPage() {
         return;
       }
 
-      setSuccessMessage(data.message);
+      // Le texte vient d'ici, dans la langue de l'interface : celui du serveur est en français pour tout le monde.
+      setSuccessMessage(t(data.success ? "manager.subscription.feedback.activated" : "manager.subscription.feedback.pending", { plan: nomFormule(selectedPlan) }));
       setSelectedPlan(null);
       await refreshUser();
       loadData();
@@ -184,8 +185,8 @@ export default function SubscriptionPage() {
     setError(null);
     setSuccessMessage(null);
     try {
-      const { data } = await api.post("/subscription/cancel");
-      setSuccessMessage(data.message);
+      const { data } = await api.post<{ autoRenewCancelled?: boolean }>("/subscription/cancel");
+      setSuccessMessage(t(data.autoRenewCancelled ? "manager.subscription.feedback.cancelledAuto" : "manager.subscription.feedback.cancelledManual"));
       await refreshUser();
       loadData();
     } catch (err) {

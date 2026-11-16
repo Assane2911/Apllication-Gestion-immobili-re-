@@ -249,7 +249,7 @@ describe("AdminSuggestionsPage", () => {
       );
       render(<AdminSuggestionsPage />);
 
-      expect(await screen.findAllByText("Sans suite depuis 12 jour(s)")).toHaveLength(1);
+      expect(await screen.findAllByText("Sans suite depuis 12 jours")).toHaveLength(1);
       expect(screen.queryByText(/Sans suite depuis 2 /)).not.toBeInTheDocument();
       expect(screen.queryByText(/Sans suite depuis 30/)).not.toBeInTheDocument();
     });
@@ -276,7 +276,7 @@ describe("AdminSuggestionsPage — recherche", () => {
     await user.type(screen.getByRole("searchbox"), "decembre");
     expect(screen.getByText(/Exporter les biens/)).toBeInTheDocument();
     expect(screen.queryByText(/Filtrer les factures/)).not.toBeInTheDocument();
-    expect(screen.getByText("1 suggestion(s) affichée(s) sur les 2 de cette page")).toBeInTheDocument();
+    expect(screen.getByText("1 suggestion affichée sur les 2 de cette page")).toBeInTheDocument();
 
     await user.clear(screen.getByRole("searchbox"));
     await user.type(screen.getByRole("searchbox"), "introuvable");

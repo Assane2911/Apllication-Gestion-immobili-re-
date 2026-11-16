@@ -122,7 +122,7 @@ describe("ActivityLogPage", () => {
     expect(within(jourRecent).getAllByRole("listitem")).toHaveLength(2);
     const jourAncien = screen.getByRole("region", { name: /10 mars 2025/i });
     expect(within(jourAncien).getByText("Action de la veille")).toBeInTheDocument();
-    expect(screen.getByText("3 action(s) enregistrée(s)")).toBeInTheDocument();
+    expect(screen.getByText("3 actions enregistrées")).toBeInTheDocument();
   });
 
   describe("recherche, période et export", () => {

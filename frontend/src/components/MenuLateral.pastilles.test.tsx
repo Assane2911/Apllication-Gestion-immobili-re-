@@ -38,7 +38,7 @@ describe("MenuLateral — pastilles", () => {
     afficher({ "/proprietaire/messages": 3 });
     const lien = screen.getByRole("link", { name: /Messagerie/ });
     expect(within(lien).getByTestId("pastille-menu")).toHaveTextContent("3");
-    expect(lien).toHaveAccessibleName("Messagerie, 3 message(s) non lu(s)");
+    expect(lien).toHaveAccessibleName("Messagerie, 3 messages non lus");
     // Les autres entrées n'en ont pas.
     expect(within(screen.getByRole("link", { name: "Tableau de bord" })).queryByTestId("pastille-menu")).not.toBeInTheDocument();
   });

@@ -36,7 +36,7 @@ describe("WhatsappPlateforme", () => {
     mocked.get.mockResolvedValueOnce({ data: usage() });
     rendre();
 
-    expect(await screen.findByText(/Ce mois-ci : 140 message\(s\)/)).toBeInTheDocument();
+    expect(await screen.findByText(/Ce mois-ci : 140 messages/)).toBeInTheDocument();
     expect(mocked.get).toHaveBeenCalledWith("/admin/whatsapp-usage", undefined);
 
     const [parMois, parAgence] = screen.getAllByRole("table");

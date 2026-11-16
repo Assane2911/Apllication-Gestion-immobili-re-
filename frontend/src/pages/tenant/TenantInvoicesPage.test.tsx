@@ -260,7 +260,7 @@ describe("TenantInvoicesPage", () => {
     mockedApi.post.mockResolvedValueOnce({
       data: {
         invoice: invoice({ status: "PENDING" }),
-        payment: { method: "BANK_TRANSFER", status: "PENDING_VALIDATION", message: "Virement déclaré." },
+        payment: { method: "BANK_TRANSFER", status: "PENDING_VALIDATION", message: "Texte du serveur, ignoré." },
       },
     });
 
@@ -278,6 +278,8 @@ describe("TenantInvoicesPage", () => {
         bankReference: "VIR-2026-06-001",
       })
     );
+    // La confirmation est écrite par le site, dans la langue de l'interface : celle du serveur est toujours en français.
+    expect(await screen.findByText("Virement déclaré, en attente de validation par le gestionnaire.")).toBeInTheDocument();
   });
 
   /**
@@ -413,16 +415,16 @@ describe("TenantInvoicesPage — situation, retard et filtres", () => {
     expect(valeur("En attente de règlement")).toHaveTextContent("2 échéances");
     expect(within(synthese).getByText(/Total dû : .*1.?000/)).toBeInTheDocument();
     expect(valeur("En retard")).toHaveTextContent("2");
-    expect(within(synthese).getByText("jusqu'à 41 jour(s) de retard")).toBeInTheDocument();
+    expect(within(synthese).getByText("jusqu'à 41 jours de retard")).toBeInTheDocument();
     expect(valeur("Prochaine échéance")).toHaveTextContent("05/10/2026");
-    expect(within(synthese).getByText("échue depuis 41 jour(s)")).toBeInTheDocument();
+    expect(within(synthese).getByText("échue depuis 41 jours")).toBeInTheDocument();
     expect(within(synthese).getByText(/Réglé en 2026 : .*500/)).toBeInTheDocument();
   });
 
   it("indique le retard en jours sur la ligne du loyer en retard", async () => {
     afficher();
-    expect(await screen.findByText(/En retard de 41 jour\(s\)/)).toBeInTheDocument();
-    expect(screen.getByText(/En retard de 10 jour\(s\)/)).toBeInTheDocument();
+    expect(await screen.findByText(/En retard de 41 jours/)).toBeInTheDocument();
+    expect(screen.getByText(/En retard de 10 jours/)).toBeInTheDocument();
   });
 
   it("ouvre le règlement de l'échéance la plus ancienne en un clic", async () => {

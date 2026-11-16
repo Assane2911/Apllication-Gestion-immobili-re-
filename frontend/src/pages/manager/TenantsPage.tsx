@@ -472,7 +472,7 @@ export default function TenantsPage() {
             </button>
           </BarreListe>
           <p aria-live="polite" className="font-mono text-[11px] uppercase tracking-wider text-slate-600">
-            {t(totalPages > 1 ? "manager.liste.shownOnPage" : "manager.liste.shown", { shown: visibles.length, total: tenants.length })}
+            {t(totalPages > 1 ? "manager.liste.shownOnPage" : "manager.liste.shown", { count: visibles.length, total: tenants.length })}
           </p>
         </>
       )}

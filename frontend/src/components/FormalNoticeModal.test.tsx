@@ -45,7 +45,7 @@ describe("FormalNoticeModal — copie aux garants", () => {
     afficher();
     await user.click(screen.getByRole("checkbox", { name: "Adresser une copie aux garants" }));
     await user.click(screen.getByRole("button", { name: "Émettre la mise en demeure" }));
-    expect(await screen.findByRole("status")).toHaveTextContent("Copie envoyée à 2 garant(s).");
+    expect(await screen.findByRole("status")).toHaveTextContent("Copie envoyée à 2 garants.");
   });
 
   it("avertit quand la copie demandée n'a atteint aucun garant", async () => {

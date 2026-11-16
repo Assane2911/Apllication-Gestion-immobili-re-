@@ -25,7 +25,7 @@ describe("SimulateurRelances", () => {
     fireEvent.change(screen.getByLabelText(/Délai avant la première relance/), { target: { value: "3" } });
     fireEvent.change(screen.getByLabelText(/Intervalle entre deux relances/), { target: { value: "7" } });
     expect(screen.getByTestId("resume-relances")).toHaveTextContent("J+3, deuxième relance à J+10, dernière relance à J+17.");
-    expect(screen.getByLabelText(/Délai avant la première relance/)).toHaveAttribute("aria-valuetext", "3 jour(s)");
+    expect(screen.getByLabelText(/Délai avant la première relance/)).toHaveAttribute("aria-valuetext", "3 jours");
   });
 
   it("garde les réglages dans les bornes de l'application (1 à 30 jours, intervalle de 3 jours minimum)", () => {

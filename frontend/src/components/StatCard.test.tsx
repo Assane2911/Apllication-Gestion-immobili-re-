@@ -5,10 +5,10 @@ import StatCard from "./StatCard";
 
 describe("StatCard", () => {
   it("affiche le libellé, le chiffre et l'indication", () => {
-    render(<StatCard label="Biens immobiliers" value={8} hint="2 disponible(s)" />);
+    render(<StatCard label="Biens immobiliers" value={8} hint="2 disponibles" />);
     expect(screen.getByText("Biens immobiliers")).toBeInTheDocument();
     expect(screen.getByText("8")).toBeInTheDocument();
-    expect(screen.getByText("2 disponible(s)")).toBeInTheDocument();
+    expect(screen.getByText("2 disponibles")).toBeInTheDocument();
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 

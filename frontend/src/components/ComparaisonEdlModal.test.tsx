@@ -49,7 +49,7 @@ describe("ComparaisonEdlModal", () => {
     await screen.findByText("Salon");
     expect(screen.getByText("80")).toBeInTheDocument();
     expect(screen.getByText("non calculable")).toBeInTheDocument();
-    expect(screen.getByText("1 manquante(s)")).toBeInTheDocument();
+    expect(screen.getByText("1 manquante")).toBeInTheDocument();
     expect(screen.getByText(/ne les chiffre pas/)).toBeInTheDocument();
   });
 

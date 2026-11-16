@@ -334,7 +334,7 @@ describe("LandingPage — tarifs, conseil de formule, FAQ et essai fixé", () =>
 
     // Formule Professionnelle à 29 € pour 10 biens : 2,90 € par bien et par mois.
     expect(screen.getByText(/soit 2,9\s€ par bien et par mois/)).toBeInTheDocument();
-    expect(screen.getByText("Pour vos 10 bien(s)")).toBeInTheDocument();
+    expect(screen.getByText("Pour vos 10 biens")).toBeInTheDocument();
   });
 
   it("filtre la FAQ au fil de la saisie, sans tenir compte des accents, et le dit quand rien ne correspond", async () => {

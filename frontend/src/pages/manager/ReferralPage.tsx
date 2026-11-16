@@ -157,11 +157,11 @@ export default function ReferralPage() {
           >
             {plafondAtteint
               ? t("manager.referral.rewardCapReached")
-              : t("manager.referral.rewardCap", { used: info.rewardedReferrals, max: info.maxRewardedReferrals })}
+              : t("manager.referral.rewardCap", { count: info.rewardedReferrals, max: info.maxRewardedReferrals })}
           </p>
 
           {!plafondAtteint && restant.places > 0 && (
-            <p className="-mt-3 font-mono text-xs text-slate-700">{t("manager.referral.remaining", { places: restant.places, days: restant.jours })}</p>
+            <p className="-mt-3 font-mono text-xs text-slate-700">{t("manager.referral.remaining", { count: restant.places, days: restant.jours })}</p>
           )}
 
           {/* Comment ça marche : trois étapes numérotées. */}

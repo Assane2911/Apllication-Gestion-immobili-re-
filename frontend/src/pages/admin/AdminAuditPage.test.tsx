@@ -94,7 +94,7 @@ describe("AdminAuditPage", () => {
   it("traduit les actions d'ajustement d'abonnement", async () => {
     mockedApi.get.mockResolvedValueOnce(
       page([
-        entree({ id: "a1", action: "subscription.grant_days", details: "10 jour(s) offert(s)" }),
+        entree({ id: "a1", action: "subscription.grant_days", details: "10 jours offerts" }),
         entree({ id: "a2", action: "subscription.change_plan", details: "Starter → Pro" }),
       ])
     );
@@ -196,7 +196,7 @@ describe("AdminAuditPage — recherche et période", () => {
     await user.type(screen.getByRole("searchbox"), "impayes");
     expect(screen.getByText("Impayés répétés")).toBeInTheDocument();
     expect(screen.queryByText("Virement PRO de 29 EUR confirmé")).not.toBeInTheDocument();
-    expect(screen.getByText("1 entrée(s) affichée(s) sur les 3 de cette page")).toBeInTheDocument();
+    expect(screen.getByText("1 entrée affichée sur les 3 de cette page")).toBeInTheDocument();
 
     await user.clear(screen.getByRole("searchbox"));
     await user.type(screen.getByRole("searchbox"), "villa");

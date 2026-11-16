@@ -302,10 +302,10 @@ describe("InspectionsPage (manager)", () => {
       await user.click(screen.getByRole("button", { name: "Salon" }));
       await user.click(screen.getByRole("button", { name: "Cuisine" }));
       expect(screen.getAllByRole("textbox", { name: "Nom de la pièce" }).map((c) => (c as HTMLInputElement).value)).toEqual(["Cave", "Salon", "Cuisine"]);
-      expect(screen.getByText(/2 en bon état · 0 moyen\(s\) · 1 en mauvais état/)).toBeInTheDocument();
+      expect(screen.getByText(/2 en bon état · 0 moyen · 1 en mauvais état/)).toBeInTheDocument();
 
       await user.click(screen.getByRole("button", { name: "Tout en bon état" }));
-      expect(screen.getByText(/3 en bon état · 0 moyen\(s\) · 0 en mauvais état/)).toBeInTheDocument();
+      expect(screen.getByText(/3 en bon état · 0 moyen · 0 en mauvais état/)).toBeInTheDocument();
     });
   });
   it("propose la comparaison uniquement sur un état des lieux de sortie finalisé", async () => {

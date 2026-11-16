@@ -365,7 +365,7 @@ describe("TenantIssuesPage — suivi, filtres, motifs courants", () => {
   it("dit depuis combien de jours un signalement en cours attend, et rien pour un signalement clos", async () => {
     afficher();
     const fuite = (await screen.findByRole("heading", { level: 4, name: "Fuite d'eau" })).closest("article") as HTMLElement;
-    expect(within(fuite).getByText(/Signalé il y a 10 jour\(s\)/)).toBeInTheDocument();
+    expect(within(fuite).getByText(/Signalé il y a 10 jours/)).toBeInTheDocument();
     const volet = screen.getByRole("heading", { level: 4, name: "Volet cassé" }).closest("article") as HTMLElement;
     expect(within(volet).queryByText(/Signalé il y a|Signalé aujourd/)).not.toBeInTheDocument();
   });

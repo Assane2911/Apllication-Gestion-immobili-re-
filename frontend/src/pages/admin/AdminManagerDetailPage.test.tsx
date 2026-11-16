@@ -125,7 +125,7 @@ describe("AdminManagerDetailPage", () => {
     expect(screen.getByText("Actif")).toBeInTheDocument();
     expect(screen.getByText("VIR-001")).toBeInTheDocument();
     expect(screen.getByText("29 €")).toBeInTheDocument();
-    expect(screen.getByText("2 propriétaire(s)")).toBeInTheDocument();
+    expect(screen.getByText("2 propriétaires")).toBeInTheDocument();
   });
 
   it("indique les jours restants d'un essai en cours", async () => {
@@ -145,7 +145,7 @@ describe("AdminManagerDetailPage", () => {
     });
     renderPage();
 
-    expect(await screen.findByText(/6 jour\(s\) restant\(s\)/)).toBeInTheDocument();
+    expect(await screen.findByText(/6 jours restants/)).toBeInTheDocument();
     expect(screen.getByText("Aucun paiement enregistré.")).toBeInTheDocument();
   });
 
@@ -524,7 +524,7 @@ describe("AdminManagerDetailPage", () => {
 
   it("signale un compte sans activité depuis plus d'un mois, et pas un compte actif récemment", async () => {
     const { unmount } = (mockedApi.get.mockResolvedValueOnce({ data: fiche({ lastActivityAt: "2025-01-01T00:00:00.000Z" }) }), renderPage());
-    expect(await screen.findByText(/Inactif depuis \d+ jour\(s\)/)).toBeInTheDocument();
+    expect(await screen.findByText(/Inactif depuis \d+ jours/)).toBeInTheDocument();
     unmount();
 
     mockedApi.get.mockResolvedValueOnce({ data: fiche({ lastActivityAt: new Date(Date.now() - 3 * 86_400_000).toISOString() }) });

@@ -186,3 +186,18 @@ describe("Traductions — le français vouvoie", () => {
   });
 });
 
+
+/**
+ * Le portugais traite l'utilisateur de « o senhor » (« a sua conta », « introduza »), comme le français le vouvoie. Les écrans
+ * de double authentification et la cloche des alertes tutoyaient (« a tua aplicação », « introduz », « podes ») : deux registres
+ * dans le même parcours.
+ */
+describe("Traductions — le portugais vouvoie", () => {
+  const TU = /(?<![\p{L}])(tua|tuas|teu|teus|tens|podes|percas|ti|tu)(?![\p{L}])/iu;
+  const IMPERATIFS_TU = /^(Insere|Introduz|Anota|Escolhe|Indica|Clica|Tenta)(?![\p{L}])/u;
+
+  it("n'emploie aucun pronom ni verbe de tutoiement", () => {
+    const fautes = valeursDe(pt).filter((v) => TU.test(v) || IMPERATIFS_TU.test(v));
+    expect(fautes, fautes.slice(0, 10).join(" | ")).toEqual([]);
+  });
+});

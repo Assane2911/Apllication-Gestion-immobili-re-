@@ -154,7 +154,7 @@ export default function AdminSuggestionsPage() {
         <BarreListe idPrefixe="suggestions" recherche={recherche} onRecherche={setRecherche} placeholderRecherche={t("admin.suggestions.search")} />
       )}
       {donnees && recherche.trim() !== "" && donnees.items.length > 0 && (
-        <p className="font-mono text-xs uppercase tracking-wider text-slate-600">{t("admin.suggestions.shown", { shown: visibles.length, total: donnees.items.length })}</p>
+        <p className="font-mono text-xs uppercase tracking-wider text-slate-600">{t("admin.suggestions.shown", { count: visibles.length, total: donnees.items.length })}</p>
       )}
 
       {erreurSuivi && (
