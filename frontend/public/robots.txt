@@ -24,5 +24,13 @@ Disallow: /subscription
 Disallow: /portail
 Disallow: /proprietaire
 Disallow: /admin
+Disallow: /agenda
+Disallow: /assurances
+Disallow: /documents
+Disallow: /guide-demarrage
+Disallow: /import
+Disallow: /parrainage
+Disallow: /pays
+Disallow: /prestataires
 
 Sitemap: https://www.immoplatformpro.com/sitemap.xml

@@ -1339,7 +1339,7 @@ const zone = {
   },
   seo: {
     landing: {
-      title: "ImmoPlatform Pro — Gestion locative et immobilière intelligente",
+      title: "ImmoPlatform Pro — Gestion locative intelligente",
       description:
         "Quittances PDF automatiques, signature électronique des baux, relances automatiques, tableau de bord en temps réel. Essai gratuit de 15 jours sans engagement.",
     },
@@ -1351,7 +1351,7 @@ const zone = {
     register: {
       title: "Créer un compte gestionnaire",
       description:
-        "Créez le compte de votre agence en 2 minutes et profitez de 15 jours d'essai gratuit, sans engagement : quittances PDF, signature électronique et relances automatiques.",
+        "Créez le compte de votre agence en 2 minutes : 15 jours d'essai gratuit sans engagement, quittances PDF, signature électronique et relances automatiques.",
     },
     forgotPassword: {
       title: "Mot de passe oublié",
@@ -1365,7 +1365,7 @@ const zone = {
       title: "Confirmation de l'email",
     },
     vitrine: {
-      title: "Annonces immobilières — Locations, ventes, terrains | ImmoPlatform Pro",
+      title: "Annonces immobilières : locations, ventes | ImmoPlatform Pro",
       description:
         "Parcourez les annonces publiées par nos agences partenaires : locations, ventes, terrains et promotions immobilières en France et en Afrique francophone.",
     },

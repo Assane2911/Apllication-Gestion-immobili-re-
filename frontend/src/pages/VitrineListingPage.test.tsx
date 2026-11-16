@@ -92,6 +92,14 @@ describe("VitrineListingPage (fiche annonce individuelle)", () => {
     expect(screen.getByRole("link", { name: "Voir toutes les annonces" })).toHaveAttribute("href", "/vitrine");
   });
 
+  it("sort une annonce retirée de l'index des moteurs de recherche (noindex), l'adresse répondant quand même 200", async () => {
+    mockedApi.get.mockRejectedValueOnce({ response: { status: 404 }, isAxiosError: true });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Cette annonce n'est plus disponible.")).toBeInTheDocument());
+    await waitFor(() => expect(document.querySelector('meta[name="robots"]')).toHaveAttribute("content", "noindex"));
+  });
+
   it("soumet une demande de visite depuis la fiche", async () => {
     const user = userEvent.setup();
     mockedApi.get.mockResolvedValueOnce({ data: listing() });

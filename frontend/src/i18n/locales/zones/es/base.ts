@@ -1341,9 +1341,9 @@ const zone: ZoneBase = {
   },
   seo: {
     landing: {
-      title: "ImmoPlatform Pro — Gestión inmobiliaria y de alquileres inteligente",
+      title: "ImmoPlatform Pro — Gestión de alquileres inteligente",
       description:
-        "Recibos de alquiler en PDF automáticos, firma electrónica de contratos, recordatorios automáticos, panel en tiempo real. Prueba gratuita de 15 días sin compromiso.",
+        "Recibos de alquiler en PDF, firma electrónica de contratos, recordatorios automáticos y panel en tiempo real. Prueba gratuita de 15 días sin compromiso.",
     },
     login: {
       title: "Iniciar sesión",
@@ -1353,7 +1353,7 @@ const zone: ZoneBase = {
     register: {
       title: "Crear una cuenta de gestor",
       description:
-        "Cree la cuenta de su agencia en 2 minutos y disfrute de 15 días de prueba gratuita, sin compromiso: recibos en PDF, firma electrónica y recordatorios automáticos.",
+        "Cree la cuenta de su agencia en 2 minutos: 15 días de prueba gratuita sin compromiso, recibos en PDF, firma electrónica y recordatorios automáticos.",
     },
     forgotPassword: {
       title: "Contraseña olvidada",
@@ -1367,7 +1367,7 @@ const zone: ZoneBase = {
       title: "Confirmación del correo",
     },
     vitrine: {
-      title: "Anuncios inmobiliarios — Alquileres, ventas, terrenos | ImmoPlatform Pro",
+      title: "Anuncios inmobiliarios: alquiler y venta | ImmoPlatform Pro",
       description:
         "Explore los anuncios publicados por nuestras agencias asociadas: alquileres, ventas, terrenos y promociones inmobiliarias en Francia y África francófona.",
     },
