@@ -7,6 +7,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import InactiviteSession from "./components/InactiviteSession";
 import ManagerLayout from "./components/ManagerLayout";
 import PorteMaintenance from "./components/PorteMaintenance";
+import SynchroLangueUrl from "./components/SynchroLangueUrl";
 import OwnerLayout from "./components/OwnerLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import TenantLayout from "./components/TenantLayout";
@@ -17,6 +18,7 @@ import { useAuth } from "./context/auth";
 import { CurrencyProvider } from "./context/CurrencyContext";
 import { lazyAvecZones } from "./utils/lazyAvecZones";
 import { lazyWithReload } from "./utils/lazyWithReload";
+import { LANGUES_PREFIXEES } from "./utils/langueUrl";
 import { homePathForRole } from "./utils/roleHome";
 
 const ForgotPasswordPage = lazyWithReload(() => import("./pages/ForgotPasswordPage"));
@@ -196,6 +198,12 @@ function AppRoutes() {
           <Route path="/admin/annonces" element={<AdminListingsPage />} />
         </Route>
 
+        {/* Accueil et vitrine existent aussi en anglais, espagnol et portugais, à leur propre adresse (voir utils/langueUrl.ts). */}
+        {LANGUES_PREFIXEES.flatMap((langue) => [
+          <Route key={`${langue}-accueil`} path={`/${langue}`} element={<HomeRedirect />} />,
+          <Route key={`${langue}-vitrine`} path={`/${langue}/vitrine`} element={<VitrinePage />} />,
+        ])}
+
         <Route path="*" element={<HomeRedirect />} />
       </Routes>
     </Suspense>
@@ -215,6 +223,7 @@ export default function App() {
         <HistoriqueProvider>
           <AuthProvider>
             <CurrencyProvider>
+              <SynchroLangueUrl />
               <BandeauNouvelleVersion />
               <PorteMaintenance>
                 <AppRoutes />

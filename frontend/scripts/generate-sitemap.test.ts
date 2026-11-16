@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { construireSitemap, echapperXml, SITE_URL, STATIC_ROUTES } from "./generate-sitemap.mjs";
+import { LANGUES_PREFIXEES as LANGUES_DU_SITE, PAGES_TRADUITES as TRADUITES_DU_SITE } from "../src/utils/langueUrl";
+import { construireSitemap, echapperXml, entreesStatiques, LANGUES_PREFIXEES, PAGES_TRADUITES, SITE_URL, STATIC_ROUTES, versionsDeLaPage } from "./generate-sitemap.mjs";
 
 describe("generate-sitemap — fonctions pures", () => {
   it("échappe les caractères spéciaux XML", () => {
@@ -50,5 +51,51 @@ describe("generate-sitemap — fonctions pures", () => {
   it("ne liste que des adresses distinctes", () => {
     const chemins = STATIC_ROUTES.map((r) => r.path);
     expect(new Set(chemins).size).toBe(chemins.length);
+  });
+
+  /**
+   * L'accueil et la vitrine existent en quatre langues, chacune à son adresse : le plan du site les liste toutes et les relie
+   * par des balises hreflang (chaque version cite toutes les versions, la sienne comprise, et le français en x-default).
+   */
+  describe("pages traduites", () => {
+    it("la liste du script est celle de l'application", () => {
+      expect([...LANGUES_PREFIXEES]).toEqual([...LANGUES_DU_SITE]);
+      expect([...PAGES_TRADUITES]).toEqual([...TRADUITES_DU_SITE]);
+    });
+
+    it("une page traduite a une entrée par langue, reliées entre elles", () => {
+      const entrees = entreesStatiques().filter((e: { loc: string }) => e.loc.includes("/vitrine") && !e.loc.includes("/annonces"));
+      expect(entrees.map((e: { loc: string }) => e.loc)).toEqual([
+        `${SITE_URL}/vitrine`,
+        `${SITE_URL}/en/vitrine`,
+        `${SITE_URL}/es/vitrine`,
+        `${SITE_URL}/pt/vitrine`,
+      ]);
+      for (const e of entrees) {
+        expect(e.alternates).toEqual({ fr: `${SITE_URL}/vitrine`, en: `${SITE_URL}/en/vitrine`, es: `${SITE_URL}/es/vitrine`, pt: `${SITE_URL}/pt/vitrine` });
+      }
+    });
+
+    it("l'accueil français est « / », ses versions « /en », « /es », « /pt »", () => {
+      expect(versionsDeLaPage("/")).toEqual({ fr: "/", en: "/en", es: "/es", pt: "/pt" });
+    });
+
+    it("une page qui n'existe qu'en français (connexion, inscription, pages légales) n'a qu'une entrée, sans hreflang", () => {
+      const entrees = entreesStatiques().filter((e: { loc: string }) => /\/(inscription|cgu|mentions-legales|confidentialite)$/.test(e.loc));
+      expect(entrees).toHaveLength(4);
+      for (const e of entrees) expect(e.alternates).toBeUndefined();
+    });
+
+    it("le XML déclare l'espace xhtml et porte les liens hreflang et x-default", () => {
+      const xml = construireSitemap(entreesStatiques());
+      expect(xml).toContain('xmlns:xhtml="http://www.w3.org/1999/xhtml"');
+      expect(xml).toContain(`<xhtml:link rel="alternate" hreflang="en" href="${SITE_URL}/en/vitrine"/>`);
+      expect(xml).toContain(`<xhtml:link rel="alternate" hreflang="x-default" href="${SITE_URL}/vitrine"/>`);
+      expect(xml).toContain(`<loc>${SITE_URL}/pt</loc>`);
+    });
+
+    it("sans page traduite, le XML reste celui d'avant (pas d'espace xhtml)", () => {
+      expect(construireSitemap([{ loc: "https://example.com/a", priority: "1.0" }])).not.toContain("xhtml");
+    });
   });
 });

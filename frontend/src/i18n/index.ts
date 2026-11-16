@@ -1,3 +1,4 @@
+import { langueDuChemin } from "../utils/langueUrl";
 import i18n from "i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import { initReactI18next } from "react-i18next";
@@ -123,10 +124,21 @@ export async function changerLangue(code: string): Promise<void> {
   await i18n.changeLanguage(code);
 }
 
+/** Langue annoncée par l'adresse (« /en/vitrine » → « en ») : une adresse partagée ou trouvée sur un moteur de recherche s'ouvre dans sa langue. */
+function langueDeLAdresse(): string | undefined {
+  try {
+    return langueDuChemin(window.location.pathname) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
+    // Sans `lng`, le détecteur lit le choix mémorisé du visiteur ; avec, l'adresse l'emporte.
+    lng: langueDeLAdresse(),
     resources: {
       fr: { translation: copie(fr) },
     },

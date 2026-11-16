@@ -32,6 +32,18 @@ export const STATIC_ROUTES = [
   { path: "/confidentialite", priority: "0.3" },
 ];
 
+// Pages publiques qui existent aussi en anglais, espagnol et portugais, à leur propre adresse (« /en », « /es/vitrine »…).
+// Même liste que src/utils/langueUrl.ts, dont src/utils/langueUrl.test.ts vérifie l'accord.
+export const LANGUES_PREFIXEES = ["en", "es", "pt"];
+export const PAGES_TRADUITES = ["/", "/vitrine"];
+
+/** Les quatre versions d'une page traduite : { fr: « /vitrine », en: « /en/vitrine »… }. */
+export function versionsDeLaPage(chemin) {
+  const versions = { fr: chemin };
+  for (const langue of LANGUES_PREFIXEES) versions[langue] = chemin === "/" ? `/${langue}` : `/${langue}${chemin}`;
+  return versions;
+}
+
 export function echapperXml(texte) {
   return texte.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
@@ -52,15 +64,43 @@ async function recupererIdsAnnoncesPubliees() {
   return ids;
 }
 
+/**
+ * `alternates` (facultatif) : les versions de la page dans chaque langue, { fr: url, en: url… }. Chaque version se liste elle-même
+ * et ses sœurs, avec le français en « x-default » — c'est ce que Google demande pour relier les versions d'une page.
+ */
 export function construireSitemap(urls) {
+  const avecLangues = urls.some((u) => u.alternates);
   const entrees = urls
-    .map(({ loc, priority }) => `  <url>\n    <loc>${echapperXml(loc)}</loc>\n    <priority>${priority}</priority>\n  </url>`)
+    .map(({ loc, priority, alternates }) => {
+      const liens = alternates
+        ? Object.entries(alternates)
+            .map(([langue, href]) => `\n    <xhtml:link rel="alternate" hreflang="${langue}" href="${echapperXml(href)}"/>`)
+            .join("") + `\n    <xhtml:link rel="alternate" hreflang="x-default" href="${echapperXml(alternates.fr)}"/>`
+        : "";
+      return `  <url>\n    <loc>${echapperXml(loc)}</loc>${liens}\n    <priority>${priority}</priority>\n  </url>`;
+    })
     .join("\n");
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entrees}\n</urlset>\n`;
+  const espaces = avecLangues ? ' xmlns:xhtml="http://www.w3.org/1999/xhtml"' : "";
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"${espaces}>\n${entrees}\n</urlset>\n`;
+}
+
+/** Les entrées du plan pour les pages statiques : une par langue pour une page traduite, reliées entre elles. */
+export function entreesStatiques() {
+  const entrees = [];
+  for (const { path, priority } of STATIC_ROUTES) {
+    if (!PAGES_TRADUITES.includes(path)) {
+      entrees.push({ loc: `${SITE_URL}${path}`, priority });
+      continue;
+    }
+    const versions = versionsDeLaPage(path);
+    const alternates = Object.fromEntries(Object.entries(versions).map(([langue, chemin]) => [langue, `${SITE_URL}${chemin}`]));
+    for (const chemin of Object.values(versions)) entrees.push({ loc: `${SITE_URL}${chemin}`, priority, alternates });
+  }
+  return entrees;
 }
 
 async function main() {
-  const urls = STATIC_ROUTES.map(({ path, priority }) => ({ loc: `${SITE_URL}${path}`, priority }));
+  const urls = entreesStatiques();
 
   try {
     const ids = await recupererIdsAnnoncesPubliees();
