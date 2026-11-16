@@ -45,7 +45,7 @@ const zone: ZoneLanding = {
       titleLine1: "La gestión de alquileres,",
       titleLine2: "reinventada y automatizada.",
       subtitle:
-        "Genera tus recibos en PDF, firma tus contratos en línea, envía tus recordatorios automáticos desde el día 1 de cada mes y sigue tu rentabilidad neta en tiempo real.",
+        "Genera sus recibos en PDF, firme sus contratos en línea, envíe sus recordatorios automáticos desde el día 1 de cada mes y siga su rentabilidad neta en tiempo real.",
       ctaTrial: "Comenzar la prueba gratuita de 15 días →",
       ctaPricing: "Ver precios",
       mobileSoon: "Próximamente en App Store y Google Play",
@@ -57,7 +57,7 @@ const zone: ZoneLanding = {
       },
       signature: {
         title: "Firma Táctil Electrónica",
-        desc: "Haz firmar tus contratos de alquiler directamente desde el móvil o la tableta. Sellado de tiempo y archivo digital seguro.",
+        desc: "Haga firmar sus contratos de alquiler directamente desde el móvil o la tableta. Sellado de tiempo y archivo digital seguro.",
       },
       reminders: {
         title: "Alertas Automáticas el Día 1 de Cada Mes",
@@ -65,15 +65,15 @@ const zone: ZoneLanding = {
       },
       dashboard: {
         title: "Panel de Control y Estadísticas en Tiempo Real",
-        desc: "Consulta de un vistazo tu tasa de ocupación, tus ingresos cobrados, tus facturas atrasadas y el estado de tu cartera, con gráficos claros y actualizados en directo.",
+        desc: "Consulte de un vistazo su tasa de ocupación, sus ingresos cobrados, sus facturas atrasadas y el estado de su cartera, con gráficos claros y actualizados en directo.",
       },
       expenses: {
         title: "Seguimiento de Gastos y Rentabilidad Neta",
-        desc: "Registra tus gastos de mantenimiento, impuestos y cargas, y visualiza automáticamente tu flujo de caja real — ingresos menos gastos — mes a mes.",
+        desc: "Registre sus gastos de mantenimiento, impuestos y cargas, y visualice automáticamente su flujo de caja real — ingresos menos gastos — mes a mes.",
       },
       tenantPortal: {
         title: "Portal del Inquilino Dedicado",
-        desc: "Tus inquilinos pagan su alquiler, consultan sus recibos, reportan una incidencia con foto y te escriben directamente, sin llamadas ni papeleo.",
+        desc: "Sus inquilinos pagan su alquiler, consultan sus recibos, reportan una incidencia con foto y le escriben directamente, sin llamadas ni papeleo.",
       },
       security: {
         title: "Seguridad y Cumplimiento RGPD",
@@ -81,7 +81,7 @@ const zone: ZoneLanding = {
       },
       multiCurrency: {
         title: "Multi-Divisas",
-        desc: "Muestra y cobra tus alquileres en la divisa que elijas, adaptada a tu mercado y al de tus inquilinos.",
+        desc: "Muestre y cobre sus alquileres en la divisa que elija, adaptada a su mercado y al de sus inquilinos.",
       },
       multiLanguage: {
         title: "Interfaz Multilingüe",
@@ -89,7 +89,7 @@ const zone: ZoneLanding = {
       },
     },
     featuresSection: {
-      title: "Todo lo necesario para gestionar tus alquileres con tranquilidad",
+      title: "Todo lo necesario para gestionar sus alquileres con tranquilidad",
       subtitle: "Una sola plataforma, desde el contrato hasta el cobro, tanto para independientes como para agencias.",
     },
     extras: [
@@ -97,14 +97,14 @@ const zone: ZoneLanding = {
       "Búsqueda global instantánea",
       "Registro de actividad completo",
       "Exportación contable CSV",
-      "Marca blanca para tu agencia",
+      "Marca blanca para su agencia",
     ],
     productTour: {
-      title: "Descubre la plataforma en imágenes",
-      subtitle: "Una interfaz pensada para ser rápida, tanto para ti como para tus inquilinos.",
+      title: "Descubra la plataforma en imágenes",
+      subtitle: "Una interfaz pensada para ser rápida, tanto para usted como para sus inquilinos.",
       dashboard: {
         title: "Un panel de control claro y accionable",
-        desc: "Ingresos, ocupación, facturas atrasadas e incidencias: todas tus prioridades del día, reunidas en una sola pantalla.",
+        desc: "Ingresos, ocupación, facturas atrasadas e incidencias: todas sus prioridades del día, reunidas en una sola pantalla.",
       },
       contracts: {
         title: "Contratos firmados en unos pocos clics",
@@ -112,23 +112,23 @@ const zone: ZoneLanding = {
       },
       expenses: {
         title: "Una rentabilidad siempre actualizada",
-        desc: "Cada gasto registrado recalcula al instante tu flujo de caja neto, propiedad por propiedad.",
+        desc: "Cada gasto registrado recalcula al instante su flujo de caja neto, propiedad por propiedad.",
       },
       tenant: {
         title: "Una experiencia fluida para el inquilino",
-        desc: "Recibos, documentos para firmar y mensajería directa: tus inquilinos ya no te llaman por cualquier motivo.",
+        desc: "Recibos, documentos para firmar y mensajería directa: sus inquilinos ya no le llaman por cualquier motivo.",
       },
     },
     forWho: {
       title: "Diseñado para todos los perfiles de gestión de alquileres",
-      subtitle: "Ya gestiones un estudio o varios cientos de propiedades, hay un plan hecho para ti.",
+      subtitle: "Ya gestione un estudio o varios cientos de propiedades, hay un plan hecho para usted.",
       independent: {
         title: "Propietario independiente",
-        desc: "Gestiona tus pocas propiedades con toda sencillez: recibos automáticos, recordatorios de pago y portal del inquilino, sin complejidad innecesaria.",
+        desc: "Gestiona sus pocas propiedades con toda sencillez: recibos automáticos, recordatorios de pago y portal del inquilino, sin complejidad innecesaria.",
       },
       agency: {
         title: "Agencia inmobiliaria",
-        desc: "Firma electrónica, seguimiento de rentabilidad y marca blanca para presentar una imagen profesional a tus clientes propietarios e inquilinos.",
+        desc: "Firma electrónica, seguimiento de rentabilidad y marca blanca para presentar una imagen profesional a sus clientes propietarios e inquilinos.",
       },
       enterprise: {
         title: "Gestor de gran cartera",
@@ -136,7 +136,7 @@ const zone: ZoneLanding = {
       },
     },
     trust: {
-      title: "Tus datos, protegidos en serio",
+      title: "Sus datos, protegidos en serio",
       subtitle: "La seguridad no es una opción añadida después: forma parte de la arquitectura del servicio.",
       items: [
         "Datos alojados en Francia (París), en una infraestructura dedicada.",
@@ -155,11 +155,11 @@ const zone: ZoneLanding = {
       items: [
         {
           q: "¿Cuánto tiempo se tarda en empezar?",
-          a: "Solo unos minutos: crea tu cuenta, añade tu primera propiedad y disfruta de inmediato de 15 días de prueba gratuita, sin necesidad de tarjeta bancaria.",
+          a: "Solo unos minutos: cree su cuenta, añada su primera propiedad y disfrute de inmediato de 15 días de prueba gratuita, sin necesidad de tarjeta bancaria.",
         },
         {
           q: "¿Mis datos están seguros?",
-          a: "Sí: tus datos están alojados en Francia, cifrados y estrictamente aislados de las demás agencias que usan la plataforma. Consulta nuestra política de privacidad para más detalles.",
+          a: "Sí: sus datos están alojados en Francia, cifrados y estrictamente aislados de las demás agencias que usan la plataforma. Consulte nuestra política de privacidad para más detalles.",
         },
         {
           q: "¿Qué métodos de pago pueden usar mis inquilinos?",
@@ -167,7 +167,7 @@ const zone: ZoneLanding = {
         },
         {
           q: "¿Puedo cancelar mi suscripción en cualquier momento?",
-          a: "Sí, sin compromiso. Puedes cancelar desde tu espacio de gestión en cualquier momento; el acceso permanece activo hasta el final del período ya pagado.",
+          a: "Sí, sin compromiso. Puede cancelar desde su espacio de gestión en cualquier momento; el acceso permanece activo hasta el final del período ya pagado.",
         },
         {
           q: "¿El servicio funciona fuera de Francia?",
@@ -176,7 +176,7 @@ const zone: ZoneLanding = {
       ],
     },
     finalCta: {
-      title: "¿Listo para modernizar tu gestión de alquileres?",
+      title: "¿Listo para modernizar su gestión de alquileres?",
       subtitle: "Únete a los gestores que ya han simplificado sus recibos, recordatorios y seguimiento financiero.",
       cta: "Comenzar mi prueba gratuita de 15 días →",
     },
