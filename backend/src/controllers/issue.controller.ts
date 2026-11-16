@@ -1,3 +1,4 @@
+import { adresseDeReponseAgence } from "../services/reponseAgence.service";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
@@ -214,7 +215,7 @@ export const updateIssueStatus = asyncHandler(async (req: Request, res: Response
       frontendUrl: env.frontendUrl,
       langue: langueOuDefaut(row.tenant.language),
     });
-    await sendEmail(row.tenant.email, subject, html).catch((err) =>
+    await sendEmail(row.tenant.email, subject, html, undefined, { replyTo: await adresseDeReponseAgence(row.tenant.managerId) }).catch((err) =>
       console.error("[issue] Échec de l'envoi de la notification de statut:", err)
     );
   }

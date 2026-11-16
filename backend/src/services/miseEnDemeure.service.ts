@@ -1,3 +1,4 @@
+import { adresseDeReponseAgence } from "./reponseAgence.service";
 import { and, desc, eq, gte, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { db, Transaction } from "../db/client";
 import { agencySettings, contractGuarantors, contracts, formalNotices, invoices, properties, tenants, users } from "../db/schema";
@@ -327,7 +328,7 @@ export async function emettreMiseEnDemeure(params: {
   let emailEnvoye = false;
   if (tenant.email) {
     const { subject, html } = pourLocataire(nomAvecCivilite(tenant));
-    const resultat = await sendEmail(tenant.email, subject, html, pieceJointe);
+    const resultat = await sendEmail(tenant.email, subject, html, pieceJointe, { replyTo: await adresseDeReponseAgence(tenant.managerId) });
     emailEnvoye = !("error" in resultat && resultat.error);
   }
   const colocatairesPrevenus = await envoyerCopieAuxColocataires(contract.id, (colocataire) => ({
@@ -352,7 +353,7 @@ export async function emettreMiseEnDemeure(params: {
           agencyName: donnees.agency.name,
           reference: donnees.reference,
         });
-        const resultat = await sendEmail(garant.email, subject, html, pieceJointe);
+        const resultat = await sendEmail(garant.email, subject, html, pieceJointe, { replyTo: await adresseDeReponseAgence(tenant.managerId) });
         if (!("error" in resultat && resultat.error)) garantsPrevenus++;
       } catch (err) {
         console.error(`[mise en demeure] Copie au garant ${garant.id} non envoyée :`, err);
