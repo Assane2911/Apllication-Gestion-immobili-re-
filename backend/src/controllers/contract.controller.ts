@@ -1,3 +1,4 @@
+import { adresseDeReponseAgence } from "../services/reponseAgence.service";
 import { and, desc, eq, gt, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
@@ -1029,7 +1030,7 @@ export const recordDepositRefund = asyncHandler(async (req: Request, res: Respon
         currency: updated.currency,
         frontendUrl: env.frontendUrl,
       });
-      await sendEmail(tenant.email, subject, html).catch((err) =>
+      await sendEmail(tenant.email, subject, html, undefined, { replyTo: await adresseDeReponseAgence(tenant.managerId) }).catch((err) =>
         console.error("[contract] Échec de l'envoi de la notification de restitution du dépôt:", err)
       );
     }

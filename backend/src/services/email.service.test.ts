@@ -86,6 +86,28 @@ describe("sendEmail", () => {
    * Un message uniquement HTML est une marque classique de courrier indésirable, et un répondeur automatique qui répond à un
    * message automatique crée des échanges inutiles : chaque envoi porte donc une partie texte et les en-têtes « message automatique ».
    */
+  it("met l'adresse de l'agence en « Reply-To » quand elle est donnée, et n'en met aucun sinon", async () => {
+    env.smtp.user = "agence@test.local";
+    env.smtp.appPassword = "un-mot-de-passe-app";
+    sendMail.mockResolvedValue({ messageId: "msg-reponse" });
+
+    await sendEmail("locataire@test.local", "Sujet", "<p>Bonjour</p>", undefined, { replyTo: "contact@baobab.sn" });
+    await sendEmail("locataire@test.local", "Sujet", "<p>Bonjour</p>");
+
+    expect(sendMail.mock.calls[0][0].replyTo).toBe("contact@baobab.sn");
+    expect("replyTo" in sendMail.mock.calls[1][0]).toBe(false);
+  });
+
+  it("neutralise un retour à la ligne dans l'adresse de réponse (injection d'en-tête)", async () => {
+    env.smtp.user = "agence@test.local";
+    env.smtp.appPassword = "un-mot-de-passe-app";
+    sendMail.mockResolvedValue({ messageId: "msg-injection-reponse" });
+
+    await sendEmail("locataire@test.local", "Sujet", "<p>x</p>", undefined, { replyTo: "a@b.sn\r\nBcc: pirate@evil.test" });
+
+    expect(sendMail.mock.calls[0][0].replyTo).not.toMatch(/[\r\n]/);
+  });
+
   it("joint une partie texte brute et marque le message comme automatique", async () => {
     env.smtp.user = "agence@test.local";
     env.smtp.appPassword = "un-mot-de-passe-app";

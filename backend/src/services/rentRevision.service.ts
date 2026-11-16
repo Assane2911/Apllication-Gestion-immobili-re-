@@ -1,3 +1,4 @@
+import { adresseDeReponseAgence } from "./reponseAgence.service";
 import { and, asc, eq, lte, sql } from "drizzle-orm";
 import { db, Transaction } from "../db/client";
 import { contracts, invoices, properties, rentRevisions, tenants } from "../db/schema";
@@ -221,7 +222,7 @@ async function prevenirLocataire(revision: Revision, titreBien: string, contract
     const [locataire] = await db.select().from(tenants).where(eq(tenants.id, tenantId));
     if (locataire?.email) {
       const { subject, html } = message(locataire);
-      await sendEmail(locataire.email, subject, html);
+      await sendEmail(locataire.email, subject, html, undefined, { replyTo: await adresseDeReponseAgence(locataire.managerId) });
       envoye = true;
     }
   } catch (err) {

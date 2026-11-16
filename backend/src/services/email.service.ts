@@ -138,9 +138,15 @@ function neutraliserEnTete(value: string): string {
   return value.replace(/[\r\n]+/g, " ").trim();
 }
 
-export async function sendEmail(to: string, subject: string, html: string, attachments?: EmailAttachment[]) {
+export interface OptionsEnvoi {
+  /** Adresse à laquelle le destinataire répond (l'agence), à la place de l'adresse d'expédition de la plateforme. */
+  replyTo?: string;
+}
+
+export async function sendEmail(to: string, subject: string, html: string, attachments?: EmailAttachment[], options?: OptionsEnvoi) {
   const destinataire = neutraliserEnTete(to);
   const sujet = neutraliserEnTete(subject);
+  const replyTo = options?.replyTo ? neutraliserEnTete(options.replyTo) : undefined;
 
   const t = getTransporter();
   if (!t) {
@@ -162,6 +168,7 @@ export async function sendEmail(to: string, subject: string, html: string, attac
         text: htmlEnTexte(html),
         // Messages automatiques : les répondeurs (« absent du bureau ») ne doivent pas leur répondre en boucle.
         headers: { "Auto-Submitted": "auto-generated", "X-Auto-Response-Suppress": "OOF, AutoReply" },
+        ...(replyTo ? { replyTo } : {}),
         attachments,
       });
       return { simulated: false, messageId: info.messageId };

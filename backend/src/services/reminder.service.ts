@@ -1,3 +1,4 @@
+import { adresseDeReponseAgence } from "./reponseAgence.service";
 import { SQL, and, desc, eq, gte, inArray, isNull, lt, lte, or } from "drizzle-orm";
 import cron from "node-cron";
 import { env } from "../config/env";
@@ -685,7 +686,7 @@ export async function runRentDueReminders(managerId?: string, budget: BudgetTemp
       langue: langueOuDefaut(row.tenant.language),
     });
 
-    const emailResult = await sendEmail(row.tenant.email, subject, html);
+    const emailResult = await sendEmail(row.tenant.email, subject, html, undefined, { replyTo: await adresseDeReponseAgence(row.tenant.managerId) });
 
     // WhatsApp s'ajoute à l'email (ne le remplace pas) : un échec ici
     // (numéro invalide, API Meta non configurée) ne doit jamais empêcher
@@ -862,7 +863,7 @@ export async function runUpcomingRentDueReminders(budget: BudgetTemps = SANS_LIM
       langue: langueOuDefaut(row.tenant.language),
     });
 
-    const emailResult = await sendEmail(row.tenant.email, subject, html);
+    const emailResult = await sendEmail(row.tenant.email, subject, html, undefined, { replyTo: await adresseDeReponseAgence(row.tenant.managerId) });
 
     // Voir managersEligiblesPro : un gestionnaire sous Pro ne déclenche
     // pas cet envoi, l'email seul (promis à sa formule) part quand même.
@@ -1038,7 +1039,7 @@ export async function sendSingleInvoiceReminder(invoiceId: string, managerId: st
     langue: langueOuDefaut(row.tenant.language),
   });
 
-  const emailResult = await sendEmail(row.tenant.email, subject, html);
+  const emailResult = await sendEmail(row.tenant.email, subject, html, undefined, { replyTo: await adresseDeReponseAgence(row.tenant.managerId) });
 
   // Voir managersEligiblesPro : un gestionnaire sous Pro ne déclenche
   // pas cet envoi, l'email seul (promis à sa formule) part quand même.

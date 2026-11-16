@@ -1,5 +1,6 @@
 import { and, eq, gte, inArray, isNull, lt, or } from "drizzle-orm";
 import { db } from "../db/client";
+import { adresseDeReponseAgence } from "./reponseAgence.service";
 import { agencySettings, contractGuarantors, contracts, invoices, properties, tenants, users } from "../db/schema";
 import { env } from "../config/env";
 import { BudgetTemps, SANS_LIMITE, traiterParLots } from "../utils/budgetTemps";
@@ -100,7 +101,7 @@ export async function runOverdueReminders(budget: BudgetTemps = SANS_LIMITE, mai
       agencyName: reglage.agencyName,
     };
     const { subject, html } = overdueReminderEmail({ ...parametres, tenantName: nomAvecCivilite(ligne.tenant), langue: langueOuDefaut(ligne.tenant.language) });
-    const resultat = await sendEmail(ligne.tenant.email, subject, html);
+    const resultat = await sendEmail(ligne.tenant.email, subject, html, undefined, { replyTo: await adresseDeReponseAgence(ligne.tenant.managerId) });
     // Sans modèle configuré, on ne tente rien : chaque tentative écrirait un avertissement dans les
     // journaux, par destinataire et par impayé, tous les jours.
     const whatsappEligible = managersWhatsapp.has(ligne.property.managerId) && Boolean(env.whatsapp.templateNameOverdue);
@@ -151,7 +152,7 @@ export async function runOverdueReminders(budget: BudgetTemps = SANS_LIMITE, mai
         try {
           const avis = guarantorUnpaidNoticeEmail({ ...parametres, guarantorName: nomAvecCivilite(garant), maxAmount: garant.maxAmount, tenantName: nomComplet(ligne.tenant), langue: langueOuDefaut(ligne.tenant.language) });
           // `sendEmail` ne lève pas : un échec revient en `error`, et ne doit pas être compté comme un garant prévenu.
-          const resultatGarant = await sendEmail(garant.email, avis.subject, avis.html);
+          const resultatGarant = await sendEmail(garant.email, avis.subject, avis.html, undefined, { replyTo: await adresseDeReponseAgence(ligne.tenant.managerId) });
           if (!("error" in resultatGarant && resultatGarant.error)) garantsPrevenus++;
         } catch (err) {
           console.error(`[relances] Avis au garant ${garant.id} non envoyé :`, err);

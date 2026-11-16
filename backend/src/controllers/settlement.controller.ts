@@ -1,3 +1,4 @@
+import { adresseDeReponseAgence } from "../services/reponseAgence.service";
 import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
@@ -172,7 +173,7 @@ export const createSettlement = asyncHandler(async (req: Request, res: Response)
       });
     if (locataire.email) {
       const { subject, html } = pour(nomAvecCivilite(locataire));
-      const resultat = await sendEmail(locataire.email, subject, html, pieceJointe);
+      const resultat = await sendEmail(locataire.email, subject, html, pieceJointe, { replyTo: await adresseDeReponseAgence(locataire.managerId) });
       emailEnvoye = !("error" in resultat && resultat.error);
     }
     colocatairesPrevenus = await envoyerCopieAuxColocataires(contrat.id, (colocataire) => ({ ...pour(nomAvecCivilite(colocataire)), attachments: pieceJointe }));

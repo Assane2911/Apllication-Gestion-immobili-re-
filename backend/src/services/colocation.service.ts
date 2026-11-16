@@ -1,3 +1,4 @@
+import { adresseDeReponseAgence } from "./reponseAgence.service";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "../db/client";
 import { contractCotenants, contracts, tenants } from "../db/schema";
@@ -70,7 +71,7 @@ export async function envoyerCopieAuxColocataires(
     if (!colocataire.email) continue;
     try {
       const { subject, html, attachments } = construire(colocataire);
-      await sendEmail(colocataire.email, subject, html, attachments);
+      await sendEmail(colocataire.email, subject, html, attachments, { replyTo: await adresseDeReponseAgence(colocataire.managerId) });
       envoyees++;
     } catch (err) {
       console.error(`[colocation] Copie non envoyée au colocataire ${colocataire.id} (bail ${contractId}) :`, err);

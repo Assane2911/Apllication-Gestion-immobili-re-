@@ -157,4 +157,7 @@ const TABLES = [
 beforeEach(async () => {
   await ready;
   await testDb.execute(sql.raw(`TRUNCATE TABLE ${TABLES.join(", ")} RESTART IDENTITY CASCADE`));
+  // Les adresses de réponse des agences sont mémorisées une minute : une base vidée les rend caduques.
+  // Import dynamique : le module lit la base, qui n'existe pas encore quand ce fichier est évalué.
+  (await import("../services/reponseAgence.service")).oublierAdressesDeReponse();
 });

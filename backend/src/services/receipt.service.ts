@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "../db/client";
+import { adresseDeReponseAgence } from "./reponseAgence.service";
 import { agencySettings, contracts, invoicePayments, invoices, properties, tenants } from "../db/schema";
 import { colocatairesActifs, envoyerCopieAuxColocataires, nomsDesLocataires } from "./colocation.service";
 import { partialPaymentReceiptEmail, paymentReceiptEmail, sendEmail } from "./email.service";
@@ -100,7 +101,7 @@ export async function sendPaymentReceiptEmail(invoiceId: string) {
         contentType: "application/pdf",
       },
     ];
-    const result = await sendEmail(tenant.email, sujet, html, pieceJointe);
+    const result = await sendEmail(tenant.email, sujet, html, pieceJointe, { replyTo: await adresseDeReponseAgence(tenant.managerId) });
     // Chaque colocataire reçoit la même quittance (elle les nomme tous).
     await envoyerCopieAuxColocataires(contract.id, () => ({ subject: sujet, html, attachments: pieceJointe }));
 
@@ -161,7 +162,7 @@ export async function sendPartialPaymentReceiptEmail(invoiceId: string, paymentI
       });
 
     const { subject, html } = recuPour(tenant);
-    const result = await sendEmail(tenant.email, subject, html);
+    const result = await sendEmail(tenant.email, subject, html, undefined, { replyTo: await adresseDeReponseAgence(tenant.managerId) });
     await envoyerCopieAuxColocataires(contract.id, (colocataire) => recuPour(colocataire));
     return { sent: !result.simulated && !("error" in result && result.error), ...result };
   } catch (err) {
