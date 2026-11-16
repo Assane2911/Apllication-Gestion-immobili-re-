@@ -1,8 +1,9 @@
 import multer from "multer";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
+import { OrigineNonAutorisee } from "./middleware/errorHandler";
 import { ApiError } from "./utils/asyncHandler";
-import { masquerJetonsAgenda, shouldReportToSentry } from "./instrument";
+import { masquerDonneesSensibles, masquerJetonsAgenda, retenirSiMasquageImpossible, shouldReportToSentry } from "./instrument";
 
 // Ce prédicat décide de ce qui atteint Sentry. Il est branché sur
 // expressIntegration() et s'applique donc AVANT errorHandler : c'est le seul
@@ -31,6 +32,12 @@ describe("shouldReportToSentry", () => {
   it("ignore un upload refusé (vraie MulterError)", () => {
     const erreur = new multer.MulterError("LIMIT_FILE_SIZE");
     expect(erreur.name).toBe("MulterError");
+    expect(shouldReportToSentry(erreur)).toBe(false);
+  });
+
+  it("ignore une origine CORS refusée (vraie OrigineNonAutorisee) : réponse 403 attendue, 294 faux défauts en 15 jours", () => {
+    const erreur = new OrigineNonAutorisee();
+    expect(erreur.name).toBe("OrigineNonAutorisee");
     expect(shouldReportToSentry(erreur)).toBe(false);
   });
 
@@ -108,5 +115,52 @@ describe("masquerJetonsAgenda", () => {
     const evenement = { request: { url: "https://api.example.test/api/agenda/feed" } };
 
     expect(masquerJetonsAgenda(evenement).request.url).toBe("https://api.example.test/api/agenda/feed");
+  });
+});
+
+/**
+ * Les transactions de Sentry transportent parfois des objets Node non sérialisables tels quels (un `Timeout` référence la liste
+ * de minuteries qui le référence en retour). `JSON.stringify` y levait « Converting circular structure to JSON » : 533 fois en
+ * quatre jours en production, chaque transaction concernée étant perdue. Le masquage doit tolérer les références circulaires,
+ * continuer à masquer, et — en cas d'échec quelconque — retenir l'événement plutôt que de l'envoyer non masqué.
+ */
+describe("masquage des événements Sentry", () => {
+  it("tolère une référence circulaire (comme un Timeout Node) sans lever d'erreur", () => {
+    const minuterie: Record<string, unknown> = { nom: "Timeout" };
+    const liste: Record<string, unknown> = { premier: minuterie };
+    minuterie._idlePrev = liste;
+    liste._idleNext = minuterie;
+    const evenement = { transaction: "GET /api/listings/public", contexts: { timer: minuterie } };
+
+    expect(() => masquerDonneesSensibles(evenement)).not.toThrow();
+    const resultat = masquerDonneesSensibles(evenement) as typeof evenement;
+    expect(resultat.transaction).toBe("GET /api/listings/public");
+  });
+
+  it("masque toujours le jeton d'agenda, même dans un événement qui contient une référence circulaire", () => {
+    const jeton = "abcdefghijklmnopqrstuvwxyz0123456789";
+    const boucle: Record<string, unknown> = {};
+    boucle.soi = boucle;
+    const evenement = { request: { url: `https://api.exemple.test/api/agenda/ics/${jeton}.ics` }, boucle };
+
+    const texte = JSON.stringify(masquerDonneesSensibles(evenement));
+
+    expect(texte).not.toContain(jeton);
+    expect(texte).toContain("[masqué]");
+  });
+
+  it("ne remplace pas par « circulaire » une référence simplement partagée à deux endroits", () => {
+    const partage = { valeur: 42 };
+    const resultat = masquerDonneesSensibles({ a: partage, b: partage }) as { a: { valeur: number }; b: { valeur: number } };
+
+    expect(resultat.a.valeur).toBe(42);
+    expect(resultat.b.valeur).toBe(42);
+  });
+
+  it("retient l'événement (null) plutôt que de lever ou d'envoyer du non masqué quand le masquage échoue", () => {
+    const piege = { get dangereux(): never { throw new Error("boum"); } };
+
+    expect(retenirSiMasquageImpossible(piege)).toBeNull();
+    expect(retenirSiMasquageImpossible({ ok: true })).toEqual({ ok: true });
   });
 });
