@@ -101,8 +101,8 @@ describe("SectionMaintenance", () => {
     expect(confirmation).toHaveBeenCalledWith(expect.stringContaining("Envoyer maintenant l'e-mail d'annonce à tous les gestionnaires"));
     expect(mocked.put.mock.calls[0][1]).toMatchObject({ notifier: true });
     const statut = await screen.findByRole("status");
-    expect(statut).toHaveTextContent("Annonce par e-mail : 12 envoyé(s) sur 13 gestionnaire(s).");
-    expect(statut).toHaveTextContent("1 envoi(s) ont échoué");
+    expect(statut).toHaveTextContent("Annonce par e-mail : 12 envoyés sur un total de 13.");
+    expect(statut).toHaveTextContent("1 envoi a échoué");
     expect(screen.getByRole("checkbox", { name: /Prévenir les gestionnaires par e-mail/ })).not.toBeChecked();
   });
 

@@ -355,7 +355,7 @@ describe("templates d'emails", () => {
       dueDate: new Date(2026, 2, 5),
       frontendUrl: "https://app.test",
     });
-    expect(subject).toContain("dans 1 jour(s)");
+    expect(subject).toContain("dans 1 jour");
     expect(html).toContain("(dans 1 jour)"); // singulier, pas "1 jours"
     expect(html).toContain(`150${ESPACE_FINE}000 FCFA`);
   });

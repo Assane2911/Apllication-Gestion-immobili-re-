@@ -232,7 +232,7 @@ describe("ManagerLayout — pastille de l'agenda", () => {
 
     const agenda = await screen.findByRole("link", { name: /Agenda/ });
     expect(await within(agenda).findByTestId("pastille-menu")).toHaveTextContent("3");
-    expect(agenda).toHaveTextContent("3 échéance(s) en retard");
+    expect(agenda).toHaveTextContent("3 échéances en retard");
     mockedApi.get.mockResolvedValue(reponseParDefaut as never);
   });
 
@@ -255,7 +255,7 @@ describe("ManagerLayout — pastille de l'agenda", () => {
     }) as never);
     renderManagerLayout("/dashboard");
 
-    expect(await screen.findByRole("button", { name: "Ouvrir le menu, 5 élément(s) en attente" })).toHaveTextContent("5");
+    expect(await screen.findByRole("button", { name: "Ouvrir le menu, 5 éléments en attente" })).toHaveTextContent("5");
     mockedApi.get.mockResolvedValue(reponseParDefaut as never);
   });
 

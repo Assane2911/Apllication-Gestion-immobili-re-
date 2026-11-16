@@ -78,7 +78,7 @@ describe("MessagesPage (gestionnaire)", () => {
     // gauche et dans l'en-tête du fil sélectionné à droite (sélection
     // automatique de la première conversation).
     expect(screen.getAllByText("Awa Diallo").length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByText("1 conversation(s)")).toBeInTheDocument();
+    expect(screen.getByText("1 conversation")).toBeInTheDocument();
   });
 
   /**
@@ -356,7 +356,7 @@ describe("MessagesPage (gestionnaire) — présentation du fil", () => {
     const fiche = await screen.findByRole("complementary", { name: "Fiche du fil" });
 
     expect(fiche).toHaveTextContent("12 rue des Almadies");
-    expect(fiche).toHaveTextContent("1 message(s) dans ce fil");
+    expect(fiche).toHaveTextContent("1 message dans ce fil");
     expect(screen.getByRole("link", { name: "awa@exemple.test" })).toHaveAttribute("href", "mailto:awa@exemple.test");
     expect(screen.getByRole("link", { name: "Voir les contrats" })).toHaveAttribute("href", "/contracts");
   });
@@ -404,13 +404,13 @@ describe("MessagesPage (gestionnaire) — présentation du fil", () => {
       mockedApi.get.mockResolvedValueOnce(conversationsPage(parc()));
       mockedApi.get.mockResolvedValue({ data: { messages: [], contract: { tenant: { firstName: "Awa", lastName: "Diallo" }, property: { title: "Villa Baobab" } } } });
       renderPage();
-      await screen.findByText("3 conversation(s) · 2 non lu(s)");
+      await screen.findByText("3 conversations · 2 non lus");
     }
     const index = () => screen.getByRole("heading", { name: /Discussions/i }).closest("div")!.parentElement as HTMLElement;
 
     it("compte les conversations non lues dans l'en-tête", async () => {
       await afficher();
-      expect(screen.getByText("3 conversation(s) · 2 non lu(s)")).toBeInTheDocument();
+      expect(screen.getByText("3 conversations · 2 non lus")).toBeInTheDocument();
     });
 
     it("filtre les conversations non lues", async () => {

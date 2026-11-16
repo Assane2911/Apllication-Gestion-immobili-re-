@@ -189,7 +189,7 @@ export default function AdminSubscriptionsPage() {
             </button>
           </BarreListe>
           {(recherche.trim() !== "" || filtre !== "all") && (
-            <p className="font-mono text-xs uppercase tracking-wider text-slate-600">{t("admin.subscriptions.shown", { shown: lignes.length, total: rows.length })}</p>
+            <p className="font-mono text-xs uppercase tracking-wider text-slate-600">{t("admin.subscriptions.shown", { count: lignes.length, total: rows.length })}</p>
           )}
           {lignes.length === 0 && <p className="border border-slate-300 bg-white py-10 text-center text-sm text-slate-600">{t("admin.subscriptions.noResult")}</p>}
 

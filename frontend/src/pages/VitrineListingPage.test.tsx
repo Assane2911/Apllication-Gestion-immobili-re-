@@ -155,7 +155,7 @@ describe("VitrineListingPage (fiche annonce individuelle)", () => {
     const caracteristiques = within(await screen.findByRole("region", { name: "Caractéristiques" }));
     expect(caracteristiques.getByText("10 EUR / m² / mois")).toBeInTheDocument();
     expect(caracteristiques.getByText("55 m²")).toBeInTheDocument();
-    expect(caracteristiques.getByText("2 pièce(s)")).toBeInTheDocument();
+    expect(caracteristiques.getByText("2 pièces")).toBeInTheDocument();
     expect(caracteristiques.getByText("Sénégal")).toBeInTheDocument();
   });
 

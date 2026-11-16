@@ -324,7 +324,7 @@ export default function ImportPage() {
 
           {analyse.capacite && analyse.capacite.maximum !== null && (
             <p className="font-mono text-xs text-slate-700">
-              {t("manager.import.capacity", { existing: analyse.capacite.existants, max: analyse.capacite.maximum, remaining: analyse.capacite.restant ?? 0 })}
+              {t("manager.import.capacity", { existing: analyse.capacite.existants, max: analyse.capacite.maximum, count: analyse.capacite.restant ?? 0 })}
             </p>
           )}
 
@@ -359,7 +359,7 @@ export default function ImportPage() {
             </div>
           )}
           {filtre !== "all" && (
-            <p className="font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.import.shown", { shown: lignesVisibles.length, total: analyse.lignes.length })}</p>
+            <p className="font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.import.shown", { count: lignesVisibles.length, total: analyse.lignes.length })}</p>
           )}
 
           <div className="max-h-112 overflow-x-auto overflow-y-auto border border-slate-300 bg-white">

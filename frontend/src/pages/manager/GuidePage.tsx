@@ -71,7 +71,7 @@ export default function GuidePage() {
 
       <section aria-label={t("manager.guide.progress.label")} className="border border-slate-300 bg-white p-5 shadow-[inset_4px_0_0_var(--color-orange-700)]">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <p className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">{t("manager.guide.progress.count", { done: faites.length, total: ETAPES.length })}</p>
+          <p className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">{t("manager.guide.progress.count", { count: faites.length, total: ETAPES.length })}</p>
           {faites.length > 0 && (
             <button type="button" onClick={() => modifier([])} className="cursor-pointer border-b border-ink-900/40 text-xs font-semibold text-ink-900 hover:border-orange-700 hover:text-orange-700">
               {t("manager.guide.progress.reset")}

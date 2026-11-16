@@ -130,8 +130,13 @@ export default function InvoicesPage() {
     setError(null);
 
     try {
-      const { data } = await api.post<{ message: string; sent: number }>("/invoices/send-monthly-reminders");
-      setFeedback(data.message);
+      const { data } = await api.post<{ sent: number; echecs?: number; whatsappEchecs?: number }>("/invoices/send-monthly-reminders");
+      // Le texte vient d'ici, dans la langue de l'interface : celui du serveur est en français pour tout le monde.
+      const echecs = data.echecs ?? 0;
+      const whatsapp = (data.whatsappEchecs ?? 0) > 0 ? t("manager.invoices.feedback.whatsappFailed", { count: data.whatsappEchecs }) : "";
+      setFeedback(
+        (echecs > 0 ? t("manager.invoices.feedback.monthlyPartial", { count: data.sent, failed: echecs }) : t("manager.invoices.feedback.monthlyOk", { count: data.sent })) + whatsapp
+      );
       load();
     } catch (err) {
       setError(apiErrorMessage(err));
@@ -164,8 +169,15 @@ export default function InvoicesPage() {
     setError(null);
 
     try {
-      const { data } = await api.post<{ message: string }>(`/invoices/${inv.id}/send-reminder`);
-      setFeedback(data.message);
+      const { data } = await api.post<{ success: boolean; whatsappError?: boolean; tenantName: string; tenantEmail: string }>(`/invoices/${inv.id}/send-reminder`);
+      const infos = { name: data.tenantName, email: data.tenantEmail };
+      setFeedback(
+        !data.success
+          ? t("manager.invoices.feedback.reminderFailed", infos)
+          : data.whatsappError
+            ? t("manager.invoices.feedback.reminderWhatsappFailed", infos)
+            : t("manager.invoices.feedback.reminderOk", infos)
+      );
       load();
     } catch (err) {
       setError(apiErrorMessage(err));
@@ -208,7 +220,7 @@ export default function InvoicesPage() {
     }
     setRelanceEnCours(null);
     setSelection(new Set());
-    setFeedback(t(echecs > 0 ? "manager.invoices.selection.partial" : "manager.invoices.selection.done", { sent: envoyees, failed: echecs }));
+    setFeedback(t(echecs > 0 ? "manager.invoices.selection.partial" : "manager.invoices.selection.done", { count: envoyees, failed: echecs }));
     load();
   }
 

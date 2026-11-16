@@ -429,7 +429,7 @@ describe("SubscriptionPage", () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByText("Essai : 7 j restant(s)")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Essai : 7 j restants")).toBeInTheDocument());
     expect(screen.getByText("Starter")).toBeInTheDocument();
     expect(screen.getByText("Professionnel")).toBeInTheDocument();
     expect(screen.getByText("19 €")).toBeInTheDocument();
@@ -541,7 +541,7 @@ describe("SubscriptionPage", () => {
     seedUser(authUser());
     queueGet({ data: [plan({ id: "STARTER" })] });
     queueGet({ data: { history: [] } });
-    mockedApi.post.mockResolvedValueOnce({ data: { message: "Abonnement activé avec succès !" } });
+    mockedApi.post.mockResolvedValueOnce({ data: { success: true, message: "Texte du serveur, ignoré." } });
     queueGet({ data: [plan({ id: "STARTER" })] });
     queueGet({ data: { history: [] } });
 
@@ -560,7 +560,7 @@ describe("SubscriptionPage", () => {
         bankReference: undefined,
       })
     );
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Abonnement activé avec succès !"));
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Votre abonnement à la formule Starter a été activé avec succès !"));
     expect(screen.queryByRole("button", { name: "Confirmer et Activer l'Abonnement" })).not.toBeInTheDocument();
   });
 
@@ -767,7 +767,7 @@ describe("SubscriptionPage", () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByText("Essai : 7 j restant(s)")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Essai : 7 j restants")).toBeInTheDocument());
     expect(screen.queryByText("Starter")).not.toBeInTheDocument();
     expect(screen.queryByText("Professionnel")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Choisir/ })).not.toBeInTheDocument();
@@ -945,7 +945,8 @@ describe("SubscriptionPage", () => {
       mockedApi.post.mockResolvedValueOnce({
         data: {
           success: true,
-          message: "Le renouvellement automatique de votre abonnement a été annulé.",
+          message: "Texte du serveur, ignoré.",
+          autoRenewCancelled: true,
           subscription: subscription({ status: "CANCELLED" }),
         },
       });
@@ -959,8 +960,43 @@ describe("SubscriptionPage", () => {
 
       expect(mockedApi.post).toHaveBeenCalledWith("/subscription/cancel");
       await waitFor(() =>
-        expect(screen.getByText("Le renouvellement automatique de votre abonnement a été annulé.")).toBeInTheDocument()
+        expect(screen.getByText("Le renouvellement automatique de votre abonnement a été annulé. Votre accès reste actif jusqu'au terme de la période déjà payée.")).toBeInTheDocument()
       );
+    });
+
+    it("sans renouvellement automatique : annonce que l'abonnement ne sera pas reconduit, dans la langue de l'interface", async () => {
+      const user = userEvent.setup();
+      await changerLangue("en");
+      try {
+        vi.spyOn(window, "confirm").mockReturnValue(true);
+        seedUser(
+          authUser({
+            subscription: subscription({
+              status: "ACTIVE",
+              plan: "PRO",
+              isTrialActive: false,
+              isSubscriptionActive: true,
+              subscriptionEndsAt: "2026-10-01T00:00:00.000Z",
+            }),
+          })
+        );
+        queueGet({ data: [plan({ id: "STARTER" })] });
+        queueGet({ data: { history: [] } });
+        mockedApi.post.mockResolvedValueOnce({
+          data: { success: true, message: "Texte du serveur en français, ignoré.", autoRenewCancelled: false, subscription: subscription({ status: "CANCELLED" }) },
+        });
+        queueGet({ data: [plan({ id: "STARTER" })] });
+        queueGet({ data: { history: [] } });
+
+        renderPage();
+        await user.click(await screen.findByRole("button", { name: /Cancel my subscription/i }));
+
+        await waitFor(() =>
+          expect(screen.getByText("Your subscription will not be renewed. Your access stays active until the end of the period already paid.")).toBeInTheDocument()
+        );
+      } finally {
+        await changerLangue("fr");
+      }
     });
 
     it("pour un accès illimité : l'annonce, sans proposer de résilier ni de choisir une formule", async () => {
@@ -1042,7 +1078,7 @@ describe("SubscriptionPage", () => {
       queueGet({ data: { history: [] } });
 
       renderPage();
-      await waitFor(() => expect(screen.getByText("Essai : 7 j restant(s)")).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText("Essai : 7 j restants")).toBeInTheDocument());
       expect(screen.queryByRole("button", { name: "Résilier mon abonnement" })).not.toBeInTheDocument();
     });
   });
@@ -1132,7 +1168,7 @@ describe("SubscriptionPage — historique, économie annuelle et formule suivant
     queueGet({ data: { history: [], propertyUsage: { count: 5, max: 5, exceeded: false } } });
     renderPage();
 
-    expect(await screen.findByText(/Vous utilisez 5 bien\(s\) sur 5/)).toBeInTheDocument();
+    expect(await screen.findByText(/Vous utilisez 5 biens sur 5/)).toBeInTheDocument();
     // Le bouton de la proposition précède le tableau des formules, qui a le même libellé sur la carte de la formule.
     const boutons = screen.getAllByRole("button", { name: /^Choisir Professionnel/ });
     expect(boutons).toHaveLength(2);

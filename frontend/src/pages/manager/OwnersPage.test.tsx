@@ -359,7 +359,7 @@ describe("OwnersPage (manager)", () => {
       await afficher();
       const synthese = screen.getByLabelText("Synthèse des propriétaires");
       expect(within(synthese).getByText("1 / 4")).toBeInTheDocument();
-      expect(within(synthese).getByText("1 invité(s), 2 sans accès")).toBeInTheDocument();
+      expect(within(synthese).getByText("1 invité, 2 sans accès")).toBeInTheDocument();
       expect(within(synthese).getByText("9 %")).toBeInTheDocument();
       expect(within(synthese).getByText("2")).toBeInTheDocument(); // sans IBAN
     });

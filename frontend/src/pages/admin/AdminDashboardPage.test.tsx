@@ -56,11 +56,11 @@ describe("AdminDashboardPage", () => {
   it("signale les comptes suspendus dans la vignette des gestionnaires, et seulement s'il y en a", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: stats({ managers: { total: 12, trialActive: 4, subscriptionActive: 6, expired: 2, suspended: 3 } }) });
     const { unmount } = renderPage();
-    expect(await screen.findByText(/3 suspendu\(s\)/)).toBeInTheDocument();
+    expect(await screen.findByText(/3 suspendus/)).toBeInTheDocument();
     unmount();
 
     // Aucun suspendu — ou un serveur plus ancien qui n'envoie pas le champ :
-    // la vignette garde son texte habituel, sans « 0 suspendu(s) ».
+    // la vignette garde son texte habituel, sans « 0 suspendus ».
     mockedApi.get.mockResolvedValueOnce({ data: stats({ managers: { total: 12, trialActive: 4, subscriptionActive: 6, expired: 2 } }) });
     renderPage();
     expect(await screen.findByText(/4 en essai · 2 sans accès/)).toBeInTheDocument();
@@ -115,7 +115,7 @@ describe("AdminDashboardPage", () => {
 
     await waitFor(() => expect(screen.getByText("Agence du Port")).toBeInTheDocument());
     expect(screen.getByText("agence-port@test.local")).toBeInTheDocument();
-    expect(screen.getByText("2 jour(s) restant(s)")).toBeInTheDocument();
+    expect(screen.getByText("2 jours restants")).toBeInTheDocument();
   });
 
   it("affiche un message dédié quand aucun essai ne se termine bientôt", async () => {
@@ -147,11 +147,11 @@ describe("AdminDashboardPage", () => {
 
     renderPage();
 
-    const virements = await screen.findByRole("link", { name: /2 virement\(s\) à confirmer/ });
+    const virements = await screen.findByRole("link", { name: /2 virements à confirmer/ });
     expect(virements).toHaveAttribute("href", "/admin/virements");
-    expect(screen.getByRole("link", { name: /1 essai\(s\) à relancer/ })).toHaveAttribute("href", "/admin/gestionnaires");
-    expect(screen.getByRole("link", { name: /2 compte\(s\) sans accès/ })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /1 compte\(s\) suspendu\(s\)/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /1 essai à relancer/ })).toHaveAttribute("href", "/admin/gestionnaires");
+    expect(screen.getByRole("link", { name: /2 comptes sans accès/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /1 compte suspendu/ })).toBeInTheDocument();
   });
 
   it("annonce que tout est à jour quand rien n'attend, et se passe des virements si leur liste est indisponible", async () => {
@@ -203,7 +203,7 @@ describe("AdminDashboardPage — suggestions non lues", () => {
     });
     renderPage();
 
-    const lien = await screen.findByRole("link", { name: /4 suggestion\(s\) non lue\(s\)/ });
+    const lien = await screen.findByRole("link", { name: /4 suggestions non lues/ });
     expect(lien).toHaveAttribute("href", "/admin/suggestions");
   });
 
@@ -216,6 +216,6 @@ describe("AdminDashboardPage — suggestions non lues", () => {
     });
     renderPage();
     await screen.findByText("Agence du Port");
-    expect(screen.queryByText(/suggestion\(s\) non lue\(s\)/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/suggestions non lues/)).not.toBeInTheDocument();
   });
 });

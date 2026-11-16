@@ -444,7 +444,7 @@ export default function OwnersPage() {
             {
               libelle: t("manager.owners.summary.portal"),
               valeur: `${actifs.length - sansPortail.length - invites.length} / ${actifs.length}`,
-              aide: t("manager.owners.summary.portalHint", { pending: invites.length, none: sansPortail.length }),
+              aide: t("manager.owners.summary.portalHint", { count: invites.length, none: sansPortail.length }),
             },
             { libelle: t("manager.owners.summary.feeAverage"), valeur: `${(Math.round(commissionMoyenne * 10) / 10).toLocaleString(i18n.language)} %`, aide: t("manager.owners.summary.feeAverageHint") },
             {
@@ -490,7 +490,7 @@ export default function OwnersPage() {
             </button>
           </BarreListe>
           <p aria-live="polite" className="font-mono text-[11px] uppercase tracking-wider text-slate-600">
-            {t(totalPages > 1 ? "manager.liste.shownOnPage" : "manager.liste.shown", { shown: visibles.length, total: owners.length })}
+            {t(totalPages > 1 ? "manager.liste.shownOnPage" : "manager.liste.shown", { count: visibles.length, total: owners.length })}
           </p>
         </>
       )}

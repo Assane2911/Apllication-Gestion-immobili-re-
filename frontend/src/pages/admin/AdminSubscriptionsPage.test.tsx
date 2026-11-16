@@ -274,7 +274,7 @@ describe("AdminSubscriptionsPage", () => {
     });
     rendre();
 
-    expect(await screen.findByText("3 virement(s) en attente")).toBeInTheDocument();
+    expect(await screen.findByText("3 virements en attente")).toBeInTheDocument();
     expect(screen.getByText("À encaisser · 68 €")).toBeInTheDocument();
     expect(screen.getByText(/À encaisser · 15\s?000 FCFA/)).toBeInTheDocument();
   });
@@ -289,8 +289,8 @@ describe("AdminSubscriptionsPage", () => {
     });
     rendre();
 
-    expect(await screen.findByText("depuis 6 jour(s)")).toBeInTheDocument();
-    expect(screen.getByText("depuis 1 jour(s)")).toBeInTheDocument();
+    expect(await screen.findByText("depuis 6 jours")).toBeInTheDocument();
+    expect(screen.getByText("depuis 1 jour")).toBeInTheDocument();
     const liens = screen.getAllByRole("link").map((l) => l.textContent);
     expect(liens).toEqual(["vieux@test.local", "recent@test.local"]);
   });
@@ -342,7 +342,7 @@ describe("AdminSubscriptionsPage — recherche, attente et export", () => {
     await user.type(screen.getByRole("searchbox"), "VIR-NEW");
     expect(screen.getByText("recent@test.local")).toBeInTheDocument();
     expect(screen.queryByText("ancien@test.local")).not.toBeInTheDocument();
-    expect(screen.getByText("1 virement(s) affiché(s) sur 2")).toBeInTheDocument();
+    expect(screen.getByText("1 virement affiché sur 2")).toBeInTheDocument();
 
     await user.clear(screen.getByRole("searchbox"));
     await user.type(screen.getByRole("searchbox"), "introuvable");

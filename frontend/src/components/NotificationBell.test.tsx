@@ -248,7 +248,7 @@ describe("NotificationBell", () => {
       renderBell();
       await waitFor(() => expect(screen.getByText("1")).toBeInTheDocument());
       fireEvent.click(bouton());
-      expect(screen.getByText("2 élément(s) nécessitant votre attention")).toBeInTheDocument();
+      expect(screen.getByText("2 éléments nécessitant votre attention")).toBeInTheDocument();
 
       fireEvent.click(screen.getByText("Tout marquer comme lu"));
 
@@ -256,7 +256,7 @@ describe("NotificationBell", () => {
       expect(screen.queryByText("Loyer en retard A")).not.toBeInTheDocument();
       expect(screen.getByText("Tout est à jour")).toBeInTheDocument();
       expect(screen.queryByText("Tout marquer comme lu")).not.toBeInTheDocument();
-      expect(screen.getByText("Afficher les 2 élément(s) lu(s)")).toBeInTheDocument();
+      expect(screen.getByText("Afficher les 2 éléments lus")).toBeInTheDocument();
     });
 
     it("permet de réafficher les éléments lus (atténués), puis de les masquer de nouveau", async () => {
@@ -266,7 +266,7 @@ describe("NotificationBell", () => {
       fireEvent.click(bouton());
       fireEvent.click(screen.getByText("Tout marquer comme lu"));
 
-      fireEvent.click(screen.getByText("Afficher les 2 élément(s) lu(s)"));
+      fireEvent.click(screen.getByText("Afficher les 2 éléments lus"));
       expect(screen.getByText("Loyer en retard A").closest("li")!.className).toContain("opacity-60");
       expect(screen.getByText("Loyer en retard B")).toBeInTheDocument();
 
@@ -366,7 +366,7 @@ describe("NotificationBell", () => {
       renderBell();
       await waitFor(() => expect(mockedApi.get).toHaveBeenCalled());
       fireEvent.click(bouton());
-      fireEvent.click(screen.getByText("Afficher les 1 élément(s) lu(s)"));
+      fireEvent.click(screen.getByText("Afficher les 1 élément lu"));
       expect(screen.getByText("Déjà lu")).toBeInTheDocument();
 
       fireEvent.click(bouton());
@@ -586,6 +586,6 @@ describe("NotificationBell — liste plafonnée par le serveur", () => {
     fireEvent.click(bouton());
 
     expect(mockedApi.post).toHaveBeenCalledWith("/notifications/seen", { keys: ["a|1"] });
-    expect(screen.queryByText(/autre\(s\) plus ancien/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/autres plus ancien/)).not.toBeInTheDocument();
   });
 });

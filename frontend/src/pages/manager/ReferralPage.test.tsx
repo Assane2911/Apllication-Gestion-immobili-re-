@@ -37,7 +37,7 @@ describe("ReferralPage (manager)", () => {
     mockedApi.get.mockResolvedValueOnce({ data: referralInfo({ rewardedReferrals: 3, maxRewardedReferrals: 10 }) });
     renderPage();
 
-    expect(await screen.findByText("Plafond : 3 filleul(s) récompensé(s) sur 10.")).toBeInTheDocument();
+    expect(await screen.findByText("Plafond : 3 filleuls récompensés sur 10.")).toBeInTheDocument();
   });
 
   it("prévient quand le plafond est atteint", async () => {
@@ -45,7 +45,7 @@ describe("ReferralPage (manager)", () => {
     renderPage();
 
     expect(await screen.findByText(/Plafond atteint/)).toBeInTheDocument();
-    expect(screen.queryByText(/filleul\(s\) récompensé\(s\) sur/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/filleuls récompensés sur/)).not.toBeInTheDocument();
   });
 
   it("affiche le code de parrainage, le lien et le nombre de filleuls", async () => {
@@ -142,7 +142,7 @@ describe("ReferralPage — message prêt à envoyer et places restantes", () => 
   it("annonce les places restantes sous le plafond, et se tait une fois le plafond atteint", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: referralInfo({ rewardedReferrals: 3, maxRewardedReferrals: 10, rewardDays: 15 }) });
     const { unmount } = renderPage();
-    expect(await screen.findByText("Encore 7 filleul(s) peuvent prolonger votre accès, soit jusqu'à 105 jours supplémentaires.")).toBeInTheDocument();
+    expect(await screen.findByText("Encore 7 filleuls peuvent prolonger votre accès, soit jusqu'à 105 jours supplémentaires.")).toBeInTheDocument();
     unmount();
 
     mockedApi.get.mockResolvedValueOnce({ data: referralInfo({ rewardedReferrals: 10, maxRewardedReferrals: 10 }) });

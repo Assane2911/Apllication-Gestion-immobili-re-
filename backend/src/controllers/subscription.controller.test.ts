@@ -875,6 +875,8 @@ describe("POST /api/subscription/cancel", () => {
 
       expect(res.status).toBe(200);
       expect(res.body.message).toContain("renouvellement automatique de votre abonnement a été annulé");
+      // Le site écrit lui-même la confirmation dans la langue de l'interface : il lui faut savoir quel cas s'applique.
+      expect(res.body.autoRenewCancelled).toBe(true);
       expect(fetchMock).toHaveBeenCalledTimes(1);
       expect(fetchMock.mock.calls[0][0]).toBe("https://api.stripe.com/v1/subscriptions/sub_test_reel");
       const corpsEnvoye = fetchMock.mock.calls[0][1].body as string;
@@ -891,6 +893,7 @@ describe("POST /api/subscription/cancel", () => {
       expect(res.status).toBe(200);
       expect(res.body.message).toContain("ne sera pas reconduit");
       expect(res.body.message).not.toContain("renouvellement automatique");
+      expect(res.body.autoRenewCancelled).toBe(false);
       expect(fetchMock).not.toHaveBeenCalled();
     });
 

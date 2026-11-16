@@ -498,7 +498,7 @@ describe("TenantsPage — cibles des actions des cartes (téléphone)", () => {
       expect(within(synthese).getByText("1 / 4")).toBeInTheDocument(); // portail
       expect(within(synthese).getByText("2 / 4")).toBeInTheDocument(); // pièces d'identité
       expect(within(synthese).getByText("3 sans accès")).toBeInTheDocument();
-      expect(within(synthese).getByText("2 manquante(s)")).toBeInTheDocument();
+      expect(within(synthese).getByText("2 manquantes")).toBeInTheDocument();
       expect(within(synthese).getByText("retard de paiement ou risque")).toBeInTheDocument();
     });
 

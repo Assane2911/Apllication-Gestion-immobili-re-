@@ -133,7 +133,7 @@ describe("VitrinePage (vitrine publique)", () => {
     mockedApi.get.mockResolvedValueOnce({ data: { countries: ["SN"] } });
     renderPage();
 
-    expect(await screen.findByText("27 annonce(s)")).toBeInTheDocument();
+    expect(await screen.findByText("27 annonces")).toBeInTheDocument();
   });
 
   it("filtre par type d'un clic sur un onglet, et revient à tous les types", async () => {

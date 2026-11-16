@@ -36,7 +36,7 @@ describe("OwnerAgendaPage", () => {
     } as never);
     afficher();
 
-    expect(await screen.findByText("3 échéance(s)")).toBeInTheDocument();
+    expect(await screen.findByText("3 échéances")).toBeInTheDocument();
     expect(mockedApi.get).toHaveBeenCalledWith("/owners/mine/agenda", expect.objectContaining({ params: { days: 180 } }));
 
     const retard = screen.getByRole("region", { name: /En retard/ });
@@ -49,7 +49,7 @@ describe("OwnerAgendaPage", () => {
   it("n'affiche aucun lien d'action : la page informe, l'agence traite", async () => {
     mockedApi.get.mockResolvedValue({ data: [evt("l1", "LEASE_END", "2026-08-31T00:00:00.000Z")] } as never);
     afficher();
-    await screen.findByText("1 échéance(s)");
+    await screen.findByText("1 échéance");
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 

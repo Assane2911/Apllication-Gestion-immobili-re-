@@ -145,7 +145,7 @@ describe("LeaseNoticeModal — congé en cours", () => {
   it("signale les factures déjà émises après la sortie, sans les annuler", async () => {
     mockedApi.get.mockResolvedValueOnce(enCours({ facturesApresSortie: 2 }));
     afficher();
-    expect(await screen.findByRole("note")).toHaveTextContent("2 facture(s) déjà émise(s)");
+    expect(await screen.findByRole("note")).toHaveTextContent("2 factures déjà émises");
   });
 
   it("propose de joindre le scan quand aucun document n'est encore attaché, et le lien quand il l'est", async () => {

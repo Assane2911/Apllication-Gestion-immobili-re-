@@ -347,7 +347,7 @@ export default function InspectionsPage() {
             </div>
             {editForm.rooms.length > 0 && (
               <p className="mt-3 flex flex-wrap items-center gap-3 font-mono text-[11px] text-slate-700">
-                {t("manager.inspections.quickRooms.summary", { good: pieces.bon, fair: pieces.moyen, poor: pieces.mauvais })}
+                {t("manager.inspections.quickRooms.summary", { good: pieces.bon, count: pieces.moyen, poor: pieces.mauvais })}
                 <button type="button" onClick={allRoomsGood} className="cursor-pointer border-b border-ink-900/40 font-semibold text-ink-900 hover:border-orange-700 hover:text-orange-700">
                   {t("manager.inspections.quickRooms.allGood")}
                 </button>
@@ -469,7 +469,7 @@ export default function InspectionsPage() {
             onFiltre={(cle) => setFiltre(cle as Filtre)}
           />
           <p aria-live="polite" className="font-mono text-[11px] uppercase tracking-wider text-slate-600">
-            {t(totalPages > 1 ? "manager.liste.shownOnPage" : "manager.liste.shown", { shown: visibles.length, total: inspections.length })}
+            {t(totalPages > 1 ? "manager.liste.shownOnPage" : "manager.liste.shown", { count: visibles.length, total: inspections.length })}
           </p>
         </>
       )}

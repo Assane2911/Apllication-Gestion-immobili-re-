@@ -271,7 +271,7 @@ describe("TenantDashboardPage", () => {
     mockedApi.get.mockResolvedValueOnce(emptyInspections());
     renderPage();
 
-    await waitFor(() => expect(screen.getByText(/mensualité\(s\) de loyer en attente/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/mensualités? de loyer en attente/)).toBeInTheDocument());
     expect(screen.getByRole("link", { name: "Régler maintenant →" })).toHaveAttribute("href", "/portail/paiements");
   });
 
@@ -350,7 +350,7 @@ describe("TenantDashboardPage", () => {
       const bail = await screen.findByRole("link", { name: "Bail à signer · Studio Centre-ville" });
       expect(bail).toHaveAttribute("href", "#bail-c1");
       expect(screen.getByRole("link", { name: "État des lieux à signer · Studio Centre-ville" })).toHaveAttribute("href", "#bail-c1");
-      expect(screen.getByRole("link", { name: "2 loyer(s) à régler" })).toHaveAttribute("href", "/portail/paiements");
+      expect(screen.getByRole("link", { name: "2 loyers à régler" })).toHaveAttribute("href", "/portail/paiements");
     });
 
     it("annonce que tout est à jour quand rien n'attend (bail signé, loyers réglés)", async () => {
@@ -378,7 +378,7 @@ describe("TenantDashboardPage", () => {
       const barre = await screen.findByRole("progressbar", { name: "Avancement du bail" });
       expect(barre).toHaveAttribute("aria-valuenow", "58");
       expect(screen.getByText("58 % écoulé")).toBeInTheDocument();
-      expect(screen.getByText("152 jour(s) restant(s)")).toBeInTheDocument();
+      expect(screen.getByText("152 jours restants")).toBeInTheDocument();
     });
 
     it("dit qu'un bail est terminé, ou qu'il n'a pas encore commencé", async () => {
@@ -391,20 +391,20 @@ describe("TenantDashboardPage", () => {
       mockedApi.get.mockResolvedValueOnce({ data: [contract({ startDate: "2026-09-01T00:00:00.000Z", endDate: "2027-08-31T00:00:00.000Z" })] });
       mockedApi.get.mockResolvedValueOnce(emptyInspections());
       renderPage();
-      expect(await screen.findByText("Commence dans 31 jour(s)")).toBeInTheDocument();
+      expect(await screen.findByText("Commence dans 31 jours")).toBeInTheDocument();
     });
 
     it("annonce la prochaine échéance et son délai, ou le retard", async () => {
       mockedApi.get.mockResolvedValueOnce({ data: [contract({ invoices: [invoice({ dueDate: "2026-08-06T00:00:00.000Z", status: "PENDING" })] })] });
       mockedApi.get.mockResolvedValueOnce(emptyInspections());
       const { unmount } = renderPage();
-      expect(await screen.findByText("dans 5 jour(s)")).toBeInTheDocument();
+      expect(await screen.findByText("dans 5 jours")).toBeInTheDocument();
       unmount();
 
       mockedApi.get.mockResolvedValueOnce({ data: [contract({ invoices: [invoice({ dueDate: "2026-07-27T00:00:00.000Z", status: "LATE" })] })] });
       mockedApi.get.mockResolvedValueOnce(emptyInspections());
       renderPage();
-      expect(await screen.findByText("en retard de 5 jour(s)")).toBeInTheDocument();
+      expect(await screen.findByText("en retard de 5 jours")).toBeInTheDocument();
     });
 
     it("annonce le reste à payer d'un loyer réglé en partie, pas son montant complet", async () => {
@@ -438,7 +438,7 @@ describe("TenantDashboardPage", () => {
       mockedApi.get.mockResolvedValueOnce(emptyInspections());
       renderPage();
 
-      expect(await screen.findByText("2 loyer(s) réglé(s) sur 3")).toBeInTheDocument();
+      expect(await screen.findByText("2 loyers réglés sur 3")).toBeInTheDocument();
     });
 
     it("dit « aucun loyer en attente » quand tout est réglé", async () => {

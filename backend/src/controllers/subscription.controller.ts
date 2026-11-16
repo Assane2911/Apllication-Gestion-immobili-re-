@@ -559,6 +559,8 @@ export const cancelSubscription = asyncHandler(async (req: Request, res: Respons
     message: compteAvant.stripeSubscriptionId
       ? "Le renouvellement automatique de votre abonnement a été annulé. Votre accès reste actif jusqu'au terme de la période déjà payée."
       : "Votre abonnement ne sera pas reconduit. Votre accès reste actif jusqu'au terme de la période déjà payée.",
+    // Pour que le site écrive lui-même la confirmation, dans la langue de l'interface (le texte ci-dessus est en français).
+    autoRenewCancelled: Boolean(compteAvant.stripeSubscriptionId),
     subscription: computeSubscriptionInfo(updatedUser),
   });
 });

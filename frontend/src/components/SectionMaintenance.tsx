@@ -70,8 +70,8 @@ export default function SectionMaintenance({ numero }: { numero: string }) {
       setInfo(
         [
           t("admin.settings.maintenance.scheduled"),
-          annonce && t("admin.settings.maintenance.notify.sent", { envoyes: annonce.envoyes, destinataires: annonce.destinataires }),
-          annonce && annonce.echecs > 0 && t("admin.settings.maintenance.notify.failed", { echecs: annonce.echecs }),
+          annonce && t("admin.settings.maintenance.notify.sent", { count: annonce.envoyes, destinataires: annonce.destinataires }),
+          annonce && annonce.echecs > 0 && t("admin.settings.maintenance.notify.failed", { count: annonce.echecs }),
         ]
           .filter(Boolean)
           .join(" ")

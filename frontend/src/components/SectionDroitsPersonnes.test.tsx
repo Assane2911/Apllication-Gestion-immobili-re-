@@ -77,7 +77,7 @@ describe("SectionDroitsPersonnes", () => {
     await userEvent.click(bouton(/Anonymiser ses données/));
 
     await waitFor(() => expect(mocked.post).toHaveBeenCalledWith("/personnes/anonymiser", { email: "awa@example.com" }));
-    expect(await screen.findByRole("status")).toHaveTextContent("2 garant(s) et 1 demande(s) de prospect anonymisés");
+    expect(await screen.findByRole("status")).toHaveTextContent("garants : 2, demandes de prospect : 1");
   });
 
   it("n'anonymise pas quand on refuse la confirmation", async () => {

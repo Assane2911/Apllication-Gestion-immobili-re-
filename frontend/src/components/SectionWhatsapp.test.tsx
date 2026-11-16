@@ -38,7 +38,7 @@ describe("SectionWhatsapp", () => {
     mocked.get.mockResolvedValue({ data: usage() });
     render(<SectionWhatsapp managerId="mgr-9" numero="05" />);
 
-    expect(await screen.findByText(/Ce mois-ci : 100 message\(s\)/)).toBeInTheDocument();
+    expect(await screen.findByText(/Ce mois-ci : 100 messages/)).toBeInTheDocument();
     expect(mocked.get).toHaveBeenCalledWith("/admin/managers/mgr-9/whatsapp-usage");
     expect(screen.getByText("Inclus dans sa formule")).toBeInTheDocument();
 

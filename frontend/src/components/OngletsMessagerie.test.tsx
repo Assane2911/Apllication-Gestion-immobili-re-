@@ -16,8 +16,8 @@ const afficher = (valeur = { count: 0, tenants: 0, owners: 0 }) =>
 describe("OngletsMessagerie — messages non lus", () => {
   it("montre sur chaque onglet les messages non lus de ce type de discussion", () => {
     afficher({ count: 5, tenants: 2, owners: 3 });
-    expect(screen.getByRole("link", { name: /Locataires/ })).toHaveAccessibleName("Locataires, 2 message(s) non lu(s)");
-    expect(screen.getByRole("link", { name: /Propriétaires/ })).toHaveAccessibleName("Propriétaires, 3 message(s) non lu(s)");
+    expect(screen.getByRole("link", { name: /Locataires/ })).toHaveAccessibleName("Locataires, 2 messages non lus");
+    expect(screen.getByRole("link", { name: /Propriétaires/ })).toHaveAccessibleName("Propriétaires, 3 messages non lus");
   });
 
   it("n'ajoute rien sur un onglet sans message non lu", () => {

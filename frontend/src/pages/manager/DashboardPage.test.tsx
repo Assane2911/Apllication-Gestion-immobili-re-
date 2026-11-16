@@ -120,12 +120,12 @@ describe("DashboardPage", () => {
 
       const zone = await screen.findByRole("region", { name: "À traiter" });
       const lignes = within(zone).getAllByRole("listitem");
-      expect(lignes[0]).toHaveTextContent("3 facture(s) en retard");
+      expect(lignes[0]).toHaveTextContent("3 factures en retard");
       expect(within(lignes[0]).getByRole("link", { name: "Relancer" })).toHaveAttribute("href", "/invoices");
-      expect(lignes[1]).toHaveTextContent("2 incident(s) ouvert(s)");
-      expect(within(zone).getByText("2 bien(s) à louer")).toBeInTheDocument();
+      expect(lignes[1]).toHaveTextContent("2 incidents ouverts");
+      expect(within(zone).getByText("2 biens à louer")).toBeInTheDocument();
       expect(within(zone).getByRole("link", { name: "Publier une annonce" })).toHaveAttribute("href", "/annonces");
-      expect(within(zone).getByText("1 bien(s) en travaux")).toBeInTheDocument();
+      expect(within(zone).getByText("1 bien en travaux")).toBeInTheDocument();
     });
 
     it("reprend les échéances de l'agenda : les dépassées en urgence, celles de la semaine en information, toutes vers l'agenda", async () => {
@@ -136,10 +136,10 @@ describe("DashboardPage", () => {
 
       const zone = await screen.findByRole("region", { name: "À traiter" });
       const lignes = within(zone).getAllByRole("listitem");
-      expect(lignes[0]).toHaveTextContent("2 échéance(s) dépassée(s) (assurances, documents, baux…)");
+      expect(lignes[0]).toHaveTextContent("2 échéances dépassées (assurances, documents, baux…)");
       expect(lignes[0]).toHaveTextContent("Urgent");
       expect(within(lignes[0]).getByRole("link", { name: "Ouvrir l'agenda" })).toHaveAttribute("href", "/agenda");
-      const semaine = within(zone).getByText("5 échéance(s) dans les 7 jours").closest("li") as HTMLElement;
+      const semaine = within(zone).getByText("5 échéances dans les 7 jours").closest("li") as HTMLElement;
       expect(within(semaine).getByRole("link", { name: "Voir l'agenda" })).toHaveAttribute("href", "/agenda");
       expect(semaine).not.toHaveTextContent("Urgent");
     });

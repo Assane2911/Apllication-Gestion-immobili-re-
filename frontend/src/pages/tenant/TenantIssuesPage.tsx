@@ -300,7 +300,7 @@ export default function TenantIssuesPage() {
                 {
                   libelle: t("tenant.issues.summary.oldest"),
                   valeur: situation.enCours > 0 ? `${situation.plusAncien} j` : "—",
-                  aide: situation.enCours > 0 ? t("tenant.issues.summary.oldestHint", { days: situation.plusAncien }) : t("tenant.issues.summary.oldestNone"),
+                  aide: situation.enCours > 0 ? t("tenant.issues.summary.oldestHint", { count: situation.plusAncien }) : t("tenant.issues.summary.oldestNone"),
                 },
               ]}
             />

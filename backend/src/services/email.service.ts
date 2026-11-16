@@ -1048,7 +1048,7 @@ export function formalNoticeEmail(params: {
           <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center;">
             <span style="font-size: 11px; color: #7f1d1d; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Total à régler</span><br>
             <span style="font-size: 26px; font-weight: 800; color: #0f172a;">${montant}</span><br>
-            <span style="font-size: 12px; color: #64748b;">sous ${params.deadlineDays} jour(s) à compter de la réception de ce courrier</span>
+            <span style="font-size: 12px; color: #64748b;">sous ${params.deadlineDays} jour${params.deadlineDays > 1 ? "s" : ""} à compter de la réception de ce courrier</span>
           </div>
           <p style="font-size: 13px; color: #475569;">Vous pouvez régler depuis votre espace locataire. En cas de difficulté, contactez votre agence sans attendre ; si vous avez déjà payé, ne tenez pas compte de ce message.</p>
         </div>
@@ -1117,7 +1117,7 @@ export function guarantorFormalNoticeEmail(params: {
           En votre qualité de garant de <strong>${escapeHtml(params.tenantName)}</strong> pour le logement
           « ${escapeHtml(params.propertyTitle)} », nous vous adressons copie de la mise en demeure de payer
           qui lui a été notifiée : <strong>${escapeHtml(formaterMontant(params.totalDue, params.currency))}</strong>
-          restent dus, à régler sous ${params.deadlineDays} jour(s). Le courrier est joint à cet email.
+          restent dus, à régler sous ${params.deadlineDays} jour${params.deadlineDays > 1 ? "s" : ""}. Le courrier est joint à cet email.
         </p>
         ${rappelPlafondGarant(params.maxAmount, params.currency)}
         <p style="font-size: 13px; color: #64748b;">${escapeHtml(params.agencyName)}</p>

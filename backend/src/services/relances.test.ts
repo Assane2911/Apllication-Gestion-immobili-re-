@@ -60,7 +60,7 @@ describe("relances graduées", () => {
     expect(await niveauDe(f.id)).toBe(1);
     expect(envoi).toHaveBeenCalledTimes(1);
     expect(envoi.mock.calls[0][1]).toContain("Rappel : loyer non réglé");
-    expect(envoi.mock.calls[0][2]).toContain("dépassée de 7 jour(s)");
+    expect(envoi.mock.calls[0][2]).toContain("dépassée de 7 jours");
 
     await runOverdueReminders(); // même jour : rien de plus
     aLaDate(2026, 9, 19); // 14 jours : toujours niveau 1

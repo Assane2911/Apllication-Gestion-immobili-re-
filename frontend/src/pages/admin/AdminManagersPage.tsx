@@ -300,7 +300,7 @@ export default function AdminManagersPage() {
                             {/* Les biens du compte face à ce que sa formule inclut. */}
                             <div
                               role="meter"
-                              aria-label={t("admin.managers.capacity", { used: m.propertiesCount, max: plafond })}
+                              aria-label={t("admin.managers.capacity", { count: m.propertiesCount, max: plafond })}
                               aria-valuemin={0}
                               aria-valuemax={plafond}
                               aria-valuenow={Math.min(m.propertiesCount, plafond)}
