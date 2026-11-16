@@ -1106,6 +1106,8 @@ export async function initDb() {
     // INDEX juste après ("column manager_id does not exist") puis toute
     // requête applicative qui s'appuie sur ces colonnes.
     await ajouterColonne("platform_subscriptions", "currency", sql`ALTER TABLE platform_subscriptions ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EUR'`);
+    await ajouterColonne("users", "ending_notice_for", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ending_notice_for TIMESTAMP`);
+    await ajouterColonne("users", "ended_notice_for", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ended_notice_for TIMESTAMP`);
     await ajouterColonne("users", "subscription_status", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_status TEXT NOT NULL DEFAULT 'TRIAL'`);
     await ajouterColonne("users", "subscription_plan", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_plan TEXT NOT NULL DEFAULT 'STARTER'`);
     await ajouterColonne("users", "trial_ends_at", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMP`);

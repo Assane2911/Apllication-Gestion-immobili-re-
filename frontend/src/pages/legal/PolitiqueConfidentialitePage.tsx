@@ -97,6 +97,7 @@ export default function PolitiqueConfidentialitePage() {
             "Exécution du contrat : fourniture du Service, gestion des comptes, des biens, contrats, paiements et incidents (base légale : exécution contractuelle).",
             "Émission des quittances de loyer et documents contractuels, à des fins de conformité comptable et fiscale (base légale : obligation légale et intérêt légitime).",
             "Envoi de rappels automatiques de paiement et de notifications relatives aux biens gérés (base légale : exécution contractuelle et intérêt légitime).",
+            "Envoi au Gestionnaire d'e-mails de service sur son accès : fin de la période d'essai gratuit, fin ou échéance de l'abonnement (une fois quelques jours avant, une fois à l'échéance). Ce ne sont pas des messages commerciaux (base légale : exécution contractuelle).",
             "Sécurité du Service et prévention de la fraude (base légale : intérêt légitime).",
             "Support utilisateur et réponse aux demandes (base légale : intérêt légitime / consentement).",
             "Amélioration du Service (statistiques d'usage agrégées) (base légale : intérêt légitime).",

@@ -17,6 +17,7 @@ import {
   sendEmail,
 } from "./email.service";
 import { appliquerRevisionsDues } from "./rentRevision.service";
+import { runSubscriptionExpiryNotices } from "./finAcces.service";
 import { envoyerCopieAuxColocataires, envoyerCopieWhatsappAuxColocataires } from "./colocation.service";
 import { FactureExistantePourGeneration, generateInvoicesForContract, markOverdueInvoices } from "./invoice.service";
 import {
@@ -1165,6 +1166,13 @@ export function scheduleContractEndingReminders() {
   console.log(`[reminder] 📄 Job rappel d'expiration des documents planifié avec "${documentReminderCron}"`);
   cron.schedule(documentReminderCron, () => {
     runStoredDocumentExpiryReminders().catch((err) => console.error("[reminder] erreur rappel documents:", err));
+  });
+
+  // Fin d'essai gratuit et fin d'abonnement (voir runSubscriptionExpiryNotices).
+  const finAccesCron = "40 8 * * *";
+  console.log(`[reminder] ⏳ Job e-mails de fin d'essai et d'abonnement planifié avec "${finAccesCron}"`);
+  cron.schedule(finAccesCron, () => {
+    runSubscriptionExpiryNotices().catch((err) => console.error("[reminder] erreur e-mails de fin d'accès:", err));
   });
 }
 

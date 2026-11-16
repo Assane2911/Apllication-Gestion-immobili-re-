@@ -107,6 +107,11 @@ export const users = pgTable("users", {
   // souscription, évite de recréer un Customer Stripe) ; stripeSubscriptionId
   // est effacé quand Stripe confirme la fin de l'abonnement (webhook
   // customer.subscription.deleted).
+  // E-mails de fin d'essai / d'abonnement (voir runSubscriptionExpiryNotices, reminder.service.ts) : chaque colonne garde la date
+  // d'échéance POUR laquelle l'e-mail est déjà parti. Une échéance prolongée (paiement, parrainage) est une autre date : le cycle
+  // repart, sans jamais renvoyer deux fois le même message.
+  endingNoticeFor: timestamp("ending_notice_for", { mode: "date" }),
+  endedNoticeFor: timestamp("ended_notice_for", { mode: "date" }),
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id").unique(),
   // Réinitialisation de mot de passe : on ne stocke jamais le token en clair,
