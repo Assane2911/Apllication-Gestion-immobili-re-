@@ -598,6 +598,44 @@ export function referralRewardEmail(params: { days: number; newEndDate: Date; fr
   };
 }
 
+/**
+ * E-mail de fin d'essai ou d'abonnement au gestionnaire : « bientôt » (quelques jours avant l'échéance) ou « terminé » (juste après,
+ * quand l'accès à la gestion s'est arrêté). Le lien mène à la page de l'abonnement. Voir runSubscriptionExpiryNotices
+ * (reminder.service.ts).
+ */
+export function accessEndEmail(params: {
+  cas: "essaiBientot" | "essaiTermine" | "abonnementBientot" | "abonnementTermine";
+  endDate: Date;
+  daysLeft: number;
+  frontendUrl: string;
+  langue?: Langue;
+}) {
+  const { cas, endDate, daysLeft, frontendUrl, langue = LANGUE_PAR_DEFAUT } = params;
+  const t = TEXTES_SUITE[langue].finAcces[cas];
+  const date = escapeHtml(formaterDate(endDate, langue));
+  const delai = TEXTES_SUITE[langue].documents.delai(daysLeft);
+
+  return {
+    subject: t.sujet(daysLeft),
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
+        <h2 style="color:#0f172a;">${t.titre}</h2>
+        <p>${TEXTES_COMPTE[langue].bonjour}</p>
+        <p>${t.intro(date, delai)}</p>
+        <p>${t.suite}</p>
+        <div style="text-align:center; margin: 24px 0 12px 0;">
+          <a href="${frontendUrl}/subscription" style="background:#2563eb; color:#ffffff; padding:10px 22px; text-decoration:none; font-weight:bold; font-size:13px; border-radius:8px; display:inline-block;">
+            ${t.bouton}
+          </a>
+        </div>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">
+          ${TEXTES_COMPTE[langue].pied}
+        </p>
+      </div>
+    `,
+  };
+}
+
 /** Email envoyé au locataire lorsqu'il reçoit un nouveau message de son agence. */
 export function newMessageFromManagerEmail(params: {
   tenantName: string;

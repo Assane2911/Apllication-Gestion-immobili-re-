@@ -105,7 +105,14 @@ export interface TextesSuite {
     nouvelleEcheance: string;
     suite: string;
     bouton: string;
-  };
+  };  /**
+   * Fin de l'essai gratuit ou de l'abonnement, au gestionnaire : prévenu quelques jours avant (« bientôt »), puis le jour où l'accès
+   * s'arrête (« terminé »). `date` est déjà mise en forme dans sa langue, `delai` est « demain » / « dans 3 jours ».
+   */
+  finAcces: Record<
+    "essaiBientot" | "essaiTermine" | "abonnementBientot" | "abonnementTermine",
+    { sujet: (jours: number) => string; titre: string; intro: (date: string, delai: string) => string; suite: string; bouton: string }
+  >;
 }
 
 const fr: TextesSuite = {
@@ -211,6 +218,36 @@ const fr: TextesSuite = {
     suite: "Continuez à partager votre code de parrainage pour prolonger votre accès à chaque nouveau filleul confirmé.",
     bouton: "Voir mon programme de parrainage →",
   },
+  finAcces: {
+    essaiBientot: {
+      sujet: (j) => `Votre essai gratuit se termine ${j <= 1 ? "demain" : `dans ${j} jours`}`,
+      titre: "Votre essai gratuit touche à sa fin",
+      intro: (date, delai) => `Votre période d'essai d'ImmoPlatform Pro se termine le <strong>${date}</strong> (${delai}). Jusqu'à cette date, tout reste accessible.`,
+      suite: "Pour continuer sans interruption à gérer vos biens, vos quittances et vos relances, choisissez une formule : toutes vos données sont conservées telles quelles.",
+      bouton: "Choisir une formule →",
+    },
+    essaiTermine: {
+      sujet: () => "Votre essai gratuit est terminé",
+      titre: "Votre essai gratuit est terminé",
+      intro: (date) => `Votre période d'essai s'est terminée le <strong>${date}</strong> : l'accès à la gestion est suspendu.`,
+      suite: "Rien n'est perdu : vos biens, locataires et documents sont conservés. Choisissez une formule et vous retrouvez tout immédiatement.",
+      bouton: "Choisir une formule →",
+    },
+    abonnementBientot: {
+      sujet: (j) => `Votre abonnement se termine ${j <= 1 ? "demain" : `dans ${j} jours`}`,
+      titre: "Votre abonnement arrive à échéance",
+      intro: (date, delai) => `Votre abonnement ImmoPlatform Pro se termine le <strong>${date}</strong> (${delai}).`,
+      suite: "Renouvelez-le avant cette date pour ne pas interrompre votre accès à la gestion de vos biens.",
+      bouton: "Renouveler mon abonnement →",
+    },
+    abonnementTermine: {
+      sujet: () => "Votre abonnement est arrivé à échéance",
+      titre: "Votre abonnement est arrivé à échéance",
+      intro: (date) => `Votre abonnement s'est terminé le <strong>${date}</strong> : l'accès à la gestion est suspendu.`,
+      suite: "Vos biens, locataires et documents sont conservés. Renouvelez votre abonnement et vous retrouvez tout immédiatement.",
+      bouton: "Renouveler mon abonnement →",
+    },
+  },
 };
 
 const en: TextesSuite = {
@@ -313,6 +350,36 @@ const en: TextesSuite = {
     nouvelleEcheance: "New expiry date",
     suite: "Keep sharing your referral code to extend your access with every new confirmed referral.",
     bouton: "View my referral program →",
+  },
+  finAcces: {
+    essaiBientot: {
+      sujet: (j) => `Your free trial ends ${j <= 1 ? "tomorrow" : `in ${j} days`}`,
+      titre: "Your free trial is about to end",
+      intro: (date, delai) => `Your ImmoPlatform Pro trial ends on <strong>${date}</strong> (${delai}). Until then, everything stays available.`,
+      suite: "To keep managing your properties, receipts and reminders without interruption, choose a plan: all your data is kept exactly as it is.",
+      bouton: "Choose a plan →",
+    },
+    essaiTermine: {
+      sujet: () => "Your free trial has ended",
+      titre: "Your free trial has ended",
+      intro: (date) => `Your trial ended on <strong>${date}</strong>: access to management is suspended.`,
+      suite: "Nothing is lost: your properties, tenants and documents are kept. Choose a plan and everything is back right away.",
+      bouton: "Choose a plan →",
+    },
+    abonnementBientot: {
+      sujet: (j) => `Your subscription ends ${j <= 1 ? "tomorrow" : `in ${j} days`}`,
+      titre: "Your subscription is about to expire",
+      intro: (date, delai) => `Your ImmoPlatform Pro subscription ends on <strong>${date}</strong> (${delai}).`,
+      suite: "Renew it before that date so your access to property management is not interrupted.",
+      bouton: "Renew my subscription →",
+    },
+    abonnementTermine: {
+      sujet: () => "Your subscription has expired",
+      titre: "Your subscription has expired",
+      intro: (date) => `Your subscription ended on <strong>${date}</strong>: access to management is suspended.`,
+      suite: "Your properties, tenants and documents are kept. Renew your subscription and everything is back right away.",
+      bouton: "Renew my subscription →",
+    },
   },
 };
 
@@ -417,6 +484,36 @@ const es: TextesSuite = {
     suite: "Sigue compartiendo tu código de recomendación para prolongar tu acceso con cada nuevo referido confirmado.",
     bouton: "Ver mi programa de recomendación →",
   },
+  finAcces: {
+    essaiBientot: {
+      sujet: (j) => `Tu prueba gratuita termina ${j <= 1 ? "mañana" : `dentro de ${j} días`}`,
+      titre: "Tu prueba gratuita está a punto de terminar",
+      intro: (date, delai) => `Tu período de prueba de ImmoPlatform Pro termina el <strong>${date}</strong> (${delai}). Hasta esa fecha, todo sigue disponible.`,
+      suite: "Para seguir gestionando tus inmuebles, recibos y recordatorios sin interrupción, elige un plan: todos tus datos se conservan tal cual.",
+      bouton: "Elegir un plan →",
+    },
+    essaiTermine: {
+      sujet: () => "Tu prueba gratuita ha terminado",
+      titre: "Tu prueba gratuita ha terminado",
+      intro: (date) => `Tu período de prueba terminó el <strong>${date}</strong>: el acceso a la gestión está suspendido.`,
+      suite: "No se pierde nada: tus inmuebles, inquilinos y documentos se conservan. Elige un plan y lo recuperas todo al instante.",
+      bouton: "Elegir un plan →",
+    },
+    abonnementBientot: {
+      sujet: (j) => `Tu suscripción termina ${j <= 1 ? "mañana" : `dentro de ${j} días`}`,
+      titre: "Tu suscripción está a punto de vencer",
+      intro: (date, delai) => `Tu suscripción a ImmoPlatform Pro termina el <strong>${date}</strong> (${delai}).`,
+      suite: "Renuévala antes de esa fecha para no interrumpir tu acceso a la gestión de tus inmuebles.",
+      bouton: "Renovar mi suscripción →",
+    },
+    abonnementTermine: {
+      sujet: () => "Tu suscripción ha vencido",
+      titre: "Tu suscripción ha vencido",
+      intro: (date) => `Tu suscripción terminó el <strong>${date}</strong>: el acceso a la gestión está suspendido.`,
+      suite: "Tus inmuebles, inquilinos y documentos se conservan. Renueva tu suscripción y lo recuperas todo al instante.",
+      bouton: "Renovar mi suscripción →",
+    },
+  },
 };
 
 const pt: TextesSuite = {
@@ -519,6 +616,36 @@ const pt: TextesSuite = {
     nouvelleEcheance: "Nova data de vencimento",
     suite: "Continue compartilhando o seu código de indicação para prolongar o seu acesso a cada nova indicação confirmada.",
     bouton: "Ver meu programa de indicação →",
+  },
+  finAcces: {
+    essaiBientot: {
+      sujet: (j) => `O seu período de teste gratuito termina ${j <= 1 ? "amanhã" : `em ${j} dias`}`,
+      titre: "O seu período de teste gratuito está a terminar",
+      intro: (date, delai) => `O seu período de teste do ImmoPlatform Pro termina em <strong>${date}</strong> (${delai}). Até lá, tudo continua disponível.`,
+      suite: "Para continuar a gerir os seus imóveis, recibos e lembretes sem interrupção, escolha um plano: todos os seus dados são mantidos tal como estão.",
+      bouton: "Escolher um plano →",
+    },
+    essaiTermine: {
+      sujet: () => "O seu período de teste gratuito terminou",
+      titre: "O seu período de teste gratuito terminou",
+      intro: (date) => `O seu período de teste terminou em <strong>${date}</strong>: o acesso à gestão está suspenso.`,
+      suite: "Nada se perde: os seus imóveis, inquilinos e documentos são mantidos. Escolha um plano e recupera tudo de imediato.",
+      bouton: "Escolher um plano →",
+    },
+    abonnementBientot: {
+      sujet: (j) => `A sua assinatura termina ${j <= 1 ? "amanhã" : `em ${j} dias`}`,
+      titre: "A sua assinatura está a vencer",
+      intro: (date, delai) => `A sua assinatura do ImmoPlatform Pro termina em <strong>${date}</strong> (${delai}).`,
+      suite: "Renove-a antes dessa data para não interromper o seu acesso à gestão dos seus imóveis.",
+      bouton: "Renovar a minha assinatura →",
+    },
+    abonnementTermine: {
+      sujet: () => "A sua assinatura venceu",
+      titre: "A sua assinatura venceu",
+      intro: (date) => `A sua assinatura terminou em <strong>${date}</strong>: o acesso à gestão está suspenso.`,
+      suite: "Os seus imóveis, inquilinos e documentos são mantidos. Renove a sua assinatura e recupera tudo de imediato.",
+      bouton: "Renovar a minha assinatura →",
+    },
   },
 };
 
