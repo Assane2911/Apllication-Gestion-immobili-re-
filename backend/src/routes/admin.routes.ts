@@ -14,7 +14,7 @@ import { exportAuditCsv, exportManagersCsv } from "../controllers/adminExport.co
 import { getManagerWhatsappUsage, getPlatformWhatsappUsage } from "../controllers/adminWhatsapp.controller";
 import { deleteManager } from "../controllers/adminSuppression.controller";
 import { hideListing, listAdminListings, restoreListing, setListingFeatured } from "../controllers/adminListing.controller";
-import { changeManagerPlan, grantSubscriptionDays, grantUnlimitedAccess, revokeUnlimitedAccess } from "../controllers/adminSubscription.controller";
+import { changeManagerPlan, grantSubscriptionDays, grantUnlimitedAccess, revokeUnlimitedAccess, sendTrialReminder } from "../controllers/adminSubscription.controller";
 import { annulerMaintenance, etatMaintenance, programmerMaintenance } from "../controllers/maintenance.controller";
 import { getPlatformSettings, updatePlatformSettings } from "../controllers/platformSettings.controller";
 import { listSuggestions, updateSuggestion } from "../controllers/suggestion.controller";
@@ -37,6 +37,7 @@ router.get("/managers/:id/whatsapp-usage", getManagerWhatsappUsage);
 router.post("/managers/:id/suspend", suspendManager);
 router.delete("/managers/:id", deleteManager);
 router.post("/managers/:id/reactivate", reactivateManager);
+router.post("/managers/:id/trial-reminder", sendTrialReminder);
 router.post("/managers/:id/subscription/grant-days", grantSubscriptionDays);
 router.post("/managers/:id/subscription/change-plan", changeManagerPlan);
 router.post("/managers/:id/subscription/grant-unlimited", grantUnlimitedAccess);

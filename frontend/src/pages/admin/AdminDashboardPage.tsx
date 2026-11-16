@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { api, apiErrorMessage, liste } from "../../api/client";
+import BoutonRappelEssai from "../../components/BoutonRappelEssai";
 import EmptyState from "../../components/EmptyState";
 import { Skeleton, StatCardSkeleton } from "../../components/Skeleton";
 import StatCard from "../../components/StatCard";
@@ -329,14 +330,8 @@ export default function AdminDashboardPage() {
                           </span>
                         </td>
                         <td className="px-3 py-3 text-right">
-                          {/* Le geste attendu d'un essai qui se termine : écrire au gestionnaire. */}
-                          <a
-                            href={`mailto:${trial.email}`}
-                            aria-label={t("admin.dashboard.trialsEndingSoon.contact", { email: trial.email })}
-                            className="inline-flex size-8 items-center justify-center border border-slate-300 text-ink-900 hover:border-orange-700 hover:text-orange-700"
-                          >
-                            <Mail size={14} aria-hidden="true" />
-                          </a>
+                          {/* Le geste attendu d'un essai qui se termine : relancer le gestionnaire, depuis la plateforme. */}
+                          <BoutonRappelEssai managerId={trial.userId} email={trial.email} />
                         </td>
                       </tr>
                     ))}
