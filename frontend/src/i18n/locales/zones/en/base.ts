@@ -184,6 +184,8 @@ const zone: ZoneBase = {
       TRIAL_REMINDER_NOT_IN_TRIAL: "This manager is not on an ongoing free trial.",
       TRIAL_REMINDER_ALREADY_SENT: "A reminder has already been sent for this end date.",
       TRIAL_REMINDER_SEND_FAILED: "The reminder could not be sent: the email service did not accept the message.",
+      ADMIN_MESSAGE_SEND_FAILED: "The message could not be sent: the email service did not accept it.",
+      ADMIN_MESSAGE_RATE_LIMITED: "Too many messages sent in a short time. Try again in an hour.",
       AGENCY_LOGO_FILE_REQUIRED: "Logo: upload the image file from the agency settings.",
       AGENCY_STAMP_FILE_REQUIRED: "Stamp: upload the image file from the agency settings.",
       NO_FILE_RECEIVED: "No file received.",

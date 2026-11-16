@@ -233,9 +233,9 @@ describe("AdminSuggestionsPage", () => {
       );
       render(<AdminSuggestionsPage />);
 
-      const liens = await screen.findAllByRole("link", { name: "Écrire à l'auteur" });
-      expect(liens).toHaveLength(1);
-      expect(liens[0]).toHaveAttribute("href", "mailto:agence@test.local");
+      const boutons = await screen.findAllByRole("button", { name: "Écrire à l'auteur" });
+      expect(boutons).toHaveLength(1);
+      expect(document.querySelector('a[href^="mailto:"]')).toBeNull();
     });
 
     it("signale une suggestion restée « Nouvelle » depuis plus d'une semaine, et seulement celle-là", async () => {

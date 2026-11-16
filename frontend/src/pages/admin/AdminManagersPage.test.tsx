@@ -240,7 +240,8 @@ describe("AdminManagersPage", () => {
     mockedApi.get.mockResolvedValueOnce(page([ligne()]));
     renderPage();
 
-    expect(await screen.findByRole("link", { name: "Écrire à agence@test.local" })).toHaveAttribute("href", "mailto:agence@test.local");
+    expect(await screen.findByRole("button", { name: "Écrire à agence@test.local" })).toBeInTheDocument();
+    expect(document.querySelector('a[href^="mailto:"]')).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Copier l'adresse agence@test.local" }));
     expect(ecrire).toHaveBeenCalledWith("agence@test.local");
   });

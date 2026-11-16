@@ -182,6 +182,8 @@ const zone = {
       TRIAL_REMINDER_NOT_IN_TRIAL: "Ce gestionnaire n'est pas en essai gratuit en cours.",
       TRIAL_REMINDER_ALREADY_SENT: "Un rappel est déjà parti pour cette échéance.",
       TRIAL_REMINDER_SEND_FAILED: "Le rappel n'a pas pu être envoyé : le service d'e-mail n'a pas accepté le message.",
+      ADMIN_MESSAGE_SEND_FAILED: "Le message n'a pas pu être envoyé : le service d'e-mail ne l'a pas accepté.",
+      ADMIN_MESSAGE_RATE_LIMITED: "Trop de messages envoyés en peu de temps. Réessayez dans une heure.",
       AGENCY_LOGO_FILE_REQUIRED: "Logo : envoyez le fichier image depuis les paramètres de l'agence.",
       AGENCY_STAMP_FILE_REQUIRED: "Tampon : envoyez le fichier image depuis les paramètres de l'agence.",
       NO_FILE_RECEIVED: "Aucun fichier reçu.",

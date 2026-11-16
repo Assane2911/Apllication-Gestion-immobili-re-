@@ -648,6 +648,37 @@ export function accessEndEmail(params: {
   };
 }
 
+const MESSAGE_ADMIN_TEXTES: Record<Langue, { signature: string; reponse: string }> = {
+  fr: { signature: "L'équipe ImmoPlatform Pro", reponse: "Vous pouvez répondre directement à cet e-mail." },
+  en: { signature: "The ImmoPlatform Pro team", reponse: "You can reply directly to this email." },
+  es: { signature: "El equipo de ImmoPlatform Pro", reponse: "Puede responder directamente a este correo." },
+  pt: { signature: "A equipa ImmoPlatform Pro", reponse: "Pode responder diretamente a este e-mail." },
+};
+
+/**
+ * Message libre écrit à la main par l'administration à un compte (réponse à une suggestion, question sur une annonce, suivi d'un
+ * essai…). Le sujet et le texte sont ceux de l'administrateur, protégés comme tout texte saisi ; seuls la salutation et la
+ * signature suivent la langue du destinataire. Les réponses partent vers l'adresse de l'administrateur (voir sendAdminMessage).
+ */
+export function adminMessageEmail(params: { subject: string; message: string; langue?: Langue }) {
+  const { subject, message, langue = LANGUE_PAR_DEFAUT } = params;
+  const t = MESSAGE_ADMIN_TEXTES[langue];
+  const corps = escapeHtml(message).replace(/\r?\n/g, "<br/>");
+
+  return {
+    subject,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
+        <h2 style="color:#0f172a;">${escapeHtml(subject)}</h2>
+        <p>${TEXTES_COMPTE[langue].bonjour}</p>
+        <p style="line-height:1.5;">${corps}</p>
+        <p style="margin-top:24px;">${t.signature}</p>
+        <p style="margin-top:24px; color:#6b7280; font-size:12px;">${t.reponse}</p>
+      </div>
+    `,
+  };
+}
+
 /** Email envoyé au locataire lorsqu'il reçoit un nouveau message de son agence. */
 export function newMessageFromManagerEmail(params: {
   tenantName: string;
