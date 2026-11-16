@@ -217,7 +217,7 @@ export const handleStripeWebhook = asyncHandler(async (req: Request, res: Respon
       // rattache au compte pour pouvoir les résilier plus tard
       // (cancelSubscription) et reconnaître ses renouvellements
       // (traiterFactureRenouvellement ci-dessous).
-      if (session.customer && session.subscription) {
+      if (session.customer && session.subscription && abonnement.userId) {
         await db
           .update(users)
           .set({ stripeCustomerId: session.customer, stripeSubscriptionId: session.subscription })

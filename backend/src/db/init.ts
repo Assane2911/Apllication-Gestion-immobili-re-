@@ -354,6 +354,42 @@ async function elargirMoyensDePaiement(): Promise<void> {
   );
 }
 
+/**
+ * Les paiements d'abonnement sont conservés ANONYMISÉS quand le compte est supprimé (obligation comptable) : `user_id` doit
+ * pouvoir passer à NULL. Une base créée avant ce choix a `user_id NOT NULL` et `ON DELETE CASCADE` : la suppression d'un
+ * compte effaçait alors son historique. `CREATE TABLE IF NOT EXISTS` ne corrige pas une table existante : cette migration
+ * lit l'état réel de la colonne et ne touche à rien quand il est déjà conforme (donc pas de verrou à chaque démarrage).
+ */
+async function conserverAbonnementsSansCompte(): Promise<void> {
+  const etatColonne = lignes<{ obligatoire: boolean; regle: string | null }>(
+    await db.execute(sql`
+      SELECT a.attnotnull AS obligatoire,
+             (SELECT string_agg(DISTINCT c.confdeltype::text, '') FROM pg_constraint c
+               WHERE c.conrelid = a.attrelid AND c.contype = 'f' AND c.conkey = ARRAY[a.attnum]) AS regle
+      FROM pg_attribute a
+      WHERE a.attrelid = 'platform_subscriptions'::regclass AND a.attname = 'user_id' AND NOT a.attisdropped
+    `)
+  )[0];
+  if (etatColonne && !etatColonne.obligatoire && etatColonne.regle === "n") return;
+  await alterSiBesoin(() =>
+    executerDdl(
+      sql`ALTER TABLE platform_subscriptions ALTER COLUMN user_id DROP NOT NULL`,
+      sql`DO $$
+        DECLARE ancienne record;
+        BEGIN
+          FOR ancienne IN
+            SELECT conname FROM pg_constraint
+             WHERE conrelid = 'platform_subscriptions'::regclass AND contype = 'f'
+               AND conkey = ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid = 'platform_subscriptions'::regclass AND attname = 'user_id')]
+          LOOP
+            EXECUTE format('ALTER TABLE platform_subscriptions DROP CONSTRAINT %I', ancienne.conname);
+          END LOOP;
+        END $$`,
+      sql`ALTER TABLE platform_subscriptions ADD CONSTRAINT platform_subscriptions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL`
+    )
+  );
+}
+
 export async function initDb() {
   try {
     verrouTenu = false;
@@ -978,7 +1014,7 @@ export async function initDb() {
     await creerTable("platform_subscriptions", sql`
       CREATE TABLE IF NOT EXISTS platform_subscriptions (
         id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
         plan TEXT NOT NULL CHECK (plan IN ('STARTER', 'PRO', 'ENTERPRISE')),
         amount DOUBLE PRECISION NOT NULL,
         currency TEXT NOT NULL DEFAULT 'EUR',
@@ -1063,6 +1099,8 @@ export async function initDb() {
     // totalement vierge (PGlite fallback local, sans DATABASE_URL), les
     // tables visées n'existaient pas encore quand ce bloc était placé plus
     // haut, donc chaque ALTER échouait silencieusement (try/catch) et les
+    await conserverAbonnementsSansCompte();
+
     // colonnes ci-dessous — dont manager_id, indispensable à l'isolation par
     // gestionnaire — n'étaient jamais créées, faisant échouer les CREATE
     // INDEX juste après ("column manager_id does not exist") puis toute
