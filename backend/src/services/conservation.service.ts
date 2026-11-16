@@ -1,7 +1,8 @@
-import { and, desc, eq, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, like, lt, not, or, sql } from "drizzle-orm";
 import { db } from "../db/client";
-import { activityLogs, contractCotenants, contracts, listingLeads, rateLimitHits, tenants, users } from "../db/schema";
+import { activityLogs, adminAuditLogs, contractCotenants, contracts, listingLeads, rateLimitHits, tenants, users } from "../db/schema";
 import { jourDecale } from "../utils/dates";
+import { PREFIXES_ACTIONS_FINANCIERES } from "./adminAudit.service";
 
 /**
  * Durées de conservation.
@@ -13,6 +14,11 @@ import { jourDecale } from "../utils/dates";
 export const DUREES = {
   /** Journaux d'activité — traçabilité, au-delà d'un an sans utilité. */
   journauxJours: 365,
+  /**
+   * Journal d'audit de l'administration : un an, SAUF les entrées financières (virements, formules, accès accordés, coordonnées
+   * bancaires), conservées pendant la durée comptable. Voir PREFIXES_ACTIONS_FINANCIERES.
+   */
+  journalAdminJours: 365,
   /**
    * Fiche locataire qu'aucun bail n'a jamais concrétisée : le référentiel
    * CNIL ramène à trois mois le dossier d'un candidat non retenu.
@@ -78,6 +84,18 @@ export async function purgerDonneesDeLaPlateforme() {
     .where(lt(activityLogs.createdAt, jourDecale(-DUREES.journauxJours, maintenant)))
     .returning({ id: activityLogs.id });
 
+  // Journal d'audit de l'administration : il recopie l'adresse e-mail du gestionnaire visé. Au-delà d'un an, les actions non
+  // financières (maintenance, suspension, annonces, exports) n'ont plus d'utilité ; les pièces financières ne sont JAMAIS effacées.
+  const journauxAdmin = await db
+    .delete(adminAuditLogs)
+    .where(
+      and(
+        lt(adminAuditLogs.createdAt, jourDecale(-DUREES.journalAdminJours, maintenant)),
+        not(or(...PREFIXES_ACTIONS_FINANCIERES.map((prefixe) => like(adminAuditLogs.action, `${prefixe}%`)))!)
+      )
+    )
+    .returning({ id: adminAuditLogs.id });
+
   // Compteurs de limitation de fréquence des routes d'authentification (voir
   // middleware/rateLimitStore.ts) : une fenêtre dépassée ne sert plus à rien.
   // On garde un jour de marge — la fenêtre dure 15 minutes — pour ne jamais
@@ -87,13 +105,13 @@ export async function purgerDonneesDeLaPlateforme() {
     .where(lt(rateLimitHits.resetAt, jourDecale(-1, maintenant)))
     .returning({ cle: rateLimitHits.cle });
 
-  if (jetons.length || journaux.length) {
+  if (jetons.length || journaux.length || journauxAdmin.length) {
     console.log(
-      `[conservation] ${jetons.length} jeton(s) périmé(s) effacé(s), ${journaux.length} entrée(s) de journal au-delà de ${DUREES.journauxJours} jours.`
+      `[conservation] ${jetons.length} jeton(s) périmé(s) effacé(s), ${journaux.length} entrée(s) de journal au-delà de ${DUREES.journauxJours} jours, ${journauxAdmin.length} entrée(s) non financière(s) du journal d'administration.`
     );
   }
 
-  return { jetonsEffaces: jetons.length, journauxEffaces: journaux.length, compteursEfface: compteurs.length };
+  return { jetonsEffaces: jetons.length, journauxEffaces: journaux.length, journauxAdminEfface: journauxAdmin.length, compteursEfface: compteurs.length };
 }
 
 type FicheSignalee = typeof tenants.$inferSelect & { finDuDernierBail?: Date | null };
