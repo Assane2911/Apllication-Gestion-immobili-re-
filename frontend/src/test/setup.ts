@@ -1,7 +1,11 @@
 import "@testing-library/jest-dom/vitest";
-import "../i18n"; // initialise i18next une fois pour tous les tests (pages/composants traduits)
+import { demanderToutesLesZones } from "../i18n"; // initialise i18next une fois pour tous les tests (pages/composants traduits)
 import { cleanup } from "@testing-library/react";
 import { afterEach } from "vitest";
+
+// Le site charge les textes zone par zone, avec chaque page (voir i18n/index.ts) ; un test affiche une page ou un composant sans
+// passer par le routeur : il a besoin de toutes les zones. Que chaque page déclare les siennes est vérifié par i18n/zones.test.ts.
+await demanderToutesLesZones();
 
 // jsdom n'implémente pas IntersectionObserver (utilisé par <Reveal> et
 // useInView pour les animations d'apparition au scroll) — sans ce stub,
