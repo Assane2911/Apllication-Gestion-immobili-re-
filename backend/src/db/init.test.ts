@@ -114,6 +114,35 @@ describe("initDb : idempotence sans verrou inutile", () => {
     expect(lignes[0].def).toContain("'OWNER'");
   });
 
+  it("rend conservables les paiements d'abonnement d'une base ANCIENNE (user_id NOT NULL + CASCADE → NULL autorisé + SET NULL)", async () => {
+    await initDb();
+    // Toutes les clés étrangères de la colonne (le nom varie selon l'outil qui a créé la table), puis l'ancien état.
+    await testDb.execute(sql`DO $$ DECLARE c record; BEGIN
+      FOR c IN SELECT conname FROM pg_constraint WHERE conrelid = 'platform_subscriptions'::regclass AND contype = 'f' LOOP
+        EXECUTE format('ALTER TABLE platform_subscriptions DROP CONSTRAINT %I', c.conname);
+      END LOOP; END $$`);
+    await testDb.execute(sql`ALTER TABLE platform_subscriptions ALTER COLUMN user_id SET NOT NULL`);
+    await testDb.execute(sql`ALTER TABLE platform_subscriptions ADD CONSTRAINT platform_subscriptions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`);
+
+    await initDb();
+
+    const etat = await testDb.execute(sql`
+      SELECT a.attnotnull AS obligatoire,
+             (SELECT c.confdeltype FROM pg_constraint c WHERE c.conrelid = a.attrelid AND c.contype = 'f' AND c.conkey = ARRAY[a.attnum]) AS regle
+      FROM pg_attribute a WHERE a.attrelid = 'platform_subscriptions'::regclass AND a.attname = 'user_id'`);
+    const lignes = (Array.isArray(etat) ? etat : ((etat as { rows: unknown[] }).rows ?? [])) as Array<{ obligatoire: boolean; regle: string }>;
+    expect(lignes).toEqual([{ obligatoire: false, regle: "n" }]);
+  });
+
+  it("la migration des paiements d'abonnement est rejouable sans erreur ni instruction de schéma", async () => {
+    await initDb();
+    const emises = enregistrerInstructions();
+
+    await initDb();
+
+    expect(emises.filter((q) => /platform_subscriptions/i.test(q) && /\b(ALTER|DROP)\b|ADD CONSTRAINT/i.test(q))).toEqual([]);
+  });
+
   it("repose une contrainte de rôle absente", async () => {
     await initDb();
     await testDb.execute(sql`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`);

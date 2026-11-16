@@ -64,6 +64,8 @@ async function activerAvec(subscriptionId: string, dbClient: DbClient) {
     throw new ApiError(400, "Ce virement a été rejeté : impossible de le confirmer", "TRANSFER_REJECTED_CANNOT_CONFIRM");
   }
 
+  // Compte supprimé : la ligne n'est conservée qu'anonymisée (obligation comptable), il n'y a plus d'abonnement à activer.
+  if (!record.userId) return null;
   const [compte] = await dbClient.select().from(users).where(eq(users.id, record.userId));
   if (!compte) return null;
 

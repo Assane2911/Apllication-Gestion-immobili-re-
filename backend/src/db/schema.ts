@@ -195,9 +195,10 @@ export const platformSubscriptions = pgTable(
   "platform_subscriptions",
   {
     id: id(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+    // NULL = le compte du gestionnaire a été supprimé : la ligne est conservée, anonymisée (voir suppressionCompte.service.ts).
+    // Elle ne contient plus aucune donnée personnelle (ni compte, ni adresse), seulement le fait comptable : plan, montant,
+    // devise, période, moyen et référence de paiement.
+    userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
     plan: subscriptionPlanEnum("plan").notNull(),
     amount: doublePrecision("amount").notNull(),
     // Un montant sans devise n'est pas un montant : les tarifs existent en

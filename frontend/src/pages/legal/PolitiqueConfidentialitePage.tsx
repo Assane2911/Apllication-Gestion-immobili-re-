@@ -187,7 +187,7 @@ export default function PolitiqueConfidentialitePage() {
             "Garants d'un bail : conservés avec le bail qui les mentionne, dont le contenu est figé une fois le bail signé. Le Gestionnaire peut anonymiser les données identifiantes d'un garant (voir section 8) ; le montant garanti et le rattachement au bail demeurent.",
             "Demandes de prospects reçues depuis une annonce : le Service signale au Gestionnaire, dans son espace, celles de plus de trois ans, durée de conservation recommandée pour la prospection ; le Gestionnaire peut les supprimer ou les anonymiser à tout moment.",
             "Journal d'activité de l'agence (traçabilité des actions) : conservé un an, puis effacé automatiquement — et en tout état de cause supprimé avec le compte.",
-            "Données d'abonnement et de facturation : conservées pendant la durée requise par les obligations comptables et fiscales applicables, y compris après la clôture du compte.",
+            "Données d'abonnement et de facturation : conservées pendant la durée requise par les obligations comptables et fiscales applicables, y compris après la clôture du compte, mais sous forme anonymisée : les paiements encaissés ne gardent que le plan, le montant, la devise, la période et la référence de paiement, sans plus aucun lien avec le compte supprimé. Les demandes d'abonnement jamais encaissées sont supprimées avec le compte.",
           ]}
         />
         <p>

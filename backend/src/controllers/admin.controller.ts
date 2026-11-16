@@ -22,7 +22,9 @@ import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { computeSubscriptionInfo } from "./auth.controller";
 
 /** Email d'un gestionnaire, pour l'instantané `targetLabel` du journal d'audit. */
-async function emailDuGestionnaire(userId: string): Promise<string | null> {
+async function emailDuGestionnaire(userId: string | null): Promise<string | null> {
+  // NULL : le compte a été supprimé, l'abonnement n'est plus conservé qu'anonymisé (voir suppressionCompte.service.ts).
+  if (!userId) return null;
   const [user] = await db.select({ email: users.email }).from(users).where(eq(users.id, userId));
   return user?.email ?? null;
 }
@@ -233,7 +235,7 @@ export const getPlatformDashboardStats = asyncHandler(async (_req: Request, res:
       : [];
   const latestPaidByUser = new Map<string, (typeof paidRecords)[number]>();
   for (const record of paidRecords) {
-    if (!latestPaidByUser.has(record.userId)) {
+    if (record.userId && !latestPaidByUser.has(record.userId)) {
       latestPaidByUser.set(record.userId, record);
     }
   }
