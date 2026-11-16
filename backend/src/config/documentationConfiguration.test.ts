@@ -208,4 +208,23 @@ describe.skipIf(!dispo)("documentation de la configuration", () => {
       expect(readme).toMatch(mot);
     }
   });
+
+  /**
+   * En cas de sinistre, personne n'a le temps de chercher : le guide doit dire quels secrets sont irremplaçables (leur perte
+   * rend des données illisibles pour de bon) et dans quel ordre tout reconstruire.
+   */
+  it("DEPLOYMENT.md décrit la reprise après sinistre et nomme les secrets irremplaçables", () => {
+    const guide = lire("DEPLOYMENT.md");
+    expect(guide).toContain("## Reprise après sinistre");
+    for (const secret of ["PAYMENT_KEYS_ENCRYPTION_KEY", "TOTP_ENCRYPTION_KEY", "BACKUP_PASSPHRASE"]) {
+      const debut = guide.indexOf("Les secrets qu'on ne peut PAS recréer");
+      expect(guide.indexOf(secret, debut), `${secret} absent de la liste des secrets irremplaçables`).toBeGreaterThan(debut);
+    }
+    // Les secrets irremplaçables sont bien des variables que le code lit.
+    const lues = new Set<string>();
+    for (const f of sources(join(RACINE, "backend/src"), [".ts"])) {
+      for (const m of readFileSync(f, "utf8").matchAll(/process\.env\.([A-Z][A-Z0-9_]+)/g)) lues.add(m[1]);
+    }
+    expect(lues.has("PAYMENT_KEYS_ENCRYPTION_KEY") && lues.has("TOTP_ENCRYPTION_KEY")).toBe(true);
+  });
 });
