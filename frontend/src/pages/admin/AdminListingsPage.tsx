@@ -1,7 +1,8 @@
-import { Eye, Mail, Megaphone, Star } from "lucide-react";
+import { Eye, Megaphone, Star } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, fileUrl } from "../../api/client";
+import BoutonEcrire from "../../components/BoutonEcrire";
 import EmptyState from "../../components/EmptyState";
 import Pagination from "../../components/Pagination";
 import { useCurrency } from "../../context/currency";
@@ -26,6 +27,7 @@ interface AdminListing {
   managerSuspendedAt?: string | null;
   // Abonnement du gestionnaire terminé : même effet, son espace est fermé jusqu'au renouvellement.
   managerSubscriptionExpired?: boolean;
+  managerId: string;
   managerEmail: string;
   agencyName: string | null;
 }
@@ -318,13 +320,7 @@ export default function AdminListingsPage() {
                         >
                           {a.featured ? t("admin.listings.unfeature") : t("admin.listings.feature")}
                         </button>
-                        <a
-                          href={`mailto:${a.managerEmail}`}
-                          className="inline-flex items-center gap-1.5 border-b border-ink-900/40 pb-0.5 text-xs font-semibold text-ink-900 hover:border-orange-700 hover:text-orange-700"
-                        >
-                          <Mail size={13} aria-hidden="true" />
-                          {t("admin.listings.writeToManager")}
-                        </a>
+                        <BoutonEcrire userId={a.managerId} email={a.managerEmail} variante="lien" libelle={t("admin.listings.writeToManager")} />
                         {enLigne && (
                           <a
                             href={`/vitrine/annonces/${a.id}`}

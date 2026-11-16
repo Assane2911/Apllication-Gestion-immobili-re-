@@ -1,8 +1,9 @@
-import { Building2, Check, Copy, FileText, Mail, UserCog, Users } from "lucide-react";
+import { Building2, Check, Copy, FileText, UserCog, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, apiErrorMessage } from "../../api/client";
+import BoutonEcrire from "../../components/BoutonEcrire";
 import Initiales from "../../components/Initiales";
 import SectionReglage from "../../components/SectionReglage";
 import SectionWhatsapp from "../../components/SectionWhatsapp";
@@ -254,13 +255,7 @@ export default function AdminManagerDetailPage() {
                     >
                       {copie ? <Check size={12} aria-hidden="true" className="text-ink-900" /> : <Copy size={12} aria-hidden="true" />}
                     </button>
-                    <a
-                      href={`mailto:${manager.email}`}
-                      aria-label={t("admin.managers.writeTo", { email: manager.email })}
-                      className="inline-flex size-5 items-center justify-center text-slate-500 hover:text-orange-700"
-                    >
-                      <Mail size={12} aria-hidden="true" />
-                    </a>
+                    <BoutonEcrire userId={manager.id} email={manager.email} />
                   </p>
                 </div>
               </div>

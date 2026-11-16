@@ -3,6 +3,15 @@ import type { ZoneAdmin } from "../fr/admin";
 /** Textes de l'espace administrateur (hors menu, voir base.ts), chargés avec ses pages. */
 const zone: ZoneAdmin = {
   admin: {
+    message: {
+      title: "Escribir a {{email}}",
+      subtitle: "El mensaje se envía desde la plataforma; las respuestas llegan a su dirección de administrador.",
+      subjectLabel: "Asunto",
+      messageLabel: "Mensaje",
+      send: "Enviar",
+      sending: "Enviando…",
+      sent: "Mensaje enviado a {{email}}.",
+    },
     managers: {
       count_one: "{{count}} cuenta",
       count_other: "{{count}} cuentas",
@@ -206,6 +215,7 @@ const zone: ZoneAdmin = {
         "manager.suspend": "Cuenta suspendida",
         "manager.reactivate": "Suspensión levantada",
         "manager.trial_reminder": "Recordatorio de fin de prueba enviado",
+        "user.message": "Mensaje enviado a una cuenta",
         "manager.delete": "Cuenta eliminada",
         "subscription.bank_transfer.confirm": "Transferencia confirmada",
         "subscription.bank_transfer.reject": "Transferencia rechazada",

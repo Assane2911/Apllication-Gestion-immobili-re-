@@ -246,6 +246,8 @@ describe("AdminListingsPage", () => {
     mockedApi.get.mockResolvedValueOnce(page([annonce()]));
     renderPage();
 
-    expect(await screen.findByRole("link", { name: "Écrire au gestionnaire" })).toHaveAttribute("href", "mailto:agence@test.local");
+    // Un bouton qui écrit DEPUIS la plateforme : le lien « mailto: » n'ouvrait rien sans messagerie configurée sur le poste.
+    expect(await screen.findByRole("button", { name: "Écrire au gestionnaire" })).toBeInTheDocument();
+    expect(document.querySelector('a[href^="mailto:"]')).toBeNull();
   });
 });

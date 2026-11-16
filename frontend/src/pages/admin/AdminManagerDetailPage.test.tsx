@@ -549,6 +549,7 @@ describe("AdminManagerDetailPage", () => {
     mockedApi.get.mockResolvedValueOnce({ data: fiche() });
     renderPage();
 
-    expect(await screen.findByRole("link", { name: "Écrire à agence@test.local" })).toHaveAttribute("href", "mailto:agence@test.local");
+    expect(await screen.findByRole("button", { name: "Écrire à agence@test.local" })).toBeInTheDocument();
+    expect(document.querySelector('a[href^="mailto:"]')).toBeNull();
   });
 });

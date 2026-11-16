@@ -1,6 +1,15 @@
 /** Textes de l'espace administrateur (hors menu, voir base.ts), chargés avec ses pages. */
 const zone = {
   admin: {
+    message: {
+      title: "Écrire à {{email}}",
+      subtitle: "Le message part de la plateforme ; les réponses arrivent sur votre adresse d'administrateur.",
+      subjectLabel: "Objet",
+      messageLabel: "Message",
+      send: "Envoyer",
+      sending: "Envoi…",
+      sent: "Message envoyé à {{email}}.",
+    },
     managers: {
       count_one: "{{count}} compte",
       count_other: "{{count}} comptes",
@@ -204,6 +213,7 @@ const zone = {
         "manager.suspend": "Compte suspendu",
         "manager.reactivate": "Suspension levée",
         "manager.trial_reminder": "Rappel de fin d'essai envoyé",
+        "user.message": "Message envoyé à un compte",
         "manager.delete": "Compte supprimé",
         "subscription.bank_transfer.confirm": "Virement confirmé",
         "subscription.bank_transfer.reject": "Virement rejeté",

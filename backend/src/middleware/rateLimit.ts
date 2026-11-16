@@ -137,6 +137,23 @@ export const equipeInvitationLimiter = rateLimit({
 });
 
 /**
+ * Limite par ADMINISTRATEUR sur les messages libres envoyés à un compte depuis l'administration : 30 par heure. Chaque message part
+ * du même SMTP que les rappels et la vérification des comptes, avec un texte que l'administrateur écrit : sans plafond, un compte
+ * administrateur compromis (ou un script) pouvait inonder des boîtes de réception au nom de la plateforme et abîmer sa réputation
+ * d'envoi. Un administrateur n'écrit jamais trente messages à la main en une heure. Compteur en base, partagé entre les instances.
+ * Se place APRÈS `authenticate` (il lit `req.user`).
+ */
+export const adminMessageLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 30,
+  store: new PostgresRateLimitStore("admin-message"),
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => (req.user ? `adm:${req.user.userId}` : ipKeyGenerator(req.ip ?? "unknown")),
+  message: { error: "Trop de messages envoyés en peu de temps. Réessayez dans une heure.", code: "ADMIN_MESSAGE_RATE_LIMITED" },
+});
+
+/**
  * Limite par adresse IP sur les routes /api/cron/* : leur seule protection
  * est la comparaison en temps constant du secret (cron.controller.ts::
  * secretValide), qui empêche une attaque par mesure de TIMING mais pas un

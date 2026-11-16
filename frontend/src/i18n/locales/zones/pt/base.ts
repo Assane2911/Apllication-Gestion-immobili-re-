@@ -184,6 +184,8 @@ const zone: ZoneBase = {
       TRIAL_REMINDER_NOT_IN_TRIAL: "Este gestor não está num período de teste gratuito em curso.",
       TRIAL_REMINDER_ALREADY_SENT: "Já foi enviado um lembrete para esta data de fim.",
       TRIAL_REMINDER_SEND_FAILED: "Não foi possível enviar o lembrete: o serviço de e-mail não aceitou a mensagem.",
+      ADMIN_MESSAGE_SEND_FAILED: "Não foi possível enviar a mensagem: o serviço de e-mail não a aceitou.",
+      ADMIN_MESSAGE_RATE_LIMITED: "Demasiadas mensagens enviadas em pouco tempo. Tente novamente dentro de uma hora.",
       AGENCY_LOGO_FILE_REQUIRED: "Logótipo: envie o ficheiro de imagem a partir das definições da agência.",
       AGENCY_STAMP_FILE_REQUIRED: "Carimbo: envie o ficheiro de imagem a partir das definições da agência.",
       NO_FILE_RECEIVED: "Nenhum ficheiro recebido.",

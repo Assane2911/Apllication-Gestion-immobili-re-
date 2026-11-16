@@ -1,7 +1,8 @@
-import { Lightbulb, Mail } from "lucide-react";
+import { Lightbulb } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
+import BoutonEcrire from "../../components/BoutonEcrire";
 import EmptyState from "../../components/EmptyState";
 import Initiales from "../../components/Initiales";
 import BarreListe from "../../components/BarreListe";
@@ -212,13 +213,9 @@ export default function AdminSuggestionsPage() {
                         {s.page ? t("admin.suggestions.fromPage", { page: s.page }) : t("admin.suggestions.noPage")}
                       </p>
                       {peutEcrire && (
-                        <a
-                          href={`mailto:${s.authorLabel}`}
-                          className="mt-4 inline-flex items-center gap-1.5 border-b border-ink-900/40 pb-0.5 text-xs font-semibold text-ink-900 hover:border-orange-700 hover:text-orange-700"
-                        >
-                          <Mail size={13} aria-hidden="true" />
-                          {t("admin.suggestions.writeToAuthor")}
-                        </a>
+                        <div className="mt-4">
+                          <BoutonEcrire userId={s.authorId as string} email={s.authorLabel} variante="lien" libelle={t("admin.suggestions.writeToAuthor")} />
+                        </div>
                       )}
                     </div>
 

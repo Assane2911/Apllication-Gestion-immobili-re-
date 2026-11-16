@@ -12,6 +12,7 @@ import {
 } from "../controllers/admin.controller";
 import { exportAuditCsv, exportManagersCsv } from "../controllers/adminExport.controller";
 import { getManagerWhatsappUsage, getPlatformWhatsappUsage } from "../controllers/adminWhatsapp.controller";
+import { sendAdminMessage } from "../controllers/adminMessage.controller";
 import { deleteManager } from "../controllers/adminSuppression.controller";
 import { hideListing, listAdminListings, restoreListing, setListingFeatured } from "../controllers/adminListing.controller";
 import { changeManagerPlan, grantSubscriptionDays, grantUnlimitedAccess, revokeUnlimitedAccess, sendTrialReminder } from "../controllers/adminSubscription.controller";
@@ -19,6 +20,7 @@ import { annulerMaintenance, etatMaintenance, programmerMaintenance } from "../c
 import { getPlatformSettings, updatePlatformSettings } from "../controllers/platformSettings.controller";
 import { listSuggestions, updateSuggestion } from "../controllers/suggestion.controller";
 import { authenticate, exigerDeuxFacteursAdmin, requireRole } from "../middleware/auth";
+import { adminMessageLimiter } from "../middleware/rateLimit";
 
 const router = Router();
 
@@ -38,6 +40,7 @@ router.post("/managers/:id/suspend", suspendManager);
 router.delete("/managers/:id", deleteManager);
 router.post("/managers/:id/reactivate", reactivateManager);
 router.post("/managers/:id/trial-reminder", sendTrialReminder);
+router.post("/users/:id/message", adminMessageLimiter, sendAdminMessage);
 router.post("/managers/:id/subscription/grant-days", grantSubscriptionDays);
 router.post("/managers/:id/subscription/change-plan", changeManagerPlan);
 router.post("/managers/:id/subscription/grant-unlimited", grantUnlimitedAccess);

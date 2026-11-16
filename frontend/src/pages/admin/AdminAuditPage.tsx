@@ -22,6 +22,7 @@ const ACTIONS = [
   "manager.reactivate",
   "manager.delete",
   "manager.trial_reminder",
+  "user.message",
   "subscription.grant_days",
   "subscription.change_plan",
   "subscription.grant_unlimited",
@@ -39,6 +40,7 @@ const ICONE_PAR_FAMILLE: Record<string, LucideIcon> = {
   subscription: CreditCard,
   platform: Landmark,
   manager: UserCog,
+  user: UserCog,
   listing: Megaphone,
   export: Download,
 };
