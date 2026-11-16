@@ -170,7 +170,7 @@ export default function VitrinePage() {
             {loadError && (
               <div className="flex items-center justify-between gap-3 border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
                 <span>{loadError}</span>
-                <button onClick={() => load()} className="shrink-0 cursor-pointer whitespace-nowrap font-semibold underline">
+                <button onClick={() => load()} className="inline-flex min-h-6 shrink-0 cursor-pointer items-center whitespace-nowrap font-semibold underline">
                   {t("common.actions.retry")}
                 </button>
               </div>

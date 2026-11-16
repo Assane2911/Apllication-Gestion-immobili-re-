@@ -131,7 +131,7 @@ export default function TenantDashboardPage() {
           <div className="mx-auto mb-3 flex size-12 items-center justify-center border border-slate-300 bg-slate-50 text-ink-900">
             <Home size={22} strokeWidth={1.75} aria-hidden="true" />
           </div>
-          <h3 className="text-base font-bold text-slate-900">{t("tenant.dashboard.noContract")}</h3>
+          <h2 className="text-base font-bold text-slate-900">{t("tenant.dashboard.noContract")}</h2>
           <p className="mt-1 text-xs text-slate-600">{t("tenant.dashboard.noLeaseHint")}</p>
         </div>
         {sectionDonneesPersonnelles}

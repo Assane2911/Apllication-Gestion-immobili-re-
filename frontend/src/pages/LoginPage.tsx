@@ -252,7 +252,7 @@ export default function LoginPage() {
                       <input type="checkbox" checked={souvenir} onChange={(e) => setSouvenir(e.target.checked)} className="size-3.5" />
                       {t("auth.login.rememberEmail")}
                     </label>
-                    <Link to="/mot-de-passe-oublie" className="text-xs font-semibold text-ink-900 transition-colors hover:text-orange-700">
+                    <Link to="/mot-de-passe-oublie" className="inline-flex min-h-6 items-center text-xs font-semibold text-ink-900 transition-colors hover:text-orange-700">
                       {t("auth.login.forgotPasswordLink")}
                     </Link>
                   </div>

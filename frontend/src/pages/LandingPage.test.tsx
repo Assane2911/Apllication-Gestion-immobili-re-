@@ -365,13 +365,16 @@ describe("LandingPage — tarifs, conseil de formule, FAQ et essai fixé", () =>
 
   it("n'offre le bouton d'essai fixé qu'aux visiteurs non connectés, une fois l'accroche dépassée", async () => {
     renderPage();
-    const lien = screen.getByRole("link", { name: /Essayer gratuitement/ });
+    // Hors écran : ni atteignable au clavier, ni lue par les lecteurs d'écran (d'où `hidden: true` pour la retrouver).
+    const lien = screen.getByRole("link", { name: /Essayer gratuitement/, hidden: true });
     expect(lien).toHaveAttribute("href", "/inscription");
     expect(lien).toHaveAttribute("tabindex", "-1");
+    expect(lien.parentElement).toHaveAttribute("aria-hidden", "true");
 
     Object.defineProperty(window, "scrollY", { value: 900, configurable: true });
     fireEvent.scroll(window);
     await waitFor(() => expect(screen.getByRole("link", { name: /Essayer gratuitement/ })).toHaveAttribute("tabindex", "0"));
+    expect(screen.getByRole("link", { name: /Essayer gratuitement/ }).parentElement).not.toHaveAttribute("aria-hidden");
     Object.defineProperty(window, "scrollY", { value: 0, configurable: true });
   });
 });
