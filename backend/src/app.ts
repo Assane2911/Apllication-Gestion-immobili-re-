@@ -148,6 +148,13 @@ app.use(
       }
     },
     credentials: true,
+    // Le site (www.immoplatformpro.com) et l'API (api.immoplatformpro.com) sont deux origines : tout appel en JSON avec cookie est
+    // précédé d'une requête de vérification (OPTIONS) du navigateur. Sans cet en-tête, Chrome ne la mémorise que 5 secondes : presque
+    // chaque appel coûtait un aller-retour de plus vers le serveur (de Dakar à Paris, environ 150 ms et une exécution de fonction en
+    // plus). Un jour est le plafond demandé ; les navigateurs bornent d'eux-mêmes (Chrome 2 h, Firefox 24 h). La réponse ne dépend
+    // que de l'origine, pas de l'utilisateur : la mémoriser est sans risque, et une origine refusée n'est jamais mémorisée comme
+    // autorisée (l'en-tête n'est posé qu'avec une réponse positive).
+    maxAge: 86_400,
   })
 );
 // AVANT express.json : la signature du webhook Stripe porte sur les octets
