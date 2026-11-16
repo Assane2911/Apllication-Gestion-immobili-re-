@@ -21,6 +21,7 @@ const ACTIONS = [
   "manager.suspend",
   "manager.reactivate",
   "manager.delete",
+  "manager.trial_reminder",
   "subscription.grant_days",
   "subscription.change_plan",
   "subscription.grant_unlimited",

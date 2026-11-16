@@ -77,7 +77,7 @@ const entree = atteints([join(SRC, "main.tsx"), join(SRC, "App.tsx")], true);
 const parPage = pages.map((p) => ({ ...p, atteints: atteints([p.fichier], false) }));
 
 /** Identifiants d'actions du journal d'audit (« manager.suspend »…) : des noms d'actions, pas des clés de texte. */
-const PAS_DES_CLES = new Set(["manager.suspend", "manager.reactivate", "manager.delete"]);
+const PAS_DES_CLES = new Set(["manager.suspend", "manager.reactivate", "manager.delete", "manager.trial_reminder"]);
 
 const REFERENCE = /["'`](manager|admin|tenant|owner|landing)\.([A-Za-z_]\w*)/g;
 

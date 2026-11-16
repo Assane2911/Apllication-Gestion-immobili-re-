@@ -179,13 +179,15 @@ describe("AdminDashboardPage", () => {
     expect(screen.getByText("Taux d'abonnement : 50 %")).toBeInTheDocument();
   });
 
-  it("relie chaque essai à la fiche du gestionnaire et permet de lui écrire", async () => {
+  it("relie chaque essai à la fiche du gestionnaire et permet de le relancer depuis la plateforme", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: stats() });
 
     renderPage();
 
     expect(await screen.findByRole("link", { name: "Agence du Port" })).toHaveAttribute("href", "/admin/gestionnaires/mgr-1");
-    expect(screen.getByRole("link", { name: "Écrire à agence-port@test.local" })).toHaveAttribute("href", "mailto:agence-port@test.local");
+    // Plus de « mailto: » : sur un poste sans messagerie configurée, il n'ouvrait rien. Le rappel part de la plateforme.
+    expect(screen.getByRole("button", { name: "Envoyer un rappel de fin d'essai à agence-port@test.local" })).toBeInTheDocument();
+    expect(document.querySelector('a[href^="mailto:"]')).toBeNull();
   });
 });
 
