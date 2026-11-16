@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import LienGererCookies from "./LienGererCookies";
 
 export interface LienPied {
   to: string;
@@ -54,7 +55,10 @@ export default function PiedDeSite({
 
         <div className={`border border-ink-900 ${etroit ? "" : liens ? "md:col-span-3" : "md:col-span-4"}`}>
           <p className="border-b border-ink-900 bg-ink-900 px-4 py-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-white">{t("common.cartouche.notice")}</p>
-          <div className="px-4 py-3 text-xs leading-relaxed text-slate-700">{mentions}</div>
+          <div className="px-4 py-3 text-xs leading-relaxed text-slate-700">
+            {mentions}
+            <LienGererCookies />
+          </div>
         </div>
       </div>
     </footer>

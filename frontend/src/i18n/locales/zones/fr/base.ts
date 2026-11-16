@@ -1376,6 +1376,7 @@ const zone = {
     privacyLink: "En savoir plus",
     accept: "Accepter",
     reject: "Refuser",
+    manage: "Gérer mes cookies",
   },
 };
 

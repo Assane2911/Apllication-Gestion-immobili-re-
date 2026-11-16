@@ -287,7 +287,7 @@ export default function PolitiqueConfidentialitePage() {
         <p>
           Le Service utilise le stockage local de votre navigateur (localStorage) à des fins strictement
           fonctionnelles : maintien de votre session de connexion, mémorisation de votre langue d'affichage
-          préférée, de votre thème (clair/sombre), de votre devise d'affichage et de votre choix de
+          préférée, de votre devise d'affichage et de votre choix de
           consentement aux cookies ci-dessous. Ces données restent sur votre appareil et ne sont pas
           transmises à des tiers.
         </p>
@@ -300,8 +300,10 @@ export default function PolitiqueConfidentialitePage() {
           possible que des publicités d'ImmoPlatform Pro vous soient ensuite présentées sur Facebook,
           Instagram ou LinkedIn. Aucun de ces cookies n'est déposé avant votre acceptation explicite ; en cas
           de refus ou tant que vous n'avez pas répondu, aucune donnée n'est envoyée à ces services. Vous
-          pouvez revenir sur votre choix à tout moment en effaçant les cookies de votre navigateur pour ce
-          site, ce qui fera réapparaître le bandeau.
+          pouvez revenir sur votre choix à tout moment, aussi simplement que vous l'avez fait, avec le lien
+          « Gérer mes cookies » en bas des pages du site : le bandeau se rouvre, et un retrait efface les cookies
+          déjà déposés. Votre choix est conservé 13 mois pour un accord et 6 mois pour un refus, puis le
+          bandeau vous le redemande.
         </p>
       </LegalSection>
 

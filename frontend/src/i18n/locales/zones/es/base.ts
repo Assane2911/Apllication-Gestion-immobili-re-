@@ -1378,6 +1378,7 @@ const zone: ZoneBase = {
     privacyLink: "Saber más",
     accept: "Aceptar",
     reject: "Rechazar",
+    manage: "Gestionar mis cookies",
   },
 };
 
