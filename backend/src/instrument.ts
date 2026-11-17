@@ -3,6 +3,7 @@
 // choses possible (voir https://docs.sentry.io/platforms/javascript/guides/express/).
 import * as Sentry from "@sentry/node";
 import { env } from "./config/env";
+import { environnementSentry } from "./config/environnementDeploiement";
 import { masquerValeursSqlDansJson } from "./utils/erreurSansDonnees";
 
 // DSN vide (par défaut si SENTRY_DSN n'est pas configuré sur Vercel) : Sentry
@@ -98,7 +99,7 @@ export function retenirSiMasquageImpossible<T>(evenement: T): T | null {
 if (env.sentryDsn) {
   Sentry.init({
     dsn: env.sentryDsn,
-    environment: env.nodeEnv,
+    environment: environnementSentry(process.env.VERCEL_ENV, env.nodeEnv),
     beforeSend: (evenement) => retenirSiMasquageImpossible(evenement),
     beforeSendTransaction: (evenement) => retenirSiMasquageImpossible(evenement),
     integrations: [Sentry.expressIntegration({ shouldHandleError: shouldReportToSentry })],

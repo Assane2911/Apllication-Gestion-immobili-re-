@@ -35,7 +35,7 @@ function variablesDocumentees(contenu: string): Set<string> {
 }
 
 // Injectées par l'hébergeur, jamais à renseigner à la main (le `.env.example` l'explique en commentaire).
-const INJECTEES = new Set(["VERCEL", "VERCEL_PROJECT_PRODUCTION_URL"]);
+const INJECTEES = new Set(["VERCEL", "VERCEL_ENV", "VERCEL_PROJECT_PRODUCTION_URL"]);
 
 describe.skipIf(!dispo)("documentation de la configuration", () => {
   it("toutes les variables lues par le backend figurent dans backend/.env.example", () => {
