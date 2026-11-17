@@ -4,12 +4,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 // Polices servies par nous : les charger depuis les serveurs de Google enverrait l'adresse IP de chaque visiteur à
 // Google avant tout consentement (voir src/rgpd/polices.test.ts). Titres et texte : Archivo ; libellés techniques : DM Mono (index.css).
+// Seules les graisses utilisées sont embarquées (chacune pèse environ 14 Ko) : la liste et ses raisons sont dans polices.test.ts.
 import '@fontsource/archivo/400.css'
-import '@fontsource/archivo/500.css'
 import '@fontsource/archivo/600.css'
 import '@fontsource/archivo/700.css'
-import '@fontsource/archivo/800.css'
-import '@fontsource/dm-mono/400.css'
 import '@fontsource/dm-mono/500.css'
 import './index.css'
 import { i18nPret } from './i18n'
