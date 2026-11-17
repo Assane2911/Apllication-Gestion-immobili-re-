@@ -14,6 +14,7 @@ import Pagination from "../../components/Pagination";
 import { Skeleton, TableRowSkeleton } from "../../components/Skeleton";
 import type { PaginatedResponse, ReliabilityLevel, Tenant } from "../../types";
 import Bulle from "../../components/Bulle";
+import LienCourriel from "../../components/LienCourriel";
 import { motDePasseTemporaire } from "../../utils/motDePasseTemporaire";
 import { correspond } from "../../utils/recherche";
 import { aSurveiller, csvLocataires, trierLocataires, type CritereTriLocataire } from "../../utils/syntheseParc";
@@ -302,9 +303,7 @@ export default function TenantsPage() {
     </a>
   );
   const lienMail = (l: Tenant) => (
-    <a href={`mailto:${l.email}`} title={t("manager.tenants.writeTo", { name: `${l.firstName} ${l.lastName}` })} className="whitespace-nowrap hover:text-orange-700 hover:underline sm:[overflow-wrap:normal]">
-      {l.email}
-    </a>
+    <LienCourriel adresse={l.email} titre={t("manager.tenants.writeTo", { name: `${l.firstName} ${l.lastName}` })} className="whitespace-nowrap hover:text-orange-700 hover:underline sm:[overflow-wrap:normal]" />
   );
 
   return (

@@ -8,6 +8,7 @@ import OngletsMessagerie from "../../components/OngletsMessagerie";
 import Pagination from "../../components/Pagination";
 import PlanLogement from "../../components/PlanLogement";
 import ZoneDeSaisie from "../../components/ZoneDeSaisie";
+import LienCourriel from "../../components/LienCourriel";
 import { estVocal, formaterDuree } from "../../utils/messageVocal";
 import { useCurrency } from "../../context/currency";
 import { cleDuFil, useConversationThread } from "../../hooks/useConversationThread";
@@ -310,12 +311,7 @@ export default function MessagesPage() {
                   {activeDetails.tenant?.email && (
                     <li className="flex items-center gap-2">
                       <Mail size={13} aria-hidden="true" className="shrink-0 text-orange-700" />
-                      <a
-                        href={`mailto:${activeDetails.tenant.email}`}
-                        className="min-w-0 truncate border-b border-ink-900/40 font-mono text-slate-900 hover:border-orange-700 hover:text-orange-700"
-                      >
-                        {activeDetails.tenant.email}
-                      </a>
+                      <LienCourriel adresse={activeDetails.tenant.email} className="border-b border-ink-900/40 font-mono text-slate-900 hover:border-orange-700 hover:text-orange-700" />
                     </li>
                   )}
                 </ul>

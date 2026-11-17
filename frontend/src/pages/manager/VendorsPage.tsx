@@ -10,6 +10,7 @@ import Initiales from "../../components/Initiales";
 import { Skeleton } from "../../components/Skeleton";
 import type { Vendor } from "../../types";
 import Bulle from "../../components/Bulle";
+import LienCourriel from "../../components/LienCourriel";
 import { csvPrestataires, synthesePrestataires } from "../../utils/syntheseExploitation";
 import { lienWhatsapp } from "../../utils/syntheseLocation";
 import { dateDuJourPourFichier, telechargerCsv } from "../../utils/telechargement";
@@ -314,9 +315,7 @@ export default function VendorsPage() {
                   <li className="flex items-center gap-2">
                     <Mail size={13} aria-hidden="true" className="shrink-0 text-orange-700" />
                     {vendor.email ? (
-                      <a href={`mailto:${vendor.email}`} className={`min-w-0 truncate font-mono ${lienContact}`}>
-                        {vendor.email}
-                      </a>
+                      <LienCourriel adresse={vendor.email} className={`font-mono ${lienContact}`} />
                     ) : (
                       <span className="text-slate-500">—</span>
                     )}

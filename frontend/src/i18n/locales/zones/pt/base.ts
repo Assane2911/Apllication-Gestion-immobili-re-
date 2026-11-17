@@ -415,6 +415,11 @@ const zone: ZoneBase = {
       incomplete: "Número incompleto: {{numero}}",
       missingCountry: "Este número não indica nenhum país. Escolha o indicativo para que possa receber os lembretes do WhatsApp.",
     },
+    emailLink: {
+      copyAria: "Copiar o endereço {{adresse}}",
+      copied: "Endereço copiado",
+      copyFailed: "Não foi possível copiar: selecione o endereço",
+    },
     skipToContent: "Saltar para o conteúdo principal",
     actions: {
       column: "Ações",
