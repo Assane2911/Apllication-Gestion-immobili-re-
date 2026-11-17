@@ -6,7 +6,7 @@ import BandeauChiffres from "../../components/BandeauChiffres";
 import GroupeFiltres from "../../components/GroupeFiltres";
 import PhotoLightbox from "../../components/PhotoLightbox";
 import type { Contract, IssueReport, IssueStatus } from "../../types";
-import { preparerFichier } from "../../utils/fichiers";
+import { preparerPhoto } from "../../utils/fichiers";
 import { getAllIssuePhotos, MAX_PHOTOS_PAR_INCIDENT, peutAjouterUnePhoto } from "../../utils/issuePhotos";
 import { ancienneteSignalement, estEnCours, filtrerSignalements, MOTIFS_SIGNALEMENT, situationSignalements, type FiltreSignalements } from "../../utils/syntheseLocataire";
 import Bulle from "../../components/Bulle";
@@ -81,7 +81,7 @@ export default function TenantIssuesPage() {
   // trop lourde, on le dit tout de suite plutôt qu'après jusqu'à DELAI_UPLOAD_MS (60 s) d'attente sur une
   // connexion mobile lente pour un échec qu'on pouvait détecter instantanément.
   async function handlePhoto(brut: File | null) {
-    const file = brut ? await preparerFichier(brut) : null;
+    const file = brut ? await preparerPhoto(brut) : null;
     if (brut && !file) {
       setError(t("tenant.issues.photoTooLarge", { maxMb: MAX_UPLOAD_SIZE_MB }));
       return;
@@ -95,7 +95,7 @@ export default function TenantIssuesPage() {
   }
 
   async function handleExtraPhoto(brut: File | null) {
-    const file = brut ? await preparerFichier(brut) : null;
+    const file = brut ? await preparerPhoto(brut) : null;
     if (brut && !file) {
       // alert() et non setError() : ce mini-formulaire (ajout d'une photo à
       // un incident déjà existant) n'a pas de zone d'erreur dédiée — c'est le
@@ -340,7 +340,7 @@ export default function TenantIssuesPage() {
                           idx === 0 && allPhotos.length % 2 === 1 ? "col-span-2" : ""
                         }`}
                       >
-                        <img src={fileUrl(url) ?? undefined} alt={t("tenant.issues.photoAlt", { index: idx + 1 })} className="h-full w-full object-cover" />
+                        <img src={fileUrl(url) ?? undefined} alt={t("tenant.issues.photoAlt", { index: idx + 1 })} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                         <span className="absolute bottom-0 left-0 bg-ink-900 px-1.5 py-0.5 font-mono text-[9px] text-white">
                           {idx + 1}/{allPhotos.length}
                         </span>

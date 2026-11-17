@@ -2,7 +2,7 @@ import { Building2, Download, LayoutGrid, MapPin, Pencil, Table2, Trash2 } from 
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, DELAI_UPLOAD_MS, fileUrl, isRequestCancelled, liste, MAX_UPLOAD_SIZE_MB } from "../../api/client";
-import { preparerFichier } from "../../utils/fichiers";
+import { preparerPhoto } from "../../utils/fichiers";
 import BandeauChiffres from "../../components/BandeauChiffres";
 import BarreListe from "../../components/BarreListe";
 import PlanLogement from "../../components/PlanLogement";
@@ -138,7 +138,7 @@ export default function PropertiesPage() {
   // (voir utils/fichiers.ts), ou refusée tout de suite avec un message clair si elle reste trop lourde.
   async function choisirImage(e: React.ChangeEvent<HTMLInputElement>) {
     const brut = e.target.files?.[0] ?? null;
-    const prete = brut ? await preparerFichier(brut) : null;
+    const prete = brut ? await preparerPhoto(brut) : null;
     if (brut && !prete) {
       e.target.value = "";
       setImage(null);
@@ -498,6 +498,8 @@ export default function PropertiesPage() {
                     <img
                       src={fileUrl(p.imageUrl) ?? undefined}
                       alt={p.title}
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 motion-reduce:transform-none"
                     />
                   ) : (

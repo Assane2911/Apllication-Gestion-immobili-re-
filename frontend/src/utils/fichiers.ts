@@ -60,3 +60,37 @@ export async function preparerFichier(file: File, maxMb: number = MAX_UPLOAD_SIZ
   }
   return null;
 }
+
+/** Côté long maximal d'une photo affichée à l'écran : une carte d'annonce l'affiche vers 400 px de large (800 px sur un écran dense). */
+const COTE_PHOTO = 1600;
+const QUALITE_PHOTO = 0.82;
+/** Sous ce poids ET sous ce côté long, une photo est déjà légère : on ne la retouche pas (chaque recompression perd un peu de qualité). */
+const POIDS_PHOTO_LEGERE = 400 * 1024;
+
+/**
+ * Prépare une PHOTO qui sera affichée à l'écran (bien, annonce, incident) : ramenée à 1 600 px de côté long en JPEG, soit environ
+ * 250 à 400 Ko au lieu de 3 à 4 Mo. Sans cela, une page de la vitrine télécharge chaque photo à sa taille d'origine (jusqu'à 4 Mo)
+ * pour l'afficher dans une carte de 400 px : sur une connexion mobile, c'est elle qui ralentit la page, bien plus que le code.
+ *
+ * À réserver aux photos. Une pièce d'identité, un bail numérisé ou un justificatif doivent rester lisibles : ils passent par
+ * `preparerFichier`, qui ne touche à un fichier que s'il dépasse la limite d'envoi.
+ *
+ * Jamais pire qu'avant : la version réduite n'est gardée que si elle est plus légère que l'original ; en cas de doute (format que le
+ * navigateur ne sait pas lire, réduction impossible), le fichier suit le chemin de `preparerFichier`. Renvoie `null` si le fichier
+ * reste trop volumineux — l'appelant affiche alors son message « fichier trop volumineux ».
+ */
+export async function preparerPhoto(file: File, maxMb: number = MAX_UPLOAD_SIZE_MB): Promise<File | null> {
+  if (!TYPES_REDUCTIBLES.has(file.type)) return preparerFichier(file, maxMb);
+  try {
+    const image = await createImageBitmap(file);
+    const coteLong = Math.max(image.width, image.height);
+    image.close();
+    if (coteLong <= COTE_PHOTO && file.size <= POIDS_PHOTO_LEGERE) return preparerFichier(file, maxMb);
+
+    const reduit = await reduireImage(file, { cote: COTE_PHOTO, qualite: QUALITE_PHOTO });
+    if (reduit.size < file.size && !fichierTropVolumineux(reduit, maxMb)) return reduit;
+  } catch {
+    // Image illisible par le navigateur : on retombe sur le comportement d'avant.
+  }
+  return preparerFichier(file, maxMb);
+}

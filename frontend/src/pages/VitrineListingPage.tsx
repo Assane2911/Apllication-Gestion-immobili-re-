@@ -179,7 +179,7 @@ export default function VitrineListingPage() {
             <div className="border border-slate-300 bg-white">
               <div className="relative h-64 border-b border-slate-300 bg-slate-100 sm:h-96">
                 {listing.imageUrl ? (
-                  <img src={fileUrl(listing.imageUrl) ?? undefined} alt={listing.title} className="h-full w-full object-cover" />
+                  <img src={fileUrl(listing.imageUrl) ?? undefined} alt={listing.title} decoding="async" fetchPriority="high" className="h-full w-full object-cover" />
                 ) : (
                   <div className="bande-motif absolute inset-0 flex items-center justify-center opacity-25" aria-hidden="true">
                     <Building2 size={56} strokeWidth={1.5} className="text-ink-900" />

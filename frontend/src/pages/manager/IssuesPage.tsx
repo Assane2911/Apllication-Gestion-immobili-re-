@@ -229,6 +229,8 @@ export default function IssuesPage() {
                     <img
                       src={fileUrl(allPhotos[rangPhoto]) ?? undefined}
                       alt={t("manager.issues.photoAlt", { index: rangPhoto + 1 })}
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover"
                     />
                     <span className="absolute bottom-0 left-0 inline-flex items-center gap-1.5 bg-ink-900 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-white">
@@ -250,7 +252,7 @@ export default function IssuesPage() {
                           idx === rangPhoto ? "border-orange-700" : "border-slate-300 hover:border-ink-900"
                         }`}
                       >
-                        <img src={fileUrl(url) ?? undefined} alt="" className="h-full w-full object-cover" />
+                        <img src={fileUrl(url) ?? undefined} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                       </button>
                     ))}
                   </div>
