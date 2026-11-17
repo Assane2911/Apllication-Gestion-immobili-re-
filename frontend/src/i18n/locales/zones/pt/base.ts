@@ -415,6 +415,7 @@ const zone: ZoneBase = {
       incomplete: "Número incompleto: {{numero}}",
       missingCountry: "Este número não indica nenhum país. Escolha o indicativo para que possa receber os lembretes do WhatsApp.",
     },
+    skipToContent: "Saltar para o conteúdo principal",
     actions: {
       column: "Ações",
       save: "Guardar",

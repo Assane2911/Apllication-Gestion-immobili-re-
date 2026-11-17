@@ -9,7 +9,7 @@ export default function LienGererCookies() {
   const { t } = useTranslation();
   if (!unTraceurEstConfigure()) return null;
   return (
-    <button type="button" onClick={rouvrirChoixCookies} className="mt-2 cursor-pointer text-xs font-semibold text-ink-900 underline underline-offset-2 hover:text-orange-700">
+    <button type="button" onClick={rouvrirChoixCookies} className="mt-1 cursor-pointer py-1 text-xs font-semibold text-ink-900 underline underline-offset-2 hover:text-orange-700">
       {t("cookieConsent.manage")}
     </button>
   );

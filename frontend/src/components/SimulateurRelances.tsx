@@ -22,7 +22,8 @@ export default function SimulateurRelances() {
     { cle: "end", jour: RETARD_MAX_RELANCE_JOURS, plein: false },
   ] as const;
 
-  const CURSEUR = "mt-2 h-2 w-full cursor-pointer accent-orange-700";
+  // h-6 : la zone qu'on touche fait au moins 24 px de haut (WCAG 2.5.8) ; la piste du curseur reste fine.
+  const CURSEUR = "mt-1 h-6 w-full cursor-pointer accent-orange-700";
   const ETIQUETTE = "flex items-baseline justify-between gap-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-800";
 
   return (

@@ -188,7 +188,7 @@ export default function LegalLayout({ title, description, children }: LegalLayou
         </div>
       </nav>
 
-      <main className="mx-auto max-w-6xl px-6 py-10">
+      <main id="contenu-principal" tabIndex={-1} className="mx-auto max-w-6xl px-6 py-10">
         {/* Les trois documents, en onglets. */}
         <div className="mb-8 flex flex-wrap border border-slate-400 bg-white sm:inline-flex print:hidden">
           {LEGAL_PAGES.map((page) => (

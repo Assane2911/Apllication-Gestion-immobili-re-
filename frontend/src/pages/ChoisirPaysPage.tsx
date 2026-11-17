@@ -58,7 +58,7 @@ export default function ChoisirPaysPage() {
         <LanguageSwitcher />
       </div>
 
-      <main className="w-full max-w-sm">
+      <main id="contenu-principal" tabIndex={-1} className="w-full max-w-sm">
         <h1 className="text-2xl font-bold text-slate-900 text-center">{t("auth.countryChoice.title")}</h1>
         <p className="text-sm text-slate-600 text-center mt-1.5">{t("auth.countryChoice.subtitle")}</p>
 

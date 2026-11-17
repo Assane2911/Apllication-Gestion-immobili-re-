@@ -545,3 +545,37 @@ html [data-surface="app"] thead :is(tr, th, td, button, a, span, p, svg) {
     stroke-dashoffset: 0;
   }
 }
+
+/* Le contenu principal reçoit le focus quand on suit « Aller au contenu principal » (LienEvitement) : ce n'est pas un contrôle, il n'a pas à porter un cadre de focus. */
+#contenu-principal:focus {
+  outline: none;
+}
+
+/*
+ * En-tête de l'accueil : à quelles largeurs d'écran les liens s'affichent en ligne ; ailleurs, le bouton de menu.
+ * Les libellés espagnols et portugais sont plus longs (« Preguntas frecuentes », « Nuestros inmuebles ») : à largeur égale, le
+ * bouton d'essai gratuit sortait de l'écran et le sélecteur de langue était écrasé. Intervalles MESURÉS dans le navigateur
+ * (là où liens, sélecteur et bouton tiennent côte à côte), avec 12 px de marge à chaque bord. Deux intervalles pour le français,
+ * l'espagnol et le portugais : à partir de 1280 px les liens prennent plus de place (xl:px-4, xl:text-xs), d'où le creux entre
+ * 1265 et le seuil suivant. La page pose `data-langue` sur la barre (LandingPage.tsx) ; le test accueilMenu.test.ts tient
+ * ces seuils et cette liste de langues d'accord.
+ */
+.menu-en-ligne {
+  display: none;
+}
+@media (min-width: 1024px) {
+  [data-langue="en"] .menu-en-ligne { display: flex; }
+  [data-langue="en"] .hors-menu-en-ligne { display: none; }
+}
+@media (min-width: 1064px) and (max-width: 1264px), (min-width: 1312px) {
+  [data-langue="fr"] .menu-en-ligne { display: flex; }
+  [data-langue="fr"] .hors-menu-en-ligne { display: none; }
+}
+@media (min-width: 1168px) and (max-width: 1264px), (min-width: 1428px) {
+  [data-langue="pt"] .menu-en-ligne { display: flex; }
+  [data-langue="pt"] .hors-menu-en-ligne { display: none; }
+}
+@media (min-width: 1220px) and (max-width: 1264px), (min-width: 1484px) {
+  [data-langue="es"] .menu-en-ligne { display: flex; }
+  [data-langue="es"] .hors-menu-en-ligne { display: none; }
+}

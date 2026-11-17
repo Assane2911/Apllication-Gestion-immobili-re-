@@ -248,7 +248,7 @@ export default function LoginPage() {
                     </p>
                   )}
                   <div className="mt-2 flex items-center justify-between gap-3">
-                    <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-700">
+                    <label className="flex min-h-6 cursor-pointer items-center gap-2 text-xs text-slate-700">
                       <input type="checkbox" checked={souvenir} onChange={(e) => setSouvenir(e.target.checked)} className="size-3.5" />
                       {t("auth.login.rememberEmail")}
                     </label>

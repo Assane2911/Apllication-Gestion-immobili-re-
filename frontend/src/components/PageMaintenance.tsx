@@ -24,7 +24,7 @@ export default function PageMaintenance({ etat, maintenant, verification, onVeri
   const minutes = minutesRestantes(etat, maintenant);
 
   return (
-    <main data-surface="app" className="flex min-h-screen items-center justify-center px-4 py-10">
+    <main id="contenu-principal" tabIndex={-1} data-surface="app" className="flex min-h-screen items-center justify-center px-4 py-10">
       <title>{`${t("maintenance.page.docTitle")} | ${t("common.appName")}`}</title>
       <div className="w-full max-w-lg border border-ink-900 bg-white shadow-[inset_4px_0_0_var(--color-orange-700)]">
         <div className="flex items-center gap-3 border-b border-slate-300 px-6 py-4">

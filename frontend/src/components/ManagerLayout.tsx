@@ -166,7 +166,7 @@ export default function ManagerLayout() {
       />
       {/* Hors de la barre latérale : sa transformation ferait d'elle le repère d'un élément en `fixed`. */}
       {dialogueDeconnexion}
-      <main data-surface="app" className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
+      <main id="contenu-principal" tabIndex={-1} data-surface="app" className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
         <div className="flex items-center justify-between gap-3 mb-6">
           <BoutonOuvrirMenu
             onClick={() => setMobileNavOpen(true)}

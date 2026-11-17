@@ -116,7 +116,7 @@ export default function VitrineListingPage() {
     return (
       <div className="min-h-screen">
         <VitrineHeader />
-        <main className="mx-auto flex max-w-2xl justify-center px-4 py-16 sm:px-6">
+        <main id="contenu-principal" tabIndex={-1} className="mx-auto flex max-w-2xl justify-center px-4 py-16 sm:px-6">
           <span className="size-8 animate-spin rounded-full border-[3px] border-slate-200 border-t-ink-900" />
         </main>
       </div>
@@ -130,7 +130,7 @@ export default function VitrineListingPage() {
             un moteur de recherche garderait longtemps dans ses résultats une page qui dit « annonce introuvable ». */}
         <Seo title={t("vitrine.brand")} noindex />
         <VitrineHeader />
-        <main className="mx-auto max-w-2xl space-y-4 px-4 py-16 text-center sm:px-6">
+        <main id="contenu-principal" tabIndex={-1} className="mx-auto max-w-2xl space-y-4 px-4 py-16 text-center sm:px-6">
           <p className="text-sm text-slate-600">{t("vitrine.notFound")}</p>
           <Link to="/vitrine" className="inline-block border border-ink-900 px-4 py-2 text-sm font-semibold text-ink-900 transition-colors hover:bg-ink-900 hover:text-white">
             {t("vitrine.notFoundCta")}
@@ -169,7 +169,7 @@ export default function VitrineListingPage() {
       <JsonLd data={buildListingJsonLd(listing)} />
       <VitrineHeader />
 
-      <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
+      <main id="contenu-principal" tabIndex={-1} className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
         <Link to="/vitrine" className="inline-block border-b border-ink-900/40 pb-0.5 text-xs font-semibold text-ink-900 transition-colors hover:border-orange-700 hover:text-orange-700">
           {t("vitrine.backToListings")}
         </Link>
