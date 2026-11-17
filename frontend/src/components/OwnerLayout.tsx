@@ -68,7 +68,7 @@ export default function OwnerLayout() {
       />
       {/* Hors du menu : sa transformation ferait de lui le repère d'un élément en `fixed`. */}
       {dialogueDeconnexion}
-      <main data-surface="app" className="flex-1 min-w-0 px-4 sm:px-6 py-6 sm:py-8">
+      <main id="contenu-principal" tabIndex={-1} data-surface="app" className="flex-1 min-w-0 px-4 sm:px-6 py-6 sm:py-8">
         <div className="max-w-5xl mx-auto">
           <div className="mb-6 flex items-center gap-3">
             <BoutonOuvrirMenu

@@ -352,8 +352,10 @@ export default function LandingPage() {
   const { user } = useAuth();
   // Sous 640 px, l'en-tête ne tient qu'en version resserrée (voir LandingPage.mobile.test.tsx).
   const telephone = useMediaQuery("(max-width: 639px)");
-  // Entre 640 et 1279 px, la barre flottante garde le code court de la langue pour que tous les liens tiennent.
-  const ecranMoyen = useMediaQuery("(max-width: 1279px)");
+  // Le sélecteur de la barre garde toujours le code court de la langue (« FR ») : avec le nom complet, il prenait une centaine de
+  // pixels de plus et poussait le bouton d'essai hors de l'écran en espagnol et en portugais. Le seuil du menu en ligne, lui,
+  // dépend de la langue (voir index.css, « menu-en-ligne »).
+  const langueMenu = (i18n.resolvedLanguage ?? i18n.language ?? "fr").slice(0, 2);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [recherche, setRecherche] = useState("");
   // Tarifs publics du serveur, par devise : tant qu'ils ne sont pas tous deux arrivés, les prix affichés par défaut
@@ -458,9 +460,9 @@ export default function LandingPage() {
       <JsonLd data={buildOrganizationJsonLd()} />
       <JsonLd data={buildSoftwareApplicationJsonLd()} />
       {/* Navigation */}
-      <nav className={`fixed inset-x-0 top-0 z-50 bg-white border-b-[1.5px] border-ink-900 transition-shadow duration-500 ${defile || menuOuvert ? "" : ""}`}>
+      <nav data-langue={langueMenu} className={`fixed inset-x-0 top-0 z-50 bg-white border-b-[1.5px] border-ink-900 transition-shadow duration-500 ${defile || menuOuvert ? "" : ""}`}>
         <div aria-hidden="true" className="bande-motif h-1.5" />
-        <div className={`max-w-7xl mx-auto px-3 sm:px-4 flex items-stretch justify-between gap-2 transition-[height] duration-500 ease-out motion-reduce:transition-none ${defile ? "h-12" : "h-14"}`}>
+        <div className={`max-w-[1480px] mx-auto px-3 sm:px-4 flex items-stretch justify-between gap-2 transition-[height] duration-500 ease-out motion-reduce:transition-none ${defile ? "h-12" : "h-14"}`}>
           <div className="flex items-center gap-3 shrink-0">
             <Logo taille={defile ? 28 : 32} />
             <span className="sr-only sm:not-sr-only lg:sr-only xl:not-sr-only whitespace-nowrap font-bold text-lg tracking-tight text-slate-900">
@@ -468,7 +470,7 @@ export default function LandingPage() {
             </span>
           </div>
 
-          <div className="hidden lg:flex items-stretch whitespace-nowrap text-[11px] xl:text-xs font-medium text-slate-700">
+          <div className="menu-en-ligne items-stretch whitespace-nowrap text-[11px] xl:text-xs font-medium text-slate-700">
             {/*
               La vitrine publique existait — route, page, API — mais AUCUN
               écran n'y menait : `/vitrine` n'apparaissait qu'une fois dans
@@ -503,7 +505,7 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-3">
-            <LanguageSwitcher compact={telephone || ecranMoyen} />
+            <LanguageSwitcher compact className="shrink-0" />
             {user ? (
               <Link
                 to={homePathForRole(user.role)}
@@ -533,7 +535,7 @@ export default function LandingPage() {
               aria-expanded={menuOuvert}
               aria-controls="menu-accueil"
               aria-label={t("landing.nav.menu")}
-              className="lg:hidden self-center flex h-9 w-9 items-center justify-center border-[1.5px] border-ink-900 text-ink-900 hover:bg-slate-100 transition-colors cursor-pointer"
+              className="hors-menu-en-ligne self-center flex h-9 w-9 items-center justify-center border-[1.5px] border-ink-900 text-ink-900 hover:bg-slate-100 transition-colors cursor-pointer"
             >
               {menuOuvert ? <X size={18} aria-hidden="true" /> : <Menu size={18} aria-hidden="true" />}
             </button>
@@ -542,7 +544,7 @@ export default function LandingPage() {
       </nav>
 
       {menuOuvert && (
-        <div id="menu-accueil" className="menu-ouvert fixed inset-0 z-40 lg:hidden overflow-y-auto bg-white px-6 pt-24 pb-10" onClick={() => setMenuOuvert(false)}>
+        <div id="menu-accueil" className="menu-ouvert hors-menu-en-ligne fixed inset-0 z-40 overflow-y-auto bg-white px-6 pt-24 pb-10" onClick={() => setMenuOuvert(false)}>
           <ul className="border-t-[1.5px] border-ink-900">
             {[
               { href: "/vitrine", label: t("landing.nav.vitrine"), numero: "" },
@@ -580,7 +582,7 @@ export default function LandingPage() {
         </div>
       )}
 
-      <main>
+      <main id="contenu-principal" tabIndex={-1}>
       {/* Hero Section : texte à gauche, plan coté à droite */}
       <section className="relative pt-28 pb-20 md:pt-36 md:pb-28 px-6 max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-12 gap-14 lg:gap-8 items-center">
@@ -1012,7 +1014,7 @@ export default function LandingPage() {
                       setNombreDeBiens(Number(e.target.value));
                       setConseilDemande(true);
                     }}
-                    className="h-2 flex-1 cursor-pointer accent-ink-900"
+                    className="h-6 flex-1 cursor-pointer accent-ink-900"
                   />
                   <output htmlFor="nombre-de-biens" className="w-14 border border-ink-900 py-1 text-center font-mono text-sm font-bold tabular-nums text-ink-900">
                     {nombreDeBiens}

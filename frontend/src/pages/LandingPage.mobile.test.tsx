@@ -64,12 +64,14 @@ describe("LandingPage — en-tête sur téléphone", () => {
     expect(nom.className).toMatch(/sm:not-sr-only/);
   });
 
-  it("sur un écran large : rien ne change (noms de langue complets, essai de 15 jours)", () => {
+  // Le sélecteur de la barre garde le code court sur TOUS les écrans : avec les noms complets, il prenait une centaine de pixels de
+  // plus et poussait le bouton d'essai hors de l'écran en espagnol et en portugais (voir LandingPage.menu.test.tsx).
+  it("sur un écran large : code court de la langue, essai de 15 jours en toutes lettres", () => {
     simulerEcran(false);
     renderPage();
     const entete = screen.getAllByRole("navigation")[0];
     const langue = within(entete).getByLabelText("Changer de langue") as HTMLSelectElement;
-    expect(Array.from(langue.options).map((o) => o.textContent)).toEqual(["🇫🇷 Français", "🇬🇧 English", "🇵🇹 Português", "🇪🇸 Español"]);
+    expect(Array.from(langue.options).map((o) => o.textContent)).toEqual(["🇫🇷 FR", "🇬🇧 EN", "🇵🇹 PT", "🇪🇸 ES"]);
     expect(within(entete).getByRole("link", { name: "Essai 15j gratuit →" })).toBeInTheDocument();
   });
 

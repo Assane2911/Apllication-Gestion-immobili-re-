@@ -413,6 +413,7 @@ const zone = {
       incomplete: "Numéro incomplet : {{numero}}",
       missingCountry: "Ce numéro n'indique aucun pays. Choisissez l'indicatif pour qu'il puisse recevoir les rappels WhatsApp.",
     },
+    skipToContent: "Aller au contenu principal",
     actions: {
       column: "Actions",
       save: "Enregistrer",

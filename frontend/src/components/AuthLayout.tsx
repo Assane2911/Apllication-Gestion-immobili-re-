@@ -96,7 +96,7 @@ export default function AuthLayout({ page, retour, retourVers = "/landing", chil
         </div>
       </aside>
 
-      <main className="relative flex flex-col items-center justify-center px-6 pb-12 pt-20">
+      <main id="contenu-principal" tabIndex={-1} className="relative flex flex-col items-center justify-center px-6 pb-12 pt-20">
         <div className="absolute left-6 right-6 top-6 flex items-center justify-between">
           <Link
             to={retourVers}
