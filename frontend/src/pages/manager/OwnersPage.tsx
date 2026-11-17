@@ -563,7 +563,7 @@ export default function OwnersPage() {
                     )}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-right"><div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1.5">
+                <td className="px-4 py-3 text-right"><div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2.5">
                   <Link to={`/proprietaires/${owner.id}/crg`} className={LIEN_ACTION}>{t("manager.owners.viewCrg")}</Link>
                   <Bulle texte={t("manager.tips.ownerEdit")}><button onClick={() => openEdit(owner)} className={LIEN_ACTION}>{t("common.actions.edit")}</button></Bulle>
                   {owner.anonymizedAt ? (
@@ -616,7 +616,7 @@ export default function OwnersPage() {
                       </Bulle>
                     )}
                   </div>
-                  <div className="space-x-3">
+                  <div className="flex flex-wrap gap-x-3 gap-y-2.5">
                     <Link to={`/proprietaires/${owner.id}/crg`} className="font-semibold text-ink-900 hover:underline">{t("manager.owners.viewCrg")}</Link>
                     <Bulle texte={t("manager.tips.ownerEdit")}><button onClick={() => openEdit(owner)} className="cursor-pointer font-semibold text-ink-900 hover:underline">{t("common.actions.edit")}</button></Bulle>
                     {owner.anonymizedAt ? (

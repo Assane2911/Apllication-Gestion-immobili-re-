@@ -547,7 +547,7 @@ export default function TenantsPage() {
                     </Bulle>
                   )}
                 </td>
-                <td className="px-4 py-3 text-right"><div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1.5">
+                <td className="px-4 py-3 text-right"><div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2.5">
                   <Bulle texte={t("manager.tips.tenantEdit")}><button onClick={() => openEdit(tenant)} className={LIEN_ACTION}>{t("common.actions.edit")}</button></Bulle>
                   <Bulle texte={t("manager.tips.tenantExport")}><button onClick={() => handleExport(tenant)} className="cursor-pointer border-b border-slate-400/60 text-xs font-semibold text-slate-700 transition-colors hover:border-ink-900 hover:text-ink-900">{t("manager.tenants.exportData")}</button></Bulle>
                   {tenant.anonymizedAt ? (
