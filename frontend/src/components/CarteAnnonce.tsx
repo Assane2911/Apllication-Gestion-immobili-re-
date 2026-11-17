@@ -29,7 +29,7 @@ export default function CarteAnnonce({ annonce, favori, onBasculerFavori }: Prop
       <Link to={`/vitrine/annonces/${annonce.id}`} className="block">
         <div className="relative h-44 overflow-hidden border-b border-slate-300 bg-slate-100">
           {annonce.imageUrl ? (
-            <img src={fileUrl(annonce.imageUrl) ?? undefined} alt={annonce.title} className="h-full w-full object-cover" />
+            <img src={fileUrl(annonce.imageUrl) ?? undefined} alt={annonce.title} loading="lazy" decoding="async" className="h-full w-full object-cover" />
           ) : (
             <div className="bande-motif absolute inset-0 flex items-center justify-center opacity-25" aria-hidden="true">
               <Building2 size={40} strokeWidth={1.5} className="text-ink-900" />

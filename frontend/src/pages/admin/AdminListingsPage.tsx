@@ -249,7 +249,7 @@ export default function AdminListingsPage() {
                     {/* La photo telle que la vitrine la montre ; à défaut, la bande hachurée des plans. */}
                     <div className="relative h-40 border-b border-slate-300 bg-slate-100 sm:h-auto sm:min-h-36 sm:border-b-0 sm:border-r">
                       {a.imageUrl ? (
-                        <img src={fileUrl(a.imageUrl) ?? undefined} alt="" className={`absolute inset-0 h-full w-full object-cover ${masquee ? "opacity-60 grayscale" : ""}`} />
+                        <img src={fileUrl(a.imageUrl) ?? undefined} alt="" loading="lazy" decoding="async" className={`absolute inset-0 h-full w-full object-cover ${masquee ? "opacity-60 grayscale" : ""}`} />
                       ) : (
                         <div className="bande-motif absolute inset-0 opacity-25" aria-hidden="true" />
                       )}

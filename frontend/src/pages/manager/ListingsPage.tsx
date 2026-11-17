@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { api, apiErrorMessage, DELAI_UPLOAD_MS, fileUrl, isRequestCancelled, liste, MAX_UPLOAD_SIZE_MB } from "../../api/client";
-import { preparerFichier } from "../../utils/fichiers";
+import { preparerPhoto } from "../../utils/fichiers";
 import BandeauChiffres from "../../components/BandeauChiffres";
 import BarreListe from "../../components/BarreListe";
 import SectionReglage from "../../components/SectionReglage";
@@ -157,7 +157,7 @@ export default function ListingsPage() {
   // Même règle que pour les biens : photo réduite avant l'envoi, ou refus immédiat et lisible.
   async function choisirImage(e: React.ChangeEvent<HTMLInputElement>) {
     const brut = e.target.files?.[0] ?? null;
-    const prete = brut ? await preparerFichier(brut) : null;
+    const prete = brut ? await preparerPhoto(brut) : null;
     if (brut && !prete) {
       e.target.value = "";
       setImage(null);
@@ -498,6 +498,8 @@ export default function ListingsPage() {
                   <img
                     src={fileUrl(listing.imageUrl) ?? undefined}
                     alt={listing.title}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 motion-reduce:transform-none"
                   />
                 ) : (

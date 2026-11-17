@@ -221,7 +221,7 @@ export default function TenantDashboardPage() {
               {/* Le logement : sa photo, ou à défaut son plan. */}
               <div className="relative h-48 overflow-hidden border-b border-slate-300 bg-slate-100 sm:h-auto sm:min-h-56 sm:border-b-0 sm:border-r">
                 {c.property?.imageUrl ? (
-                  <img src={fileUrl(c.property.imageUrl) ?? undefined} alt={c.property.title} className="h-full w-full object-cover" />
+                  <img src={fileUrl(c.property.imageUrl) ?? undefined} alt={c.property.title} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                 ) : (
                   <PlanLogement id={c.property?.id ?? c.id} className="h-full w-full pb-10" />
                 )}
