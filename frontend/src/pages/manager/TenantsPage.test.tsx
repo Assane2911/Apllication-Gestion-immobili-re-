@@ -470,7 +470,8 @@ describe("TenantsPage — cibles des actions des cartes (téléphone)", () => {
     const actions = within(cartes!).getAllByRole("button");
     expect(actions.length).toBeGreaterThanOrEqual(3);
     for (const action of actions) {
-      expect(action.className, action.textContent ?? "").toMatch(/\bpy-1\b/);
+      // `py-1` sur un bouton de texte, ou `size-6` sur un bouton d'icône (le « Copier » d'une adresse) : 24 px dans les deux cas.
+      expect(action.className, action.textContent ?? "").toMatch(/\b(py-1|size-6)\b/);
       expect(action.className, action.textContent ?? "").toMatch(/(^|\s)-my-1(\s|$)/);
     }
   });

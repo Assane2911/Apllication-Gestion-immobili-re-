@@ -10,6 +10,7 @@ import Initiales from "../../components/Initiales";
 import Pagination from "../../components/Pagination";
 import type { Listing, LeadStatus, ListingLead, PaginatedResponse } from "../../types";
 import Bulle from "../../components/Bulle";
+import LienCourriel from "../../components/LienCourriel";
 import { formaterJour } from "../../utils/jourCivil";
 import { correspond } from "../../utils/recherche";
 import { aRepondreVite, ageEnJours, csvDemandes, JOURS_AVANT_RELANCE, lienWhatsapp, syntheseDemandes } from "../../utils/syntheseLocation";
@@ -238,9 +239,7 @@ export default function ListingLeadsPage() {
                   <ul className="mt-4 space-y-2 text-xs">
                     <li className="flex items-center gap-2">
                       <Mail size={13} aria-hidden="true" className="shrink-0 text-orange-700" />
-                      <a href={`mailto:${lead.prospectEmail}`} className="min-w-0 truncate border-b border-ink-900/40 font-mono text-slate-900 hover:border-orange-700 hover:text-orange-700">
-                        {lead.prospectEmail}
-                      </a>
+                      <LienCourriel adresse={lead.prospectEmail} className="border-b border-ink-900/40 font-mono text-slate-900 hover:border-orange-700 hover:text-orange-700" />
                     </li>
                     <li className="flex items-center gap-2">
                       <Phone size={13} aria-hidden="true" className="shrink-0 text-orange-700" />
