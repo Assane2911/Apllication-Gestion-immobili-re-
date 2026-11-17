@@ -32,7 +32,8 @@ describe.skipIf(!dispo)("en-têtes de sécurité du site", () => {
   it("interdit l'affichage du site dans un cadre d'un autre site (détournement de clic)", () => {
     const entetes = enTetesDuSite();
     expect(entetes.get("x-frame-options")).toBe("SAMEORIGIN");
-    expect(entetes.get("content-security-policy")).toBe("frame-ancestors 'self'");
+    // La directive est dans l'en-tête bloquant, à côté de celles qui protègent des scripts injectés (voir politiqueContenu.test.ts).
+    expect(entetes.get("content-security-policy")).toMatch(/(^|;\s*)frame-ancestors 'self'(;|$)/);
   });
 
   it("n'envoie aux sites tiers que l'origine, jamais l'adresse complète de la page", () => {
