@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
 
 /**
- * Point de collecte des violations de la politique de sécurité de contenu (CSP) du site, envoyée en mode
- * OBSERVATION : le navigateur ne bloque rien, il signale ce qu'il aurait bloqué. On en tire une ligne de journal
- * courte par violation, lisible dans les journaux Vercel (recherche « [csp] »), pour ajuster la politique avant de
- * la rendre bloquante.
+ * Point de collecte des violations de la politique de sécurité de contenu (CSP) du site (frontend/vercel.json). Deux
+ * en-têtes y renvoient : la partie BLOQUANTE (scripts, objets, formulaires, cadres) et la politique complète en mode
+ * OBSERVATION, où le navigateur ne bloque rien et signale ce qu'il aurait bloqué. On en tire une ligne de journal
+ * courte par violation, lisible dans les journaux Vercel (recherche « [csp] »), pour repérer un blocage inattendu et
+ * ajuster la politique avant de rendre bloquant ce qui est encore en observation.
  *
  * Le point est public : le navigateur n'envoie aucun cookie avec un rapport. Il n'écrit donc RIEN en base, répond
  * toujours 204 (un rapport mal formé n'est pas une erreur du visiteur) et ne journalise que des valeurs nettoyées :
