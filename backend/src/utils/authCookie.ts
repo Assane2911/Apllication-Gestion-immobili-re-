@@ -4,12 +4,8 @@ import { env } from "../config/env";
 
 /**
  * Nom du cookie httpOnly qui porte le jeton pour un navigateur (voir
- * frontend/src/api/client.ts). L'app mobile Capacitor continue de recevoir le
- * même jeton dans le corps JSON `{ token }` et de le gérer elle-même via
- * l'en-tête Authorization (voir authenticate ci-dessous et
- * Capacitor.isNativePlatform() côté frontend) : un WebView natif n'est pas
- * exposé au même risque de vol par script tiers (XSS) qu'une page web, et la
- * portée d'un cookie cross-site y est de toute façon peu fiable.
+ * frontend/src/api/client.ts). Le même jeton reste renvoyé dans le corps JSON `{ token }` pour les clients API, qui le
+ * gèrent eux-mêmes via l'en-tête Authorization (voir authenticate).
  */
 export const AUTH_COOKIE_NAME = "token";
 

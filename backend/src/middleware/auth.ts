@@ -84,10 +84,8 @@ declare global {
  * survit ; jeton antérieur à une révocation.
  */
 export async function authenticate(req: Request, _res: Response, next: NextFunction) {
-  // En-tête Authorization d'abord (app mobile Capacitor et clients API, qui
-  // gèrent eux-mêmes le jeton — voir utils/authCookie.ts) ; à défaut, le
-  // cookie httpOnly posé à la connexion (frontend web, depuis cette
-  // migration, qui ne lit ni ne stocke plus le jeton lui-même).
+  // En-tête Authorization d'abord (clients API, qui gèrent eux-mêmes le jeton — voir utils/authCookie.ts) ; à défaut,
+  // le cookie httpOnly posé à la connexion (frontend web, qui ne lit ni ne stocke le jeton lui-même).
   const header = req.headers.authorization;
   const bearerToken = header && header.startsWith("Bearer ") ? header.slice("Bearer ".length) : null;
   const cookieToken = req.cookies?.[AUTH_COOKIE_NAME];

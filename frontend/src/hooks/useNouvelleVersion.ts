@@ -1,4 +1,3 @@
-import { Capacitor } from "@capacitor/core";
 import { useCallback, useEffect, useState } from "react";
 import { estNouvelleVersion, lireVersionPubliee, VERSION_COURANTE } from "../utils/versionPubliee";
 
@@ -10,12 +9,12 @@ const DELAI_RETOUR_MS = 60 * 1000;
 /**
  * Dit si un déploiement a eu lieu depuis le chargement de cet onglet. La vérification se fait toutes les cinq minutes tant
  * que l'onglet est visible, et au retour sur un onglet resté en arrière-plan. Elle s'arrête dès qu'une nouvelle version est
- * trouvée. Sans effet dans l'application mobile (son code est embarqué : elle se met à jour par le store) et en développement.
+ * trouvée. Sans effet en développement.
  */
 export function useNouvelleVersion(courante: string = VERSION_COURANTE) {
   const [disponible, setDisponible] = useState(false);
   const [ignoree, setIgnoree] = useState(false);
-  const actif = courante !== "dev" && !Capacitor.isNativePlatform();
+  const actif = courante !== "dev";
 
   useEffect(() => {
     if (!actif || disponible) return;

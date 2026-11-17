@@ -1,4 +1,3 @@
-import { Capacitor } from "@capacitor/core";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -30,7 +29,7 @@ export default function InactiviteSession() {
   const deconnexionRef = useRef<() => void>(() => undefined);
 
   const role = user?.role;
-  const actif = Boolean(user) && !Capacitor.isNativePlatform();
+  const actif = Boolean(user);
 
   useEffect(() => {
     if (!actif || !role) return;

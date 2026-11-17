@@ -5,7 +5,7 @@ Application complète de gestion immobilière : tableau de bord, biens, locatair
 ## Stack technique
 
 - **Backend** : Node.js, Express, TypeScript, [Drizzle ORM](https://orm.drizzle.team/) + PostgreSQL (Supabase), JWT, Multer + Supabase Storage (fichiers), Nodemailer (emails), node-cron en local / Vercel Cron Jobs en production.
-- **Frontend** : React + Vite (TypeScript), React Router, Tailwind CSS, Recharts, Axios, i18next. Application Android via Capacitor (voir `DEPLOYMENT.md`).
+- **Frontend** : React + Vite (TypeScript), React Router, Tailwind CSS, Recharts, Axios, i18next.
 - **Déploiement** : Vercel (frontend + backend), Supabase (base de données Postgres + stockage de fichiers). Voir [`DEPLOYMENT.md`](./DEPLOYMENT.md) pour le guide complet, y compris comment relire le projet dans Google Antigravity avant de le déployer.
 
 ## Fonctionnalités

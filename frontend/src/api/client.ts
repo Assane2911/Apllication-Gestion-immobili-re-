@@ -1,4 +1,3 @@
-import { Capacitor } from "@capacitor/core";
 import axios from "axios";
 import i18n from "../i18n";
 import { definirEtat, lireEtatDepuisErreur } from "../utils/maintenance";
@@ -17,9 +16,7 @@ export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 // plutôt que dans un en-tête Authorization lu depuis localStorage — sans ce
 // réglage, un navigateur n'attache par défaut aucun cookie à une requête
 // cross-origin (frontend et backend sont sur des origines distinctes, y
-// compris en production). L'app mobile Capacitor continue de porter son
-// jeton dans l'en-tête (voir l'intercepteur ci-dessous) ; ce réglage est
-// alors sans effet, faute de cookie posé pour elle.
+// compris en production).
 //
 // X-Requested-With : exigé par le backend (middleware/auth.ts, voir
 // CSRF_HEADER_NAME) sur toute requête authentifiée par ce cookie — un
@@ -53,17 +50,8 @@ api.interceptors.request.use((config) => {
   // backend/src/utils/langue.ts). Sans elle, le navigateur enverrait ses propres langues, qui ne sont pas forcément
   // celles de l'interface. Avant l'initialisation de i18n, rien n'est posé : le navigateur garde son en-tête.
   if (i18n.language) config.headers["Accept-Language"] = i18n.language;
-  // Web : le cookie httpOnly posé à la connexion suit déjà la requête grâce à
-  // withCredentials ci-dessus — un en-tête Authorization n'y ajouterait rien
-  // et un jeton n'est de toute façon plus stocké dans localStorage sur cette
-  // plateforme (voir AuthContext.tsx). L'app native garde l'ancien schéma :
-  // un cookie cross-site n'y est pas fiable (voir authCookie.ts côté serveur).
-  if (Capacitor.isNativePlatform()) {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-  }
+  // Le cookie httpOnly posé à la connexion suit déjà la requête grâce à withCredentials ci-dessus — un en-tête
+  // Authorization n'y ajouterait rien, et aucun jeton n'est stocké dans localStorage (voir AuthContext.tsx).
   return config;
 });
 

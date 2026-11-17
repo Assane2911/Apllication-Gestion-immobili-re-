@@ -1,5 +1,4 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { Capacitor } from "@capacitor/core";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
@@ -12,7 +11,6 @@ vi.mock("../api/client", async () => {
   const actual = await vi.importActual<typeof import("../api/client")>("../api/client");
   return { ...actual, api: { get: vi.fn(), post: vi.fn() } };
 });
-vi.mock("@capacitor/core", () => ({ Capacitor: { isNativePlatform: vi.fn(() => false) } }));
 
 const mockedApi = vi.mocked(api, { deep: true });
 const MINUTE = 60_000;
@@ -46,7 +44,6 @@ beforeEach(() => {
   localStorage.clear();
   mockedApi.post.mockReset();
   mockedApi.post.mockResolvedValue({ data: { renewed: true } } as never);
-  vi.mocked(Capacitor.isNativePlatform).mockReturnValue(false);
 });
 afterEach(() => vi.useRealTimers());
 
@@ -56,13 +53,6 @@ describe("InactiviteSession", () => {
     await avancer(60 * MINUTE);
     expect(logout).not.toHaveBeenCalled();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  });
-
-  it("ne fait rien dans l'app mobile (session longue)", async () => {
-    vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
-    const { logout } = monter("MANAGER");
-    await avancer(60 * MINUTE);
-    expect(logout).not.toHaveBeenCalled();
   });
 
   it("gestionnaire : avertit à 29 min d'inactivité, déconnecte à 30 min et revient à la connexion", async () => {

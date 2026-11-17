@@ -13,7 +13,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import TenantLayout from "./components/TenantLayout";
 import { AuthProvider } from "./context/AuthContext";
 import HistoriqueProvider from "./context/HistoriqueContext";
-import { useBoutonRetourAndroid } from "./hooks/useBoutonRetourAndroid";
 import { useAuth } from "./context/auth";
 import { CurrencyProvider } from "./context/CurrencyContext";
 import { lazyAvecZones } from "./utils/lazyAvecZones";
@@ -210,12 +209,6 @@ function AppRoutes() {
   );
 }
 
-/** Branche le bouton retour d'Android sur l'historique de l'application (sans effet ailleurs). */
-function RetourAndroid() {
-  useBoutonRetourAndroid();
-  return null;
-}
-
 export default function App() {
   return (
     <ErrorBoundary>
@@ -228,7 +221,6 @@ export default function App() {
               <PorteMaintenance>
                 <AppRoutes />
               </PorteMaintenance>
-              <RetourAndroid />
               <InactiviteSession />
               <CookieConsentBanner />
             </CurrencyProvider>

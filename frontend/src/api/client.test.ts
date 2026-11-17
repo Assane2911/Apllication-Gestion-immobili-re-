@@ -1,4 +1,3 @@
-import { Capacitor } from "@capacitor/core";
 import { AxiosError, AxiosHeaders } from "axios";
 import { describe, expect, it } from "vitest";
 import { api, apiErrorCode, apiErrorMessage, fileUrl, liste } from "./client";
@@ -143,8 +142,7 @@ describe("liste", () => {
  * Depuis la migration vers un cookie httpOnly (voir backend/src/utils/authCookie.ts
  * et AuthContext.tsx), le web ne doit plus jamais poser d'en-tête Authorization
  * lu depuis localStorage : le cookie accompagne déjà la requête via
- * withCredentials. Seule l'app mobile Capacitor, qui n'a pas de cookie
- * cross-site fiable, continue de porter le jeton dans l'en-tête.
+ * withCredentials.
  */
 describe("intercepteur de requête (authentification)", () => {
   async function headersEnvoyees() {
@@ -167,18 +165,12 @@ describe("intercepteur de requête (authentification)", () => {
     expect(api.defaults.withCredentials).toBe(true);
   });
 
-  it("web : n'attache pas d'en-tête Authorization, même si un token traîne encore en localStorage", async () => {
+  it("n'attache pas d'en-tête Authorization, même si un token traîne encore en localStorage", async () => {
     localStorage.setItem("token", "un-jeton-quelconque");
     const headers = await headersEnvoyees();
     expect(headers.Authorization).toBeUndefined();
   });
 
-  it("natif (Capacitor) : attache l'en-tête Authorization depuis le token en localStorage", async () => {
-    vi.spyOn(Capacitor, "isNativePlatform").mockReturnValue(true);
-    localStorage.setItem("token", "jeton-natif");
-    const headers = await headersEnvoyees();
-    expect(headers.Authorization).toBe("Bearer jeton-natif");
-  });
 });
 
 describe("intercepteur de réponse 401", () => {

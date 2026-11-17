@@ -132,11 +132,9 @@ app.use(
   })
 );
 
-// En plus du site web (env.frontendUrl), on autorise les origines des
-// builds mobiles Capacitor : "https://localhost" (Android, androidScheme:
-// "https") et "capacitor://localhost" (iOS, scheme par défaut). Sans
-// origine (ex: appel serveur à serveur, cron) on laisse passer.
-const allowedOrigins = [env.frontendUrl, "https://localhost", "capacitor://localhost"];
+// Seul le site web (env.frontendUrl) est une origine autorisée. Sans origine (ex: appel serveur à serveur, cron) on
+// laisse passer.
+const allowedOrigins = [env.frontendUrl];
 
 app.use(
   cors({
