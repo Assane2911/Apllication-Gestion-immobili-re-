@@ -93,7 +93,7 @@ export default function DecompteCrg({ crg, ns, periode }: Props) {
           {cellules.map((c) => {
             const net = c.cle === "net";
             return (
-              <div key={c.cle} className={`relative px-5 py-4 ${net ? "bg-ink-900 text-white" : "bg-white"}`}>
+              <div key={c.cle} className={`relative px-5 py-4 ${net ? "surface-sombre bg-ink-900 text-white" : "bg-white"}`}>
                 {c.signe && (
                   <span
                     aria-hidden="true"
