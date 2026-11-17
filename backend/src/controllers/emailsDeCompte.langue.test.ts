@@ -20,7 +20,7 @@ describe("mot de passe oublié", () => {
   it.each([
     ["en", "Reset your password"],
     ["es", "Restablece tu contraseña"],
-    ["pt", "Redefina sua senha"],
+    ["pt", "Redefina a sua palavra-passe"],
     ["fr", "Réinitialisation de votre mot de passe"],
   ])("Accept-Language « %s » → e-mail dans cette langue", async (langue, extrait) => {
     const envoi = espionner();
@@ -62,7 +62,7 @@ describe("inscription", () => {
     const res = await request(app).post("/api/auth/register").set("Accept-Language", "pt-BR").send(corps("deja-pt@test.local"));
 
     expect(res.status).toBe(201);
-    expect(dernier(envoi).sujet).toContain("Você já tem uma conta");
+    expect(dernier(envoi).sujet).toContain("Já tem uma conta");
   });
 
   it("le renvoi du lien de confirmation aussi", async () => {

@@ -519,15 +519,15 @@ const es: TextesSuite = {
 const pt: TextesSuite = {
   guillemets: ["“", "”"],
   signalement: {
-    statuts: { OPEN: "Aberto", IN_PROGRESS: "Em andamento", RESOLVED: "Resolvido", REJECTED: "Rejeitado" },
+    statuts: { OPEN: "Aberta", IN_PROGRESS: "Em curso", RESOLVED: "Resolvida", REJECTED: "Rejeitada" },
     sujet: (emoji, titre) => `${emoji} Atualização da sua ocorrência — ${titre}`,
-    titre: (emoji) => `${emoji} Atualização da ocorrência que você registrou`,
+    titre: (emoji) => `${emoji} Atualização da ocorrência que registou`,
     bonjour: (nom) => `Olá ${nom},`,
-    intro: (titre, bien) => `O status da sua ocorrência <strong>“${titre}”</strong> referente ao imóvel <strong>${bien}</strong> foi atualizado:`,
+    intro: (titre, bien) => `O estado da sua ocorrência <strong>“${titre}”</strong> relativa ao imóvel <strong>${bien}</strong> foi atualizado:`,
     intervention: (date) =>
-      `<strong>📅 Intervenção prevista para ${date}</strong><br/>Certifique-se de estar presente ou de providenciar o acesso ao imóvel.`,
+      `<strong>📅 Intervenção prevista para ${date}</strong><br/>Certifique-se de que estará presente ou de que o acesso ao imóvel está assegurado.`,
     note: "Mensagem da sua imobiliária:",
-    bouton: "Ver minhas ocorrências →",
+    bouton: "Ver as minhas ocorrências →",
   },
   messageProprietaire: {
     sujet: "💬 Nova mensagem da sua imobiliária",
@@ -540,7 +540,7 @@ const pt: TextesSuite = {
     sujet: (bien) => `💬 Nova mensagem da sua imobiliária — ${bien}`,
     titre: "💬 Nova mensagem da sua imobiliária",
     bonjour: (nom) => `Olá ${nom},`,
-    intro: (bien) => `Você recebeu uma nova mensagem sobre o imóvel <strong>${bien}</strong>:`,
+    intro: (bien) => `Recebeu uma nova mensagem sobre o imóvel <strong>${bien}</strong>:`,
     bouton: "Responder à mensagem →",
   },
   maintenance: {
@@ -548,54 +548,54 @@ const pt: TextesSuite = {
     titre: "🛠️ Manutenção programada",
     intro: (debut, fin) => `Está prevista uma manutenção da plataforma de <strong>${debut}</strong> a <strong>${fin}</strong>.`,
     pendant:
-      "Durante esse período o aplicativo ficará indisponível para você, seus inquilinos e seus proprietários: eles verão uma tela de espera, e o aplicativo voltará sozinho ao final.",
-    conseil: "Seus dados não são afetados. Salve o que estiver em andamento antes do horário de início.",
-    messageEquipe: "Mensagem da equipe:",
+      "Durante este período, a aplicação ficará indisponível para si, para os seus inquilinos e para os seus proprietários: verão um ecrã de espera, e a aplicação voltará sozinha ao fim da manutenção.",
+    conseil: "Os seus dados não são afetados. Guarde o que estiver em curso antes da hora de início.",
+    messageEquipe: "Mensagem da equipa:",
   },
   revision: {
-    sujet: (date) => `Revisão do seu aluguel a partir de ${date}`,
-    bandeau: "Revisão do aluguel",
+    sujet: (date) => `Revisão da sua renda a partir de ${date}`,
+    bandeau: "Revisão da renda",
     bonjour: (nom) => `Olá <strong>${nom}</strong>,`,
-    intro: (bien, date) => `O seu aluguel do imóvel <strong>${bien}</strong> será revisto a partir de <strong>${date}</strong>.`,
-    loyerActuel: "Aluguel atual:",
-    nouveauLoyer: "Novo aluguel mensal",
+    intro: (bien, date) => `A sua renda do imóvel <strong>${bien}</strong> será revista a partir de <strong>${date}</strong>.`,
+    loyerActuel: "Renda atual:",
+    nouveauLoyer: "Nova renda mensal",
     base: "Base de cálculo:",
     suite:
-      "Os avisos de vencimento emitidos a partir dessa data trarão o novo valor. Em caso de dúvida, responda ao seu gestor.",
+      "Os avisos de vencimento emitidos a partir dessa data apresentarão o novo montante. Em caso de dúvida, responda ao seu gestor.",
     motif: { indice: "índice", separateurDecimal: ",", pourcent: "%", deuxPoints: ": " },
   },
   reversement: {
-    sujet: (periode) => `Repasse dos seus aluguéis — ${periode}`,
-    bandeau: "Repasse efetuado",
+    sujet: (periode) => `Pagamento das suas rendas — ${periode}`,
+    bandeau: "Pagamento efetuado",
     bonjour: (nom) => `Olá <strong>${nom}</strong>,`,
     intro: (date, moyen, periode) =>
-      `A sua imobiliária repassou a você em ${date} (${moyen}) o seguinte valor, referente à gestão de <strong>${periode}</strong>:`,
+      `A sua imobiliária pagou-lhe em ${date} (${moyen}) o seguinte montante, relativo à gestão de <strong>${periode}</strong>:`,
     reference: (reference) => `Referência: ${reference}`,
     detail:
-      "O detalhamento (aluguéis recebidos, despesas, comissão) consta no seu relatório de gestão, disponível no seu espaço do proprietário.",
+      "O detalhe (rendas recebidas, despesas, comissão) consta do seu relatório de gestão, disponível no seu espaço de proprietário.",
     moyens: { BANK_TRANSFER: "transferência", CASH: "dinheiro", CHEQUE: "cheque", MOBILE_MONEY: "mobile money", OTHER: "outro meio" },
   },
   garant: {
-    sujet: (locataire, periode) => `Informação: aluguel em atraso de ${locataire} — ${periode}`,
+    sujet: (locataire, periode) => `Informação: renda em atraso de ${locataire} — ${periode}`,
     bonjour: (nom) => `Olá <strong>${nom}</strong>,`,
     corps: (locataire, bien, periode, montant) =>
-      `Você é fiador do contrato de locação de <strong>${locataire}</strong> referente ao imóvel <strong>${bien}</strong>. Informamos que o aluguel de <strong>${periode}</strong> continua em atraso apesar dos nossos lembretes, no valor de <strong>${montant}</strong>.`,
-    plafond: (montant) => `Lembramos que o valor máximo que você garantiu é de <strong>${montant}</strong>.`,
-    contact: (agence) => `Em caso de dúvida, você pode entrar em contato com ${agence}.`,
+      `É fiador do contrato de arrendamento de <strong>${locataire}</strong> relativo ao imóvel <strong>${bien}</strong>. Informamos que a renda de <strong>${periode}</strong> continua em atraso apesar dos nossos lembretes, no montante de <strong>${montant}</strong>.`,
+    plafond: (montant) => `Recordamos que o montante máximo que garantiu é de <strong>${montant}</strong>.`,
+    contact: (agence) => `Em caso de dúvida, pode contactar ${agence}.`,
   },
   finDeContrat: {
     sujet: (bien, jours) => `Lembrete: o contrato termina em ${jours} dias — ${bien}`,
-    titre: "Lembrete de fim de contrato de locação",
+    titre: "Lembrete de fim de contrato de arrendamento",
     intro: (locataire, bien, date, jours) =>
-      `O contrato de locação de <strong>${locataire}</strong> referente ao imóvel <strong>${bien}</strong> termina em <strong>${date}</strong> (em ${jours} dias).`,
-    conseil: "Lembre-se de entrar em contato com o inquilino para conversar sobre uma renovação, uma vistoria de saída ou a desocupação do imóvel.",
+      `O contrato de arrendamento de <strong>${locataire}</strong> relativo ao imóvel <strong>${bien}</strong> termina em <strong>${date}</strong> (dentro de ${jours} dias).`,
+    conseil: "Lembre-se de contactar o inquilino para falar de uma renovação, de uma vistoria de saída ou da desocupação do imóvel.",
   },
   assurance: {
     sujet: (bien, jours) => `Lembrete: apólice de seguro a renovar em ${jours} dias — ${bien}`,
     titre: "Lembrete de vencimento do seguro",
     intro: (police, assureur, bien, date, jours) =>
-      `A apólice de seguro <strong>${police}</strong> contratada com <strong>${assureur}</strong> para o imóvel <strong>${bien}</strong> vence em <strong>${date}</strong> (em ${jours} dias).`,
-    conseil: "Lembre-se de entrar em contato com a sua seguradora para renovar o contrato ou contratar um novo antes dessa data.",
+      `A apólice de seguro <strong>${police}</strong> contratada com <strong>${assureur}</strong> para o imóvel <strong>${bien}</strong> vence em <strong>${date}</strong> (dentro de ${jours} dias).`,
+    conseil: "Lembre-se de contactar a sua seguradora para renovar o contrato ou subscrever um novo antes dessa data.",
   },
   documents: {
     sujet: (n) => (n === 1 ? "Lembrete: um documento está prestes a vencer" : `Lembrete: ${n} documentos estão prestes a vencer`),
@@ -606,16 +606,16 @@ const pt: TextesSuite = {
         : `<strong>${n} documentos</strong> guardados no seu espaço vencem nos próximos ${jours} dias:`,
     delai: (j) => (j <= 0 ? "hoje" : j === 1 ? "amanhã" : `em ${j} dias`),
     ligne: (titre, rattachement, date, delai) => `<strong>${titre}</strong> — ${rattachement} — vence em ${date} (${delai})`,
-    conseil: "Peça o documento atualizado, envie-o em «Documentos» e informe a nova data de validade: o acompanhamento recomeça do zero.",
+    conseil: "Peça o documento atualizado, envie-o em «Documentos» e indique a nova data de validade: o acompanhamento recomeça do zero.",
   },
   parrainage: {
-    sujet: (jours) => `🎁 +${jours} dias de presente — a pessoa que você indicou entrou no ImmoPlatform Pro`,
+    sujet: (jours) => `🎁 +${jours} dias de oferta — a pessoa que indicou entrou no ImmoPlatform Pro`,
     titre: "🎁 Obrigado pela sua indicação!",
     intro: (jours) =>
-      `A pessoa que você indicou acabou de confirmar a conta. Em agradecimento, <strong>${jours} dias</strong> foram adicionados ao seu acesso.`,
+      `A pessoa que indicou acabou de confirmar a conta. Em agradecimento, foram adicionados <strong>${jours} dias</strong> ao seu acesso.`,
     nouvelleEcheance: "Nova data de vencimento",
-    suite: "Continue compartilhando o seu código de indicação para prolongar o seu acesso a cada nova indicação confirmada.",
-    bouton: "Ver meu programa de indicação →",
+    suite: "Continue a partilhar o seu código de indicação para prolongar o seu acesso a cada nova indicação confirmada.",
+    bouton: "Ver o meu programa de indicação →",
   },
   finAcces: {
     essaiBientot: {
@@ -629,7 +629,7 @@ const pt: TextesSuite = {
       sujet: () => "O seu período de teste gratuito terminou",
       titre: "O seu período de teste gratuito terminou",
       intro: (date) => `O seu período de teste terminou em <strong>${date}</strong>: o acesso à gestão está suspenso.`,
-      suite: "Nada se perde: os seus imóveis, inquilinos e documentos são mantidos. Escolha um plano e recupera tudo de imediato.",
+      suite: "Nada se perde: os seus imóveis, inquilinos e documentos são mantidos. Escolha um plano e recupere tudo de imediato.",
       bouton: "Escolher um plano →",
     },
     abonnementBientot: {
@@ -643,7 +643,7 @@ const pt: TextesSuite = {
       sujet: () => "A sua assinatura venceu",
       titre: "A sua assinatura venceu",
       intro: (date) => `A sua assinatura terminou em <strong>${date}</strong>: o acesso à gestão está suspenso.`,
-      suite: "Os seus imóveis, inquilinos e documentos são mantidos. Renove a sua assinatura e recupera tudo de imediato.",
+      suite: "Os seus imóveis, inquilinos e documentos são mantidos. Renove a sua assinatura e recupere tudo de imediato.",
       bouton: "Renovar a minha assinatura →",
     },
   },

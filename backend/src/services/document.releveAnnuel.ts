@@ -59,9 +59,9 @@ const pt: TextesReleveAnnuel = {
   titre: "EXTRATO ANUAL DE RENDAS",
   periode: (annee) => `Ano: ${annee}`,
   sectionMois: (devise) => `Mês a mês (${devise})`,
-  colonnesMois: { mois: "Mês", loyers: "Rendas recebidas", charges: "Despesas deduzidas", commission: "Comissão", net: "Líquido", reverse: "Repassado" },
+  colonnesMois: { mois: "Mês", loyers: "Rendas recebidas", charges: "Despesas deduzidas", commission: "Comissão", net: "Líquido", reverse: "Entregue" },
   sectionBiens: "Total do ano por imóvel",
-  aucunReversement: "Nenhum repasse registrado neste ano",
+  aucunReversement: "Nenhum pagamento registado neste ano",
   pied: (date) => `Documento gerado em ${date} — Extrato com valor informativo, soma dos relatórios de gestão mensais. Não constitui uma declaração fiscal.`,
 };
 

@@ -103,7 +103,7 @@ describe("statut d'un signalement", () => {
     expect(statut("fr", "OPEN")).toContain("Ouvert");
     expect(statut("en", "OPEN")).toContain("Open");
     expect(statut("es", "RESOLVED")).toContain("Resuelto");
-    expect(statut("pt", "REJECTED")).toContain("Rejeitado");
+    expect(statut("pt", "REJECTED")).toContain("Rejeitada");
     expect(statut("en", "EN_ATTENTE_X")).toContain("EN_ATTENTE_X");
   });
 
@@ -182,7 +182,7 @@ describe("garant — avis d'impayé", () => {
     expect(texteDe(avis("fr", 1500))).toContain("montant maximal que vous avez garanti");
     expect(texteDe(avis("en", 1500))).toContain("maximum amount you have guaranteed");
     expect(texteDe(avis("es", 1500))).toContain("importe máximo que usted ha avalado");
-    expect(texteDe(avis("pt", 1500))).toContain("valor máximo que você garantiu");
+    expect(texteDe(avis("pt", 1500))).toContain("montante máximo que garantiu");
   });
 });
 
