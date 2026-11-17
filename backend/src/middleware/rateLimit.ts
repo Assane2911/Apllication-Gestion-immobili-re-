@@ -190,6 +190,28 @@ export const cronLimiter = rateLimit({
 });
 
 /**
+ * Limite par adresse IP sur les routes d'IPN PayDunya (POST /api/payments/paydunya/ipn et /ipn/agence/:managerId) : 30 REFUS par
+ * fenêtre de 15 minutes. Ces routes sont publiques, leur seule garde est le hash vérifié dans le contrôleur : sans plafond, un tiers
+ * pouvait les marteler sans limite, pour deviner le hash ou pour sonder quelles agences ont un compte de paiement actif (404 « Compte
+ * introuvable » contre 401). Seuls les refus d'authentification comptent (401 hash invalide, 404 agence sans compte) : une
+ * notification authentique de PayDunya, et même ses réessais pendant une panne de confirmation (502, 400), n'usent jamais ce quota et
+ * ne risquent donc pas d'être bloqués au moment où un paiement doit être enregistré. Le store est exporté pour que les tests remettent
+ * le compteur à zéro.
+ */
+export const ipnLimiterStore = new MemoryStore();
+
+export const ipnLimiter = rateLimit({
+  windowMs: WINDOW_MS,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  requestWasSuccessful: (_req, res) => res.statusCode !== 401 && res.statusCode !== 404,
+  store: ipnLimiterStore,
+  message: { error: "Trop de tentatives. Réessayez plus tard." },
+});
+
+/**
  * Limite par adresse IP sur le flux de calendrier public (GET /api/agenda/ics/:jeton.ics). Seuls les échecs comptent : un
  * calendrier légitime qui relit son lien toutes les heures n'use jamais ce quota, qui vise les essais de jetons au hasard.
  * Le store est exporté pour que les tests remettent le compteur à zéro.
