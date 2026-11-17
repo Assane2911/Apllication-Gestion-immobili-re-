@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import AdminLayout from "./components/AdminLayout";
 import BandeauNouvelleVersion from "./components/BandeauNouvelleVersion";
+import AnnonceChangementPage from "./components/AnnonceChangementPage";
 import LienEvitement from "./components/LienEvitement";
 import CookieConsentBanner from "./components/CookieConsentBanner";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -218,6 +219,7 @@ export default function App() {
           <AuthProvider>
             <CurrencyProvider>
               <LienEvitement />
+              <AnnonceChangementPage />
               <SynchroLangueUrl />
               <BandeauNouvelleVersion />
               <PorteMaintenance>

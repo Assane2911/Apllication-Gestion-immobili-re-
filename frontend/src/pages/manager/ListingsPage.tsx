@@ -556,7 +556,7 @@ export default function ListingsPage() {
                 </dl>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-slate-300 px-4 py-2.5 text-xs font-semibold">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5 border-t border-slate-300 px-4 py-2.5 text-xs font-semibold">
               {listing.status === "PUBLISHED" ? (
                 <>
                   <Link to={`/vitrine/annonces/${listing.id}`} className="inline-flex items-center gap-1.5 border-b border-ink-900/40 text-ink-900 hover:border-orange-700 hover:text-orange-700">
