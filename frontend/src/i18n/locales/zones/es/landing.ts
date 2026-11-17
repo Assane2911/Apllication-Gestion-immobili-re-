@@ -48,7 +48,6 @@ const zone: ZoneLanding = {
         "Genera sus recibos en PDF, firme sus contratos en línea, envíe sus recordatorios automáticos desde el día 1 de cada mes y siga su rentabilidad neta en tiempo real.",
       ctaTrial: "Comenzar la prueba gratuita de 15 días →",
       ctaPricing: "Ver precios",
-      mobileSoon: "Próximamente en App Store y Google Play",
     },
     features: {
       receipts: {

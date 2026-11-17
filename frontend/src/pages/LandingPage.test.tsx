@@ -41,9 +41,10 @@ describe("LandingPage", () => {
     expect(screen.getByText("réinventée & automatisée.")).toBeInTheDocument();
   });
 
-  it("annonce la disponibilité prochaine de l'app mobile sur l'App Store et Google Play", () => {
+  it("n'annonce plus de disponibilité sur l'App Store ni sur Google Play", () => {
     renderPage();
-    expect(screen.getByText("Bientôt disponible sur l'App Store et Google Play")).toBeInTheDocument();
+    expect(screen.queryByText(/App Store|Google Play/i)).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/App Store|Google Play/i);
   });
 
   it("définit un titre d'onglet et une meta description propres à la page", () => {

@@ -1,6 +1,5 @@
 import { useCheminPublic, useSeoLangues } from "../hooks/useSeoLangues";
 import {
-  Apple,
   ArrowRight,
   Building2,
   Camera,
@@ -17,7 +16,6 @@ import {
   Receipt,
   Scale,
   Search,
-  Smartphone,
   Sparkles,
   Wallet,
   X,
@@ -631,14 +629,6 @@ export default function LandingPage() {
                   {t("landing.hero.ctaPricing")}
                 </a>
               </div>
-            </Reveal>
-
-            <Reveal delay={320}>
-              <p className="mt-6 flex items-center justify-center lg:justify-start gap-2 text-xs text-slate-700">
-                <Apple className="w-4 h-4 shrink-0" aria-hidden="true" />
-                <Smartphone className="w-4 h-4 shrink-0" aria-hidden="true" />
-                {t("landing.hero.mobileSoon")}
-              </p>
             </Reveal>
           </div>
 
