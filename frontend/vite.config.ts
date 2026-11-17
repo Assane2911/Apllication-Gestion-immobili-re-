@@ -1,6 +1,9 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { decouperEnFichiers } from './decoupageBibliotheques.js'
+import { construireTable, genererScript, injecterDansLeHtml, routesDepuisApp, type SortieBuild } from './prechargementDesPages.js'
 
 // Identifiant de CE build : l'empreinte du commit déployé (Vercel), à défaut l'heure du build. Il est inscrit dans le code
 // de l'application (__BUILD_ID__) ET publié dans `version.json` : un onglet resté ouvert compare les deux pour savoir
@@ -17,9 +20,47 @@ function publierVersion() {
   }
 }
 
+/**
+ * Annonce dès le HTML la page et les textes de l'adresse ouverte (voir prechargementDesPages.ts) : un petit script chargé sans bloquer, qui ajoute
+ * les `<link rel="modulepreload">` utiles. Sans lui, la page n'est découverte qu'une fois le code principal exécuté (1,8 s au lieu de 0,3 s sur
+ * une connexion lente). Les routes sont lues dans App.tsx ; si la lecture ne trouve plus rien, le build échoue plutôt que de perdre le gain en silence.
+ */
+function precharger() {
+  let racine = process.cwd()
+  return {
+    name: 'precharger-les-pages',
+    configResolved(config: { root: string }) {
+      racine = config.root
+    },
+    generateBundle: {
+      order: 'post' as const,
+      handler(
+        this: {
+          emitFile: (f: { type: 'asset'; name: string; source: string }) => string
+          getFileName: (reference: string) => string
+          error: (message: string) => never
+        },
+        _options: unknown,
+        bundle: Record<string, unknown>,
+      ) {
+        const html = bundle['index.html'] as { source?: string } | undefined
+        if (!html || typeof html.source !== 'string') return
+        const routes = routesDepuisApp(readFileSync(resolve(racine, 'src/App.tsx'), 'utf8'))
+        const zones = [...new Set(routes.flatMap((r) => r.zones))]
+        const table = construireTable(bundle as SortieBuild, routes, zones)
+        if (!table.routes.some((r) => r.expression === '^/$') || !table.routes.some((r) => r.expression === '^/vitrine$')) {
+          this.error("Préchargement des pages : l'accueil ou la vitrine est introuvable dans App.tsx ou dans le build (voir prechargementDesPages.ts).")
+        }
+        const reference = this.emitFile({ type: 'asset', name: 'precharge.js', source: genererScript(table) })
+        html.source = injecterDansLeHtml(html.source, '/' + this.getFileName(reference))
+      },
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), publierVersion()],
+  plugins: [react(), publierVersion(), precharger()],
   define: { __BUILD_ID__: JSON.stringify(buildId) },
   // Le code-splitting par route existe déjà (React.lazy sur chaque page dans App.tsx) : c'est lui qui isole recharts (utilisé uniquement par
   // DashboardPage et FiscalPage) dans son propre chunk asynchrone. Un ancien découpage MANUEL qui isolait recharts avait fusionné par erreur
