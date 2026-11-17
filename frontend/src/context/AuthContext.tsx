@@ -1,4 +1,3 @@
-import { Capacitor } from "@capacitor/core";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
@@ -22,15 +21,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
 
   async function refreshUser(): Promise<AuthUser | null> {
-    // Natif (app Capacitor) : le jeton reste dans localStorage et porté par
-    // l'en-tête Authorization (voir api/client.ts) — inutile d'appeler /me
-    // sans lui. Web : l'authentification voyage dans un cookie httpOnly
-    // illisible depuis ce code, donc impossible à tester directement ; voir
-    // SESSION_HINT_KEY ci-dessus. Un indice présent mais un cookie expiré ou
-    // absent se résout simplement par le 401 de l'appel.
-    const indiceSessionLocale = Capacitor.isNativePlatform()
-      ? localStorage.getItem("token")
-      : localStorage.getItem(SESSION_HINT_KEY);
+    // L'authentification voyage dans un cookie httpOnly illisible depuis ce code, donc impossible à tester directement ;
+    // voir SESSION_HINT_KEY ci-dessus. Un indice présent mais un cookie expiré ou absent se résout simplement par le 401
+    // de l'appel.
+    const indiceSessionLocale = localStorage.getItem(SESSION_HINT_KEY);
     if (!indiceSessionLocale) return null;
     try {
       const { data } = await api.get("/auth/me");
@@ -81,14 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * toutes la même forme `{token, user}` en réponse.
    */
   function installSession(data: { token: string; user: AuthUser }): AuthUser {
-    // Web : le serveur vient de poser le cookie httpOnly qui portera
-    // l'authentification (voir api/client.ts) — stocker aussi le jeton en
-    // clair ici recréerait exactement le risque de vol par XSS que cette
-    // migration retire. Natif : pas de cookie fiable, le jeton reste géré
-    // comme avant.
-    if (Capacitor.isNativePlatform()) {
-      localStorage.setItem("token", data.token);
-    }
+    // Le serveur vient de poser le cookie httpOnly qui portera l'authentification (voir api/client.ts) — stocker aussi
+    // le jeton en clair ici recréerait exactement le risque de vol par XSS que cette migration retire.
     localStorage.setItem("user", JSON.stringify(data.user));
     localStorage.setItem(SESSION_HINT_KEY, "1");
     setUser(data.user);
@@ -174,9 +162,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
-    if (Capacitor.isNativePlatform()) {
-      localStorage.removeItem("token");
-    }
     localStorage.removeItem("user");
     localStorage.removeItem(SESSION_HINT_KEY);
     setUser(null);

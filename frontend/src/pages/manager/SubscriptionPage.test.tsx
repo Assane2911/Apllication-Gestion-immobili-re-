@@ -1,7 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Capacitor } from "@capacitor/core";
 import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
 import { CurrencyProvider } from "../../context/CurrencyContext";
@@ -14,20 +13,7 @@ vi.mock("../../api/client", async () => {
   return { ...actual, api: { get: vi.fn(), post: vi.fn(), patch: vi.fn() } };
 });
 
-// Sans ce mock, Capacitor.isNativePlatform() tourne avec son implémentation
-// web réelle (toujours `false` sous jsdom) : la branche mobile ajoutée pour
-// la conformité App Store/Play Store (grille de plans masquée, message de
-// repli) n'était alors exercée par AUCUN test. Défaut à `false` (web) pour
-// que tous les tests existants continuent d'exercer la branche web sans
-// changement ; les tests dédiés ci-dessous le passent à `true`.
-vi.mock("@capacitor/core", () => ({
-  Capacitor: {
-    isNativePlatform: vi.fn(() => false),
-  },
-}));
-
 const mockedApi = vi.mocked(api, { deep: true });
-const mockedIsNativePlatform = vi.mocked(Capacitor.isNativePlatform);
 
 function plan(overrides: Partial<SubscriptionPlanDetail> = {}): SubscriptionPlanDetail {
   return {
@@ -149,7 +135,6 @@ describe("SubscriptionPage", () => {
     mockedApi.get.mockReset();
     installerGet();
     mockedApi.post.mockReset();
-    mockedIsNativePlatform.mockReturnValue(false);
   });
 
   it("n'a pas de second titre de niveau 1 : le h1 est celui de l'espace (layout), la page porte un h2", async () => {
@@ -759,60 +744,6 @@ describe("SubscriptionPage", () => {
     await waitFor(() => expect(screen.getByText("Erreur serveur")).toBeInTheDocument());
   });
 
-  it("sur mobile natif (Capacitor), masque la grille de plans et affiche le message de repli", async () => {
-    mockedIsNativePlatform.mockReturnValue(true);
-    seedUser(authUser()); // TRIAL par défaut, donc pas encore "ACTIVE"
-    queueGet({ data: [plan({ id: "STARTER" }), plan({ id: "PRO", name: "Pro" })] });
-    queueGet({ data: { history: [] } });
-
-    renderPage();
-
-    await waitFor(() => expect(screen.getByText("Essai : 7 j restants")).toBeInTheDocument());
-    expect(screen.queryByText("Starter")).not.toBeInTheDocument();
-    expect(screen.queryByText("Professionnel")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Choisir/ })).not.toBeInTheDocument();
-    expect(
-      screen.getByText(/Pour souscrire ou changer d'offre, connectez-vous depuis le site web/)
-    ).toBeInTheDocument();
-  });
-
-  // Le message de repli de l'application native était écrit en dur en français, quelle que soit la langue choisie.
-  it("sur mobile natif, écrit le message de repli dans la langue choisie", async () => {
-    await changerLangue("en");
-    try {
-      mockedIsNativePlatform.mockReturnValue(true);
-      seedUser(authUser());
-      queueGet({ data: [plan({ id: "STARTER" })] });
-      queueGet({ data: { history: [] } });
-
-      renderPage();
-
-      await waitFor(() => expect(screen.getByText(/To subscribe or change plan, sign in from the website/)).toBeInTheDocument());
-      expect(screen.queryByText(/Pour souscrire ou changer d'offre/)).not.toBeInTheDocument();
-    } finally {
-      await changerLangue("fr");
-    }
-  });
-
-  it("sur mobile natif (Capacitor) avec un abonnement déjà actif, n'affiche ni grille ni message de repli", async () => {
-    mockedIsNativePlatform.mockReturnValue(true);
-    seedUser(
-      authUser({
-        subscription: subscription({ status: "ACTIVE", plan: "PRO", isTrialActive: false, isSubscriptionActive: true, subscriptionEndsAt: "2026-10-01T00:00:00.000Z" }),
-      })
-    );
-    queueGet({ data: [plan({ id: "STARTER" }), plan({ id: "PRO", name: "Pro" })] });
-    queueGet({ data: { history: [] } });
-
-    renderPage();
-
-    await waitFor(() => expect(screen.getByText("Formule Professionnel Active")).toBeInTheDocument());
-    expect(screen.queryByText("Starter")).not.toBeInTheDocument();
-    expect(
-      screen.queryByText(/Pour souscrire ou changer d'offre, connectez-vous depuis le site web/)
-    ).not.toBeInTheDocument();
-  });
-
   /**
    * Régression : un gestionnaire choisissant de régler son abonnement par
    * virement ne voyait aucun IBAN — seulement un champ pour déclarer une
@@ -1096,7 +1027,6 @@ describe("SubscriptionPage — historique, économie annuelle et formule suivant
     mockedApi.get.mockReset();
     installerGet();
     mockedApi.post.mockReset();
-    mockedIsNativePlatform.mockReturnValue(false);
   });
 
   it("résume les paiements : nombre, total par devise, dernier paiement", async () => {

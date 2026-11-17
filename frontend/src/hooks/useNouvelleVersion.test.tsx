@@ -1,4 +1,3 @@
-import { Capacitor } from "@capacitor/core";
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as versionPubliee from "../utils/versionPubliee";
@@ -64,14 +63,12 @@ describe("useNouvelleVersion", () => {
     expect(result.current.disponible).toBe(false);
   });
 
-  it("reste inerte en développement et dans l'application mobile", async () => {
-    renderHook(() => useNouvelleVersion("dev"));
-    vi.spyOn(Capacitor, "isNativePlatform").mockReturnValue(true);
-    const mobile = renderHook(() => useNouvelleVersion("v1"));
+  it("reste inerte en développement", async () => {
+    const dev = renderHook(() => useNouvelleVersion("dev"));
     lire.mockResolvedValue("v2");
     await attendre(INTERVALLE_VERIFICATION_MS * 2);
     expect(lire).not.toHaveBeenCalled();
-    expect(mobile.result.current.disponible).toBe(false);
+    expect(dev.result.current.disponible).toBe(false);
   });
 
   it("libère le minuteur au démontage", async () => {

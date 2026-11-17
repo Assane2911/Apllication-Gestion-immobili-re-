@@ -50,7 +50,7 @@ function renderPage(entree = "/login") {
   );
 }
 
-// Le bouton « Retour » de l'application (et celui d'Android) fait un navigate(-1) : ce petit composant tient la place
+// Le bouton « Retour » de l'application fait un navigate(-1) : ce petit composant tient la place
 // de la page d'arrivée pour savoir où l'on retombe en reculant.
 function PageAvecRetour({ titre }: { titre: string }) {
   const navigate = useNavigate();
@@ -154,8 +154,7 @@ describe("LoginPage", () => {
     await waitFor(() => expect(screen.getByText("Espace gestionnaire")).toBeInTheDocument());
     expect(mockedApi.post).toHaveBeenCalledWith("/auth/login", { email: "agence@test.local", password: "Password123!" });
     // Web : la session voyage dans le cookie httpOnly posé par le serveur, pas
-    // dans localStorage (voir AuthContext.tsx / AuthContext.native.test.tsx
-    // pour le comportement de l'app mobile Capacitor).
+    // dans localStorage (voir AuthContext.tsx)
     expect(localStorage.getItem("token")).toBeNull();
   });
 

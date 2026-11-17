@@ -1,7 +1,6 @@
 import { AlertTriangle, Check, CheckCircle2, Clock, Undo2, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Capacitor } from "@capacitor/core";
 import { api, apiErrorMessage } from "../../api/client";
 import BandeauChiffres from "../../components/BandeauChiffres";
 import BankDetails from "../../components/BankDetails";
@@ -73,7 +72,6 @@ export default function SubscriptionPage() {
   const [cancelling, setCancelling] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const isNativeApp = Capacitor.isNativePlatform();
 
   // Les moyens proposés viennent du serveur, seul à savoir quelles clés sont
   // configurées et dans quelle devise le compte encaisse. Les masquer en dur
@@ -390,7 +388,7 @@ export default function SubscriptionPage() {
       </section>
 
       {/* Le parc approche du plafond : la formule suivante qui le loge, en un clic. */}
-      {suggestion && propertyUsage && propertyUsage.max !== null && !isNativeApp && (
+      {suggestion && propertyUsage && propertyUsage.max !== null && (
         <div className="flex flex-wrap items-center justify-between gap-3 border border-slate-300 bg-white px-4 py-3 shadow-[inset_4px_0_0_var(--color-orange-700)]">
           <p className="text-sm text-slate-800">
             {t("manager.subscription.upgrade.text", {
@@ -453,87 +451,79 @@ export default function SubscriptionPage() {
         )}
       </div>
 
-      {/* Tableau des formules (masqué sur build mobile native : la souscription se fait sur le web) */}
-      {!isNativeApp && (
-        <div className="grid grid-cols-1 divide-y divide-slate-300 border border-slate-300 bg-white md:grid-cols-3 md:divide-x md:divide-y-0">
-          {plans.map((plan, rang) => {
-            const isCurrentPlan = sub?.plan === plan.id && sub?.status === "ACTIVE";
-            const price = billingCycle === "ANNUAL" ? Math.round(plan.annualPrice / 12) : plan.monthlyPrice;
+      {/* Tableau des formules */}
+      <div className="grid grid-cols-1 divide-y divide-slate-300 border border-slate-300 bg-white md:grid-cols-3 md:divide-x md:divide-y-0">
+        {plans.map((plan, rang) => {
+          const isCurrentPlan = sub?.plan === plan.id && sub?.status === "ACTIVE";
+          const price = billingCycle === "ANNUAL" ? Math.round(plan.annualPrice / 12) : plan.monthlyPrice;
 
-            return (
-              <div key={plan.id} className="relative flex flex-col">
-                <div
-                  className={`border-b px-6 py-2 font-mono text-[10px] font-semibold uppercase tracking-wider ${
-                    plan.popular ? "border-orange-700 bg-orange-700 text-white" : "border-slate-300 bg-slate-50 text-slate-600"
+          return (
+            <div key={plan.id} className="relative flex flex-col">
+              <div
+                className={`border-b px-6 py-2 font-mono text-[10px] font-semibold uppercase tracking-wider ${
+                  plan.popular ? "border-orange-700 bg-orange-700 text-white" : "border-slate-300 bg-slate-50 text-slate-600"
+                }`}
+              >
+                {plan.popular ? t("manager.subscription.mostPopular") : String(rang + 1).padStart(2, "0")}
+              </div>
+
+              <div className="flex flex-1 flex-col p-6">
+                <div className="mb-4">
+                  <h3 className="text-lg font-bold text-slate-900">{nomFormule(plan)}</h3>
+                  <p className="mt-1 min-h-[32px] text-xs text-slate-600">{t(`manager.subscription.planDescriptions.${plan.id}`, { defaultValue: plan.description })}</p>
+                </div>
+
+                <div className="mb-6 flex flex-wrap items-baseline gap-x-1.5">
+                  <span className="text-3xl font-black tabular-nums text-slate-900">{formatMoney(price, plan.currency)}</span>
+                  <span className="text-xs font-medium text-slate-600">{t("manager.subscription.perMonth")}</span>
+                  {billingCycle === "ANNUAL" && (
+                    <span className="w-full text-[11px] text-slate-600">
+                      {t("manager.subscription.billedAnnually", { amount: formatMoney(plan.annualPrice, plan.currency) })}
+                    </span>
+                  )}
+                  {billingCycle === "ANNUAL" && economieAnnuelle(plan) > 0 && (
+                    <span className="mt-1 w-full font-mono text-[10px] font-semibold uppercase tracking-wider text-orange-700">
+                      {t("manager.subscription.annualSaving", { amount: formatMoney(economieAnnuelle(plan), plan.currency) })}
+                    </span>
+                  )}
+                </div>
+
+                <div className="mb-6 flex-1 space-y-2.5 border-t border-slate-300 pt-4 text-xs text-slate-700">
+                  <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-900">{t("manager.subscription.includedInPlan")}</p>
+                  {plan.features.map((_feat, idx) => (
+                    <div key={idx} className="flex items-start gap-2.5">
+                      <span className="mt-px flex h-4 w-4 shrink-0 items-center justify-center border border-ink-900 bg-white">
+                        <Check size={11} strokeWidth={3} className="text-ink-900" aria-hidden="true" />
+                      </span>
+                      <span>{libelleLigne(plan, idx)}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => {
+                    setSelectedPlan(plan);
+                    setAutoRenew(false);
+                  }}
+                  disabled={isCurrentPlan}
+                  className={`w-full border px-4 py-2.5 text-xs font-bold transition-colors ${
+                    isCurrentPlan
+                      ? "cursor-not-allowed border-slate-300 bg-slate-100 text-slate-600"
+                      : plan.popular
+                      ? "cursor-pointer border-orange-700 bg-orange-700 text-white hover:bg-orange-800"
+                      : "cursor-pointer border-ink-900 bg-ink-900 text-white hover:bg-brand-600"
                   }`}
                 >
-                  {plan.popular ? t("manager.subscription.mostPopular") : String(rang + 1).padStart(2, "0")}
-                </div>
-
-                <div className="flex flex-1 flex-col p-6">
-                  <div className="mb-4">
-                    <h3 className="text-lg font-bold text-slate-900">{nomFormule(plan)}</h3>
-                    <p className="mt-1 min-h-[32px] text-xs text-slate-600">{t(`manager.subscription.planDescriptions.${plan.id}`, { defaultValue: plan.description })}</p>
-                  </div>
-
-                  <div className="mb-6 flex flex-wrap items-baseline gap-x-1.5">
-                    <span className="text-3xl font-black tabular-nums text-slate-900">{formatMoney(price, plan.currency)}</span>
-                    <span className="text-xs font-medium text-slate-600">{t("manager.subscription.perMonth")}</span>
-                    {billingCycle === "ANNUAL" && (
-                      <span className="w-full text-[11px] text-slate-600">
-                        {t("manager.subscription.billedAnnually", { amount: formatMoney(plan.annualPrice, plan.currency) })}
-                      </span>
-                    )}
-                    {billingCycle === "ANNUAL" && economieAnnuelle(plan) > 0 && (
-                      <span className="mt-1 w-full font-mono text-[10px] font-semibold uppercase tracking-wider text-orange-700">
-                        {t("manager.subscription.annualSaving", { amount: formatMoney(economieAnnuelle(plan), plan.currency) })}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="mb-6 flex-1 space-y-2.5 border-t border-slate-300 pt-4 text-xs text-slate-700">
-                    <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-900">{t("manager.subscription.includedInPlan")}</p>
-                    {plan.features.map((_feat, idx) => (
-                      <div key={idx} className="flex items-start gap-2.5">
-                        <span className="mt-px flex h-4 w-4 shrink-0 items-center justify-center border border-ink-900 bg-white">
-                          <Check size={11} strokeWidth={3} className="text-ink-900" aria-hidden="true" />
-                        </span>
-                        <span>{libelleLigne(plan, idx)}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setSelectedPlan(plan);
-                      setAutoRenew(false);
-                    }}
-                    disabled={isCurrentPlan}
-                    className={`w-full border px-4 py-2.5 text-xs font-bold transition-colors ${
-                      isCurrentPlan
-                        ? "cursor-not-allowed border-slate-300 bg-slate-100 text-slate-600"
-                        : plan.popular
-                        ? "cursor-pointer border-orange-700 bg-orange-700 text-white hover:bg-orange-800"
-                        : "cursor-pointer border-ink-900 bg-ink-900 text-white hover:bg-brand-600"
-                    }`}
-                  >
-                    {isCurrentPlan ? t("manager.subscription.currentPlanBtn") : t("manager.subscription.choosePlanBtn", { plan: nomFormule(plan) })}
-                  </button>
-                </div>
+                  {isCurrentPlan ? t("manager.subscription.currentPlanBtn") : t("manager.subscription.choosePlanBtn", { plan: nomFormule(plan) })}
+                </button>
               </div>
-            );
-          })}
-        </div>
-      )}
-
-      {isNativeApp && sub?.status !== "ACTIVE" && (
-        <div className="border border-slate-300 bg-white p-6 text-center text-sm text-slate-600">
-          {t("manager.subscription.nativeFallback")}
-        </div>
-      )}
+            </div>
+          );
+        })}
+      </div>
 
       {/* Modal de Souscription / Paiement */}
-      {!isNativeApp && selectedPlan && (
+      {selectedPlan && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
           <Dialogue onClose={() => setSelectedPlan(null)} titreId="subscription-modal-title" fermable={!subscribing} className="w-full max-w-lg border-2 border-ink-900 bg-white">
             <div className="flex items-start justify-between gap-3 border-b border-ink-900 bg-ink-900 px-6 py-4 text-white">

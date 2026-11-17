@@ -1,8 +1,7 @@
 import { ChevronsLeft, ChevronsRight, LogOut, X, type LucideIcon } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
-import { enregistrerCoucheRetour } from "../utils/couchesRetour";
 import { libellePastille } from "../utils/nonLus";
 import Logo from "./Logo";
 
@@ -69,12 +68,6 @@ export default function MenuLateral({ groupes, prefixeLibelles, prefixeRubriques
     });
   // Texte qui n'a sa place que menu ouvert : il s'efface en colonne d'icônes.
   const etiquette = ouvert ? "" : "sm:opacity-0 sm:pointer-events-none";
-
-  // Le bouton retour d'Android referme le tiroir ouvert avant de changer de page (voir useBoutonRetourAndroid).
-  useEffect(() => {
-    if (!ouvertMobile) return;
-    return enregistrerCoucheRetour(onFermerMobile);
-  }, [ouvertMobile, onFermerMobile]);
 
   return (
     <>

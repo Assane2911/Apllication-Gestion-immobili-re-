@@ -419,7 +419,6 @@ const zone: ZonePartage = {
       annualSaving: "You save {{amount}} a year",
       upgrade: { text_one: "You use {{count}} of {{max}} properties: the {{plan}} plan gives you room to grow.", text_other: "You use {{count}} of {{max}} properties: the {{plan}} plan gives you room to grow.", cta: "Choose {{plan}}" },
       title: "Subscription & SaaS Plans",
-      nativeFallback: "To subscribe or change plan, sign in from the website on a computer or your mobile browser — the app only shows your current subscription.",
       subtitle: "Manage your property management plan and billing options.",
       currentStatus: "Your current status",
       cells: { plan: "Plan", due: "Due date", usage: "Properties used" },

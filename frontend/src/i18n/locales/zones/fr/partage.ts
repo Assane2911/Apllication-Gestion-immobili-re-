@@ -417,7 +417,6 @@ const zone = {
       annualSaving: "Vous économisez {{amount}} par an",
       upgrade: { text_one: "Vous utilisez {{count}} bien sur {{max}} : la formule {{plan}} vous laisse de la marge.", text_other: "Vous utilisez {{count}} biens sur {{max}} : la formule {{plan}} vous laisse de la marge.", cta: "Choisir {{plan}}" },
       title: "Abonnement & Formules SaaS",
-      nativeFallback: "Pour souscrire ou changer d'offre, connectez-vous depuis le site web sur ordinateur ou votre navigateur mobile — l'app se contente d'afficher votre abonnement en cours.",
       subtitle: "Gérez votre formule de gestion immobilière et vos options de facturation.",
       currentStatus: "Votre statut actuel",
       cells: { plan: "Formule", due: "Échéance", usage: "Biens utilisés" },

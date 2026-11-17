@@ -419,7 +419,6 @@ const zone: ZonePartage = {
       annualSaving: "Ahorra {{amount}} al año",
       upgrade: { text_one: "Usa {{count}} de {{max}} inmuebles: el plan {{plan}} le da margen para crecer.", text_other: "Usa {{count}} de {{max}} inmuebles: el plan {{plan}} le da margen para crecer.", cta: "Elegir {{plan}}" },
       title: "Suscripción y Planes SaaS",
-      nativeFallback: "Para suscribirse o cambiar de plan, inicie sesión desde el sitio web, en un ordenador o en el navegador del móvil — la aplicación solo muestra su suscripción actual.",
       subtitle: "Gestione su plan de gestión inmobiliaria y sus opciones de facturación.",
       currentStatus: "Su estado actual",
       cells: { plan: "Plan", due: "Vencimiento", usage: "Inmuebles usados" },

@@ -123,7 +123,7 @@ describe("protection CSRF (repli cookie)", () => {
     expect(res.status).toBe(403);
   });
 
-  it("n'exige pas X-Requested-With quand le jeton vient de l'en-tête Authorization (app native)", async () => {
+  it("n'exige pas X-Requested-With quand le jeton vient de l'en-tête Authorization (client API)", async () => {
     const manager = await createManager();
     const tenant = await createTenant(manager.id);
     const tenantUser = await createTenantPortalUser(tenant);

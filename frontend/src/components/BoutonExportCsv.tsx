@@ -33,8 +33,8 @@ async function messageErreur(err: unknown): Promise<string> {
 
 /**
  * Télécharge un export CSV de l'administration. Passe par une requête
- * authentifiée puis un blob (et non un lien direct) : l'authentification de
- * l'app native voyage dans un en-tête, qu'un simple lien n'enverrait pas.
+ * authentifiée puis un blob (et non un lien direct), pour que l'appel passe par le client API (en-têtes, gestion des
+ * erreurs) plutôt que par un simple lien.
  */
 export default function BoutonExportCsv({ chemin, params, prefixeFichier }: BoutonExportCsvProps) {
   const { t } = useTranslation();

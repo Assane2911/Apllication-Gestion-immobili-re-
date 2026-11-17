@@ -25,12 +25,11 @@ describe("requête de vérification CORS (preflight)", () => {
     expect(res.headers["access-control-allow-credentials"]).toBe("true");
   });
 
-  it("l'est aussi pour les applications mobiles (Android, iOS)", async () => {
+  it("n'autorise plus les origines des anciennes applications mobiles (Android, iOS)", async () => {
     for (const origine of ["https://localhost", "capacitor://localhost"]) {
       const res = await preflight(origine);
-      expect(res.status, origine).toBe(204);
-      expect(res.headers["access-control-max-age"], origine).toBe("86400");
-      expect(res.headers["access-control-allow-origin"], origine).toBe(origine);
+      expect(res.status, origine).toBe(403);
+      expect(res.headers["access-control-allow-origin"], origine).toBeUndefined();
     }
   });
 

@@ -7,7 +7,6 @@ import type { AuthContextValue } from "../context/auth";
 import { CurrencyProvider } from "../context/CurrencyContext";
 import type { AuthUser } from "../types";
 import { api } from "../api/client";
-import { traiterRetourSurCouche } from "../utils/couchesRetour";
 import ManagerLayout from "./ManagerLayout";
 
 vi.mock("../api/client", async () => {
@@ -174,25 +173,6 @@ describe("ManagerLayout — navigation Retour / Suivant", () => {
     expect(within(barre).queryByRole("button", { name: "Retour" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retour" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Suivant" })).toBeInTheDocument();
-  });
-});
-
-describe("ManagerLayout — bouton retour d'Android", () => {
-  it("le menu ouvert sur téléphone se referme avec le bouton retour, avant toute navigation", async () => {
-    const { container } = renderManagerLayout("/dashboard");
-    const barre = container.querySelector("aside")!;
-    expect(barre.className).toMatch(/-translate-x-full/);
-    expect(traiterRetourSurCouche()).toBe(false);
-
-    await userEvent.setup().click(screen.getByRole("button", { name: "Ouvrir le menu" }));
-    expect(barre.className).toMatch(/translate-x-0/);
-
-    expect(traiterRetourSurCouche()).toBe(true);
-    // Le menu se referme, puis React retire la couche dans un second temps (nettoyage d'effet différé) : on attend
-    // l'un et l'autre plutôt que de supposer que le retrait a déjà eu lieu quand la classe change. Les délais sont
-    // larges : la suite complète tourne en parallèle sur une machine chargée.
-    await waitFor(() => expect(barre.className).toMatch(/-translate-x-full/), { timeout: 4000 });
-    await waitFor(() => expect(traiterRetourSurCouche()).toBe(false), { timeout: 4000 });
   });
 });
 
