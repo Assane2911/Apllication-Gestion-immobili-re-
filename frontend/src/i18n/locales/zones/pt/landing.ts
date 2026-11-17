@@ -83,7 +83,7 @@ const zone: ZoneLanding = {
         desc: "Exiba e receba as rendas na moeda da sua escolha, adaptada ao seu mercado e ao dos seus inquilinos.",
       },
       multiLanguage: {
-        title: "Interface Multilingue",
+        title: "Interface Multilíngue",
         desc: "Francês, inglês, português e espanhol: cada utilizador escolhe o seu idioma de exibição num clique, sem qualquer configuração.",
       },
     },
