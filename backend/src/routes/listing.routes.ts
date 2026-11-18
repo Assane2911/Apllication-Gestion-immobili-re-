@@ -10,6 +10,7 @@ import {
   listListings,
   listPublicCountries,
   listPublicListings,
+  sitemapAnnonces,
   updateListing,
   updateListingLead,
 } from "../controllers/listing.controller";
@@ -25,6 +26,8 @@ const router = Router();
 // de ce qui suit est public, seul le CRM gestionnaire est protégé).
 router.get("/public", listPublicListings);
 router.get("/public/countries", listPublicCountries);
+// Avant "/public/:id" : sinon « sitemap.xml » serait pris pour l'identifiant d'une annonce.
+router.get("/public/sitemap.xml", sitemapAnnonces);
 router.get("/public/:id", getPublicListing);
 router.post("/public/:id/leads", listingLeadLimiter, createPublicLead);
 

@@ -51,7 +51,12 @@ describe.skipIf(!dispo)("en-têtes de sécurité du site", () => {
 
   it("garde la redirection de toutes les pages vers l'application monopage", () => {
     const config = JSON.parse(readFileSync(join(RACINE, "frontend/vercel.json"), "utf8")) as { rewrites?: Array<{ source: string; destination: string }> };
-    expect(config.rewrites).toEqual([{ source: "/(.*)", destination: "/index.html" }]);
+    // Une seule exception, avant la règle générale : le plan du site des annonces, servi à la demande par l'API
+    // (voir depot-domaine.test.ts). La règle qui renvoie tout le reste à l'application reste la DERNIÈRE.
+    expect(config.rewrites).toEqual([
+      { source: "/sitemap-annonces.xml", destination: "https://api.immoplatformpro.com/api/listings/public/sitemap.xml" },
+      { source: "/(.*)", destination: "/index.html" },
+    ]);
   });
 });
 
