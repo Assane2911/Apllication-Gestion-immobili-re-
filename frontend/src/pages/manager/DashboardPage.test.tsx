@@ -74,11 +74,14 @@ describe("DashboardPage", () => {
   });
 
   it("affiche une erreur avec un bouton pour recharger les chiffres", async () => {
-    mockedApi.get.mockRejectedValueOnce({
-      response: { data: { error: "Erreur serveur" } },
-      isAxiosError: true,
+    // Le guide de démarrage lit aussi /agency : on répond par adresse plutôt que par ordre d'appel.
+    let appelsStats = 0;
+    mockedApi.get.mockImplementation(async (url: string) => {
+      if (url !== "/dashboard/stats") return { data: {} };
+      appelsStats += 1;
+      if (appelsStats === 1) throw { response: { data: { error: "Erreur serveur" } }, isAxiosError: true };
+      return { data: stats() };
     });
-    mockedApi.get.mockResolvedValueOnce({ data: stats() });
     renderPage();
 
     await waitFor(() => expect(screen.getByText("Erreur serveur")).toBeInTheDocument());
@@ -216,6 +219,65 @@ describe("DashboardPage", () => {
       lecteur.readAsText(blob!);
     });
     expect(texte).toContain('"2026-08";"EUR";2000,00;300,00;1700,00');
+  });
+
+  describe("guide de démarrage : aucun décalage d'affichage", () => {
+    // Le guide dépend de deux lectures : les statistiques (bien, locataire, bail) et les réglages de l'agence (identifiants
+    // légaux). Quand les trois premiers gestes sont faits, il ne s'affiche que si les identifiants manquent : l'apparaître après
+    // coup repoussait toute la page de plusieurs centaines de pixels (décalage mesuré à 0,13 sur ordinateur et 0,27 sur téléphone).
+    // La page attend donc les deux lectures, et s'affiche d'un seul tenant.
+    const statsCompletes = () => stats({ totalProperties: 3, totalTenants: 2, activeContracts: 1 });
+
+    beforeEach(() => {
+      try {
+        localStorage.clear();
+      } catch {
+        // Stockage indisponible : le guide le tolère aussi.
+      }
+    });
+
+    it("reste sur son squelette tant que les réglages de l'agence ne sont pas lus, puis affiche d'un coup les indicateurs ET le guide", async () => {
+      let repondre: (valeur: unknown) => void = () => {};
+      mockedApi.get.mockImplementation(async (url: string) => {
+        if (url === "/dashboard/stats") return { data: statsCompletes() };
+        if (url === "/agency") return new Promise((resolve) => (repondre = resolve));
+        return { data: {} };
+      });
+      renderPage();
+
+      await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/agency"));
+      // Laisse aux statistiques le temps d'arriver : elles ne suffisent pas à afficher la page.
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(screen.queryByText("Biens immobiliers")).not.toBeInTheDocument();
+
+      repondre({ data: { siretOrId: "" } });
+      await screen.findByText("Biens immobiliers");
+      // Dès le premier affichage des indicateurs, le guide est déjà là : rien n'apparaît plus tard au-dessus d'eux.
+      expect(screen.getByText("Pour bien démarrer")).toBeInTheDocument();
+      expect(screen.getByText("Renseigner les identifiants légaux de l'agence")).toBeInTheDocument();
+    });
+
+    it("ne retient pas la page si les réglages de l'agence sont illisibles : elle s'affiche, sans l'étape des identifiants", async () => {
+      mockedApi.get.mockImplementation(async (url: string) => {
+        if (url === "/dashboard/stats") return { data: stats({ totalProperties: 0, totalTenants: 0, activeContracts: 0 }) };
+        throw new Error("réseau");
+      });
+      renderPage();
+
+      expect(await screen.findByText("Pour bien démarrer")).toBeInTheDocument();
+      expect(screen.queryByText("Renseigner les identifiants légaux de l'agence")).not.toBeInTheDocument();
+      expect(screen.getByText("Ajouter votre premier bien")).toBeInTheDocument();
+    });
+
+    it("quand le guide est masqué, les réglages de l'agence ne sont pas demandés", async () => {
+      localStorage.setItem("immoplatform.demarrage.masque", "1");
+      mockedApi.get.mockImplementation(async (url: string) => (url === "/dashboard/stats" ? { data: statsCompletes() } : { data: {} }));
+      renderPage();
+
+      await screen.findByText("Biens immobiliers");
+      expect(mockedApi.get).not.toHaveBeenCalledWith("/agency");
+      expect(screen.queryByText("Pour bien démarrer")).not.toBeInTheDocument();
+    });
   });
 
   it("recharge les chiffres sans vider la page quand on actualise", async () => {

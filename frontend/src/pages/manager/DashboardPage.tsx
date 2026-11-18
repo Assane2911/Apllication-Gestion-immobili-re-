@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { api, apiErrorMessage } from "../../api/client";
 import DemarrageAgence from "../../components/DemarrageAgence";
+import { lireIdentifiantsSaisis, lireMasque as guideMasque } from "../../utils/guideDemarrage";
 import { COULEURS_STATUT } from "../../components/graphiques/couleurs";
 import { GraphiqueParc, GraphiqueRevenusDepenses } from "../../components/graphiques/graphiquesALaDemande";
 import SectionReglage from "../../components/SectionReglage";
@@ -42,6 +43,8 @@ export default function DashboardPage() {
   const { t, i18n } = useTranslation();
   const { formatMoney } = useCurrency();
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  // Réglages de l'agence lus avec les statistiques : le guide de démarrage en dépend (voir DemarrageAgence).
+  const [identifiantsSaisis, setIdentifiantsSaisis] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   // Rechargement à la demande : les chiffres restent affichés pendant qu'ils se mettent à jour.
@@ -58,10 +61,13 @@ export default function DashboardPage() {
   const charger = useCallback((silencieux = false) => {
     if (silencieux) setActualisation(true);
     else setLoading(true);
-    api
-      .get<DashboardStats>("/dashboard/stats")
-      .then((res) => {
+    // Les deux lectures partent ensemble et la page attend la plus lente : sans cela, le guide de démarrage apparaissait après
+    // les indicateurs et les repoussait vers le bas. `lireIdentifiantsSaisis` ne rejette jamais, et n'est pas appelée si le
+    // guide est masqué.
+    Promise.all([api.get<DashboardStats>("/dashboard/stats"), guideMasque() ? Promise.resolve(null) : lireIdentifiantsSaisis()])
+      .then(([res, identifiants]) => {
         setStats(res.data);
+        setIdentifiantsSaisis(identifiants);
         setError(null);
         setMisAJour(new Date());
       })
@@ -224,6 +230,7 @@ export default function DashboardPage() {
 
       <DemarrageAgence
         stats={{ totalProperties: stats.totalProperties ?? 0, totalTenants: stats.totalTenants ?? 0, activeContracts: stats.activeContracts ?? 0 }}
+        identifiantsSaisis={identifiantsSaisis}
       />
 
       {/* 01 — Ce qui demande une action aujourd'hui, du plus pressant au moins pressant. */}

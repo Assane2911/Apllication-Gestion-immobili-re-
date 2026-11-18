@@ -6,6 +6,7 @@ import { api } from "../api/client";
 import { AuthContext } from "../context/auth";
 import type { AuthContextValue } from "../context/auth";
 import type { AuthUser } from "../types";
+import { lireIdentifiantsSaisis } from "../utils/guideDemarrage";
 import DemarrageAgence from "./DemarrageAgence";
 
 vi.mock("../api/client", async () => {
@@ -25,13 +26,13 @@ function noop(): never {
   throw new Error("not implemented in this test");
 }
 
-function rendre(pays: string | null, stats = AUCUN) {
+function rendre(pays: string | null, stats = AUCUN, identifiantsSaisis: boolean | null = false) {
   const user = { id: "m1", email: "m@test.local", role: "MANAGER", country: pays } as AuthUser;
   const auth: AuthContextValue = { user, loading: false, login: noop, register: noop, loginWithGoogle: noop, verifyTwoFactor: noop, verifyEmail: noop, logout: async () => {}, refreshUser: async () => user };
   return render(
     <MemoryRouter>
       <AuthContext.Provider value={auth}>
-        <DemarrageAgence stats={stats} />
+        <DemarrageAgence stats={stats} identifiantsSaisis={identifiantsSaisis} />
       </AuthContext.Provider>
     </MemoryRouter>
   );
@@ -50,7 +51,6 @@ describe("DemarrageAgence", () => {
   });
 
   it("France : quatre étapes à faire, le SIRET pour les identifiants, et le rappel du pays et de la devise", async () => {
-    reglages("");
     rendre("FR");
 
     expect(await screen.findByText("Renseigner les identifiants légaux de l'agence")).toBeInTheDocument();
@@ -63,7 +63,6 @@ describe("DemarrageAgence", () => {
   });
 
   it("Sénégal : le NINEA et le RCCM ; autre pays de la zone : le numéro d'immatriculation et l'identifiant fiscal", async () => {
-    reglages(null);
     const { unmount } = rendre("SN");
     expect(await screen.findByText(/Votre NINEA et votre RCCM/)).toBeInTheDocument();
     expect(screen.getByText(/configurée pour Sénégal \(devise : XOF\)/)).toBeInTheDocument();
@@ -75,8 +74,7 @@ describe("DemarrageAgence", () => {
   });
 
   it("marque ce qui est fait et ne propose plus d'ouvrir une étape faite", async () => {
-    reglages("NINEA 123");
-    rendre("SN", { totalProperties: 2, totalTenants: 0, activeContracts: 0 });
+    rendre("SN", { totalProperties: 2, totalTenants: 0, activeContracts: 0 }, true);
 
     await waitFor(() => expect(screen.getAllByLabelText("Fait")).toHaveLength(2));
     expect(screen.getAllByLabelText("À faire")).toHaveLength(2);
@@ -84,48 +82,64 @@ describe("DemarrageAgence", () => {
   });
 
   it("disparaît quand tout est fait", async () => {
-    reglages("NINEA 123");
-    const { container } = rendre("SN", { totalProperties: 1, totalTenants: 1, activeContracts: 1 });
+    const { container } = rendre("SN", { totalProperties: 1, totalTenants: 1, activeContracts: 1 }, true);
 
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/agency"));
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("réglages illisibles : l'étape des identifiants est omise, les trois autres restent", async () => {
-    mockedApi.get.mockRejectedValue(new Error("réseau"));
-    rendre("SN");
+  it("réglages illisibles (null) : l'étape des identifiants est omise, les trois autres restent", async () => {
+    rendre("SN", AUCUN, null);
 
     expect(await screen.findByText("Ajouter votre premier bien")).toBeInTheDocument();
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalled());
     expect(screen.queryByText("Renseigner les identifiants légaux de l'agence")).not.toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Ouvrir" })).toHaveLength(3);
   });
 
-  it("sans réponse des réglages (valeur vide), n'échoue pas", async () => {
-    mockedApi.get.mockResolvedValue(undefined as never);
-    rendre("SN");
-    expect(await screen.findByText("Ajouter votre premier bien")).toBeInTheDocument();
-    expect(screen.queryByText("Renseigner les identifiants légaux de l'agence")).not.toBeInTheDocument();
+  it("identifiants déjà saisis, et rien d'autre à faire : le guide ne s'affiche pas du tout", () => {
+    const { container } = rendre("SN", { totalProperties: 1, totalTenants: 1, activeContracts: 1 }, true);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("trois gestes faits, identifiants manquants : le guide est là dès le premier rendu, sans attendre quoi que ce soit", () => {
+    // C'est le cas qui apparaissait en retard et repoussait la page : il est désormais décidé avant l'affichage.
+    rendre("SN", { totalProperties: 1, totalTenants: 1, activeContracts: 1 }, false);
+    expect(screen.getByText("Pour bien démarrer")).toBeInTheDocument();
   });
 
   it("sans pays connu : le même guide, sans le rappel du pays", async () => {
-    reglages("");
     rendre(null);
     expect(await screen.findByText("Pour bien démarrer")).toBeInTheDocument();
     expect(screen.getByText("Quatre gestes suffisent pour émettre vos premiers documents.")).toBeInTheDocument();
     expect(screen.queryByText(/configurée pour/)).not.toBeInTheDocument();
   });
 
-  it("se masque, et le reste à la visite suivante sans relire les réglages", async () => {
-    reglages("");
+  it("se masque, et le reste à la visite suivante", async () => {
     const premiere = rendre("SN");
     await userEvent.setup().click(await screen.findByRole("button", { name: "Masquer ce guide" }));
     expect(screen.queryByText("Pour bien démarrer")).not.toBeInTheDocument();
     premiere.unmount();
 
-    mockedApi.get.mockClear();
     rendre("SN");
     expect(screen.queryByText("Pour bien démarrer")).not.toBeInTheDocument();
-    expect(mockedApi.get).not.toHaveBeenCalled();
+  });
+});
+
+describe("lireIdentifiantsSaisis", () => {
+  beforeEach(() => mockedApi.get.mockReset());
+
+  it("vrai quand l'agence a saisi ses identifiants, faux quand le champ est vide ou blanc", async () => {
+    reglages("NINEA 123");
+    expect(await lireIdentifiantsSaisis()).toBe(true);
+    reglages("   ");
+    expect(await lireIdentifiantsSaisis()).toBe(false);
+    reglages(null);
+    expect(await lireIdentifiantsSaisis()).toBe(false);
+  });
+
+  it("null (étape omise) quand les réglages sont illisibles ou la réponse vide, et ne rejette jamais", async () => {
+    mockedApi.get.mockRejectedValue(new Error("réseau"));
+    await expect(lireIdentifiantsSaisis()).resolves.toBeNull();
+    mockedApi.get.mockResolvedValue(undefined as never);
+    await expect(lireIdentifiantsSaisis()).resolves.toBeNull();
   });
 });
