@@ -153,6 +153,20 @@ s'il est **absent**, sensible à la casse : un simple « ok » se trouverait aus
 SMS / appel si vous voulez être réveillé. Les sondes d'UptimeRobot partent d'Amérique du Nord : leurs temps de réponse
 sont plus longs que ceux d'un utilisateur à Dakar, c'est normal, seule la disponibilité compte ici.
 
+### Alerte si la tâche quotidienne ne s'exécute plus (battement de cœur)
+
+Une sonde posée sur `/api/health/ready` ne voit que ce qui **répond** : si le cron Vercel s'arrête (désactivé, secret absent, déploiement cassé) ou si une étape de la tâche échoue, le site reste au vert et personne n'est prévenu, alors que les avis d'échéance, les relances et le passage des factures en retard ne partent plus. Pour couvrir ce cas, la tâche quotidienne appelle, **seulement quand toutes ses étapes ont réussi**, l'adresse `CRON_HEARTBEAT_URL`.
+
+1. UptimeRobot → *Add new monitor* → type **Heartbeat**, intervalle **24 h** avec 2 à 3 h de marge (le cron part à 08 h UTC). Contacts d'alerte : e-mail et notification Android. UptimeRobot donne une adresse `https://heartbeat.uptimerobot.com/…`.
+2. Vercel → projet backend → *Environment Variables* → `CRON_HEARTBEAT_URL` = cette adresse, en variable **sensible** (elle contient un jeton). Redéployez.
+3. Contrôle : lancer à la main `/api/cron/daily` (voir plus haut) ; le monitor passe à « Up » dans la minute.
+
+Sans la variable, rien n'est envoyé et rien ne change. L'adresse n'apparaît jamais dans les journaux.
+
+### Délai des appels au stockage de fichiers
+
+Les appels à Supabase Storage (dépôt de photo, suppression, téléchargement) sont interrompus au bout de 30 s. Sans cela, un stockage dont la connexion se fige laissait la requête attendre jusqu'à ce que Vercel tue la fonction (300 s). L'échec est alors renvoyé comme n'importe quelle autre erreur de stockage.
+
 ## Chiffrement du secret de double authentification
 
 Le secret TOTP de chaque compte (`users.totp_secret`) est chiffré en base (AES-256-GCM) avec la clé `TOTP_ENCRYPTION_KEY`. Sans cela, quiconque lit la base pourrait calculer les codes à 6 chiffres du compte, dont celui de l'administrateur.
