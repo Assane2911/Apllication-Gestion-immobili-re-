@@ -94,7 +94,7 @@ export default function VitrinePage() {
       <Seo title={t("seo.vitrine.title")} description={t("seo.vitrine.description")} {...seoLangues} />
       <VitrineHeader />
 
-      <main id="contenu-principal" tabIndex={-1} className="mx-auto max-w-6xl space-y-6 px-4 py-10 sm:px-6">
+      <main id="contenu-principal" tabIndex={-1} className="mx-auto min-h-svh max-w-6xl space-y-6 px-4 py-10 sm:px-6">
         <div className="border border-slate-300 bg-white">
           <div aria-hidden="true" className="bande-motif h-2" />
           <div className="flex flex-wrap items-end justify-between gap-4 p-6 sm:p-8">

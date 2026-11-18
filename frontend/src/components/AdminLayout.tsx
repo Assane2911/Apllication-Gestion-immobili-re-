@@ -7,6 +7,7 @@ import { useConfirmationDeconnexion } from "../hooks/useConfirmationDeconnexion"
 import ActivationDeuxFacteursAdmin from "./ActivationDeuxFacteursAdmin";
 import LanguageSwitcher from "./LanguageSwitcher";
 import CartouchePlan from "./CartouchePlan";
+import ZoneDePage from "./ZoneDePage";
 import MenuLateral, { type GroupeMenu } from "./MenuLateral";
 
 // Même menu latéral que l'espace gestionnaire (colonne d'icônes qui s'ouvre au survol), rangé en quatre rubriques.
@@ -90,7 +91,7 @@ export default function AdminLayout() {
               className="mb-4 font-mono text-[11px] uppercase tracking-wider text-slate-600 before:content-[attr(data-groupe)] after:font-bold after:text-ink-900 after:content-[attr(data-page)]"
             />
           )}
-          {doitActiverDeuxFacteurs ? <ActivationDeuxFacteursAdmin /> : <Outlet />}
+          <ZoneDePage>{doitActiverDeuxFacteurs ? <ActivationDeuxFacteursAdmin /> : <Outlet />}</ZoneDePage>
           {entree && !doitActiverDeuxFacteurs && (
             <CartouchePlan espace={t("components.adminLayout.title")} page={t(`admin.nav.${entree.key}`)} rang={navItems.indexOf(entree) + 1} total={navItems.length} />
           )}

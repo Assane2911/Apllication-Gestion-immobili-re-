@@ -67,6 +67,11 @@ describe("TenantLayout — menu latéral", () => {
     expect(screen.getByText("Contenu du portail")).toBeInTheDocument();
   });
 
+  it("la page est dans une zone au moins aussi haute que l'écran : le cartouche reste sous la ligne de flottaison", () => {
+    renderTenantLayout();
+    expect(screen.getByText("Contenu du portail").closest(".min-h-svh")).not.toBeNull();
+  });
+
   it("garde un bouton de déconnexion accessible, qui demande confirmation avant de fermer la session", async () => {
     renderTenantLayout();
     const bouton = screen.getByRole("button", { name: /se déconnecter/i });

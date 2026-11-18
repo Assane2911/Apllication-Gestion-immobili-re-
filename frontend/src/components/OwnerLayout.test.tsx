@@ -59,6 +59,11 @@ describe("OwnerLayout", () => {
     expect(screen.getByText("Résumé financier")).toBeInTheDocument();
   });
 
+  it("la page est dans une zone au moins aussi haute que l'écran : le cartouche reste sous la ligne de flottaison", () => {
+    renderOwnerLayout();
+    expect(screen.getByText("Résumé financier").closest(".min-h-svh")).not.toBeNull();
+  });
+
   it("propose la navigation vers le CRG et surligne l'onglet actif", () => {
     renderOwnerLayout("/proprietaire/crg");
 

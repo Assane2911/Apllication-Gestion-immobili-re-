@@ -66,6 +66,11 @@ describe("AdminLayout", () => {
     expect(screen.getByText("Tableau de bord admin")).toBeInTheDocument();
   });
 
+  it("la page est dans une zone au moins aussi haute que l'écran : le cartouche reste sous la ligne de flottaison", () => {
+    renderAdminLayout();
+    expect(screen.getByText("Tableau de bord admin").closest(".min-h-svh")).not.toBeNull();
+  });
+
   it("propose la navigation vers les paramètres et surligne l'onglet actif", () => {
     renderAdminLayout("/admin/parametres");
 
