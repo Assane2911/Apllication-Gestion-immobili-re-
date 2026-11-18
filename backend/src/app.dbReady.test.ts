@@ -1,5 +1,5 @@
 import request from "supertest";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * Régression : sur Vercel, src/app.ts est directement le point d'entrée
@@ -14,6 +14,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 describe("initialisation du schéma avant la première requête (app.ts)", () => {
   beforeEach(() => {
     vi.resetModules();
+    vi.unstubAllEnvs();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("appelle initDb() avant de traiter la toute première requête, sans le refaire pour les suivantes", async () => {
@@ -49,5 +54,46 @@ describe("initialisation du schéma avant la première requête (app.ts)", () =>
     const second = await request(app).get("/api/health");
     expect(second.status).toBe(200);
     expect(initDbMock).toHaveBeenCalledTimes(2);
+  });
+
+  /**
+   * Un aperçu Vercel (branche ou commit non fusionné) partage la base de production : mêmes DATABASE_URL, clés Supabase et JWT_SECRET
+   * (constat du 18/11/2026 : une seule base Supabase, aucune branche, variables attribuées à « production » ET « aperçu »). Or initDb()
+   * ne fait pas que créer : il supprime des contraintes, change le type de colonnes et met des lignes à jour. Une branche non relue qui
+   * modifie ce fichier l'exécutait donc sur la vraie base dès la première requête de son aperçu.
+   */
+  it("un aperçu Vercel n'exécute PAS initDb() : il partage la base de production", async () => {
+    vi.stubEnv("VERCEL_ENV", "preview");
+    const initDbMock = vi.fn().mockResolvedValue(undefined);
+    vi.doMock("./db/init", () => ({ initDb: initDbMock }));
+
+    const { app } = await import("./app");
+    const reponse = await request(app).get("/api/health");
+
+    expect(reponse.status).toBe(200);
+    expect(initDbMock).not.toHaveBeenCalled();
+  });
+
+  it("un aperçu qui a sa propre base peut demander la mise à jour du schéma (PREVIEW_DB_MIGRATIONS=true)", async () => {
+    vi.stubEnv("VERCEL_ENV", "preview");
+    vi.stubEnv("PREVIEW_DB_MIGRATIONS", "true");
+    const initDbMock = vi.fn().mockResolvedValue(undefined);
+    vi.doMock("./db/init", () => ({ initDb: initDbMock }));
+
+    const { app } = await import("./app");
+    await request(app).get("/api/health");
+
+    expect(initDbMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("la production, elle, met toujours le schéma à jour", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    const initDbMock = vi.fn().mockResolvedValue(undefined);
+    vi.doMock("./db/init", () => ({ initDb: initDbMock }));
+
+    const { app } = await import("./app");
+    await request(app).get("/api/health");
+
+    expect(initDbMock).toHaveBeenCalledTimes(1);
   });
 });

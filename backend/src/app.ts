@@ -6,7 +6,7 @@ import express from "express";
 import helmet from "helmet";
 import { env } from "./config/env";
 import { signalerCleTotp } from "./config/cleTotp";
-import { estProductionReelle } from "./config/environnementDeploiement";
+import { estProductionReelle, schemaAMettreAJour } from "./config/environnementDeploiement";
 import { signalerModeDemoIgnore } from "./config/modeDemo";
 import { verifierSecretJwt } from "./config/secretJwt";
 import { initDb } from "./db/init";
@@ -85,6 +85,8 @@ signalerCleTotp(estProductionReelle(process.env.VERCEL_ENV, process.env.VERCEL, 
 // l'instance à échouer indéfiniment tant qu'elle reste chaude.
 let dbReady: Promise<void> | null = null;
 app.use((_req, _res, next) => {
+  // Pas dans un aperçu Vercel : il partage la base de production (voir schemaAMettreAJour).
+  if (!schemaAMettreAJour(process.env.VERCEL_ENV, process.env.PREVIEW_DB_MIGRATIONS)) return next();
   (dbReady ?? (dbReady = initDb())).then(
     () => next(),
     (err) => {
