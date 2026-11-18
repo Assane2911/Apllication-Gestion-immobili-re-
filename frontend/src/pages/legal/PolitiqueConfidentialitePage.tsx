@@ -79,7 +79,9 @@ export default function PolitiqueConfidentialitePage() {
             <>
               <strong className="text-slate-900">Données techniques</strong> : journaux de connexion et
               d'activité nécessaires à la sécurité et à la traçabilité des actions (journal d'activité de
-              l'agence).
+              l'agence), et compteurs anti-abus des tentatives de connexion, rattachés à l'adresse e-mail
+              saisie ou à l'adresse IP de l'appareil et effacés automatiquement dans les deux jours qui
+              suivent leur expiration.
             </>,
           ]}
         />
@@ -147,6 +149,10 @@ export default function PolitiqueConfidentialitePage() {
               {SUBPROCESSORS.googleSignIn.role}
             </>,
             <>
+              <strong className="text-slate-900">{SUBPROCESSORS.sauvegardes.name}</strong> —{" "}
+              {SUBPROCESSORS.sauvegardes.role}
+            </>,
+            <>
               <strong className="text-slate-900">{SUBPROCESSORS.errorMonitoring.name}</strong> —{" "}
               {SUBPROCESSORS.errorMonitoring.role}
             </>,
@@ -189,6 +195,7 @@ export default function PolitiqueConfidentialitePage() {
             "Demandes de prospects reçues depuis une annonce : le Service signale au Gestionnaire, dans son espace, celles de plus de trois ans, durée de conservation recommandée pour la prospection ; le Gestionnaire peut les supprimer ou les anonymiser à tout moment.",
             "Journal d'activité de l'agence (traçabilité des actions) : conservé un an, puis effacé automatiquement — et en tout état de cause supprimé avec le compte.",
             "Journal d'administration de la plateforme (actions de l'équipe du Service : maintenance, suspension, modération, exports) : conservé un an, puis effacé automatiquement. Les entrées qui justifient un paiement ou un accès d'abonnement (virements, formules, accès accordés) suivent la durée comptable des données d'abonnement ci-dessous.",
+            "Sauvegardes de la base de données : une copie chiffrée est déposée chaque nuit sur GitHub (voir la section 5) et conservée 30 jours, puis détruite. Ces copies ne servent qu'à restaurer le Service après un incident ; elles ne sont consultées pour aucun autre usage. Une donnée effacée (compte supprimé, locataire ou garant anonymisé) disparaît des copies de sauvegarde au plus tard à l'expiration de ce délai.",
             "Données d'abonnement et de facturation : conservées pendant la durée requise par les obligations comptables et fiscales applicables, y compris après la clôture du compte, mais sous forme anonymisée : les paiements encaissés ne gardent que le plan, le montant, la devise, la période et la référence de paiement, sans plus aucun lien avec le compte supprimé. Les demandes d'abonnement jamais encaissées sont supprimées avec le compte.",
           ]}
         />

@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
@@ -82,5 +84,53 @@ describe("PolitiqueConfidentialitePage", () => {
     expect(texte).toContain("anonymiser ses données identifiantes");
     expect(texte).toContain("que cette agence était seule à rattacher");
     expect(texte).toContain("exige une double authentification");
+  });
+
+  /**
+   * Audit RGPD du 18/11/2026. Le workflow « Sauvegarde de la base » (.github/workflows/sauvegarde.yml) dépose chaque nuit sur GitHub une
+   * copie chiffrée de TOUTE la base, donc de toutes les données personnelles, conservée un nombre de jours fixé par `retention-days`. La
+   * politique ne disait rien de ces copies : ni le destinataire, ni la durée, ni ce qu'il advient d'une donnée effacée. Elle doit
+   * rester alignée sur le workflow, qui est la source de la durée.
+   */
+  const WORKFLOW = resolve(__dirname, "../../../../.github/workflows/sauvegarde.yml");
+
+  it.skipIf(!existsSync(WORKFLOW))("déclare GitHub, qui reçoit chaque nuit une copie chiffrée de la base", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <PolitiqueConfidentialitePage />
+      </MemoryRouter>
+    );
+    expect(readFileSync(WORKFLOW, "utf8")).toMatch(/upload-artifact/);
+    expect(container.textContent).toMatch(/GitHub/);
+    expect(container.textContent).toMatch(/copies? de sauvegarde chiffrée/i);
+  });
+
+  it.skipIf(!existsSync(WORKFLOW))("annonce, pour les copies de sauvegarde, la durée de conservation du workflow", () => {
+    const jours = readFileSync(WORKFLOW, "utf8").match(/retention-days:\s*(\d+)/)?.[1];
+    expect(jours).toBeDefined();
+    const { container } = render(
+      <MemoryRouter>
+        <PolitiqueConfidentialitePage />
+      </MemoryRouter>
+    );
+    expect(container.textContent).toMatch(new RegExp(`Sauvegardes de la base de données[^.]*${jours} jours`));
+  });
+
+  it("dit qu'une donnée effacée disparaît des copies de sauvegarde à leur expiration", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <PolitiqueConfidentialitePage />
+      </MemoryRouter>
+    );
+    expect(container.textContent).toMatch(/disparaît des copies de sauvegarde/);
+  });
+
+  it("mentionne les compteurs anti-abus des tentatives de connexion et leur effacement automatique", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <PolitiqueConfidentialitePage />
+      </MemoryRouter>
+    );
+    expect(container.textContent).toMatch(/compteurs anti-abus/);
   });
 });
