@@ -15,31 +15,71 @@ import { isMetaPixelConfigured } from "./metaPixel";
  */
 export const CLE_CHOIX = "cookie_consent";
 export const CLE_DATE_CHOIX = "cookie_consent_date";
-export type ChoixCookies = "accepted" | "rejected";
+/**
+ * Le consentement se donne FINALITÉ PAR FINALITÉ (recommandation de la CNIL) : la mesure d'audience (Google Analytics) d'une part, la
+ * publicité et le reciblage (pixels Meta et LinkedIn) d'autre part. Quatre valeurs : « accepted » (les deux) et « rejected » (aucune)
+ * gardent leur sens d'avant, donc les choix déjà enregistrés restent valables ; « audience » et « publicite » n'autorisent que leur finalité.
+ */
+export type ChoixCookies = "accepted" | "rejected" | "audience" | "publicite";
+
+/** Les finalités qu'un choix autorise. Sans choix (`null`), aucune : rien ne part tant que le visiteur n'a pas répondu. */
+export interface FinalitesCookies {
+  audience: boolean;
+  publicite: boolean;
+}
+
+export function finalitesAutorisees(choix: ChoixCookies | null): FinalitesCookies {
+  return {
+    audience: choix === "accepted" || choix === "audience",
+    publicite: choix === "accepted" || choix === "publicite",
+  };
+}
+
+/** Le choix qui correspond à des finalités cochées : tout cocher, c'est tout accepter ; ne rien cocher, c'est tout refuser. */
+export function choixDepuisFinalites({ audience, publicite }: FinalitesCookies): ChoixCookies {
+  if (audience && publicite) return "accepted";
+  if (audience) return "audience";
+  if (publicite) return "publicite";
+  return "rejected";
+}
+
+const CHOIX_VALIDES: readonly string[] = ["accepted", "rejected", "audience", "publicite"];
 
 const JOUR_MS = 86_400_000;
-const DUREE_DU_CHOIX_MS: Record<ChoixCookies, number> = { accepted: 395 * JOUR_MS, rejected: 183 * JOUR_MS };
+/** Un choix qui contient un accord, même partiel, se redemande au bout de 13 mois ; un refus complet, au bout de 6. */
+const DUREE_DU_CHOIX_MS: Record<ChoixCookies, number> = { accepted: 395 * JOUR_MS, audience: 395 * JOUR_MS, publicite: 395 * JOUR_MS, rejected: 183 * JOUR_MS };
 
 /** Événement émis par « Gérer mes cookies » : le bandeau se rouvre. */
 export const EVENEMENT_ROUVRIR_CHOIX = "rouvrir-choix-cookies";
 
 /** Au moins un des trois traceurs a son identifiant configuré : sinon il n'y a rien à accepter ni à gérer. */
 export function unTraceurEstConfigure(): boolean {
-  return isAnalyticsConfigured() || isMetaPixelConfigured() || isLinkedInConfigured();
+  return audienceEstConfiguree() || publiciteEstConfiguree();
+}
+
+/** La finalité « mesure d'audience » existe : Google Analytics a son identifiant. */
+export function audienceEstConfiguree(): boolean {
+  return isAnalyticsConfigured();
+}
+
+/** La finalité « publicité et reciblage » existe : le pixel Meta ou le traceur LinkedIn a son identifiant. */
+export function publiciteEstConfiguree(): boolean {
+  return isMetaPixelConfigured() || isLinkedInConfigured();
 }
 
 /** Le choix enregistré, ou `null` s'il n'y en a pas, s'il a expiré ou si le stockage est indisponible. */
 export function lireChoixCookies(maintenant: number = Date.now()): ChoixCookies | null {
   try {
     const brut = localStorage.getItem(CLE_CHOIX);
-    if (brut !== "accepted" && brut !== "rejected") return null;
+    if (brut === null || !CHOIX_VALIDES.includes(brut)) return null;
+    const choix = brut as ChoixCookies;
     const date = Number(localStorage.getItem(CLE_DATE_CHOIX));
     if (!Number.isFinite(date) || date <= 0) {
       // Choix fait avant que sa date soit enregistrée : on part de maintenant plutôt que de redemander d'un coup à tous.
       localStorage.setItem(CLE_DATE_CHOIX, String(maintenant));
-      return brut;
+      return choix;
     }
-    return maintenant - date > DUREE_DU_CHOIX_MS[brut] ? null : brut;
+    return maintenant - date > DUREE_DU_CHOIX_MS[choix] ? null : choix;
   } catch {
     return null;
   }

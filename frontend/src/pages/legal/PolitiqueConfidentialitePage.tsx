@@ -299,18 +299,22 @@ export default function PolitiqueConfidentialitePage() {
           transmises à des tiers.
         </p>
         <p>
-          Un bandeau vous propose par ailleurs d'accepter ou de refuser le dépôt de cookies de mesure
-          d'audience et de publicité par {SUBPROCESSORS.analytics.name}, {SUBPROCESSORS.metaPixel.name} et{" "}
-          {SUBPROCESSORS.linkedinInsight.name} (voir leur finalité détaillée en section 5 ci-dessus). Les
-          cookies de Meta et LinkedIn servent notamment au <strong className="text-slate-900">reciblage
-          publicitaire</strong> : si vous avez visité le site sans finaliser votre inscription, il est
-          possible que des publicités d'ImmoPlatform Pro vous soient ensuite présentées sur Facebook,
-          Instagram ou LinkedIn. Aucun de ces cookies n'est déposé avant votre acceptation explicite ; en cas
-          de refus ou tant que vous n'avez pas répondu, aucune donnée n'est envoyée à ces services. Vous
-          pouvez revenir sur votre choix à tout moment, aussi simplement que vous l'avez fait, avec le lien
-          « Gérer mes cookies » en bas des pages du site : le bandeau se rouvre, et un retrait efface les cookies
-          déjà déposés. Votre choix est conservé 13 mois pour un accord et 6 mois pour un refus, puis le
-          bandeau vous le redemande.
+          Un bandeau vous propose d'accepter ou de refuser, <strong className="text-slate-900">séparément
+          pour chacune de ces deux finalités</strong> : la <strong className="text-slate-900">mesure
+          d'audience</strong> par {SUBPROCESSORS.analytics.name}, d'une part, et la <strong
+          className="text-slate-900">publicité et le reciblage</strong> par {SUBPROCESSORS.metaPixel.name} et{" "}
+          {SUBPROCESSORS.linkedinInsight.name}, d'autre part (voir leur finalité détaillée en section 5
+          ci-dessus). Vous pouvez « Tout refuser », « Tout accepter », ou « Personnaliser » votre choix : chaque
+          finalité y a sa propre case, décochée par défaut. Les cookies de Meta et LinkedIn servent notamment
+          au <strong className="text-slate-900">reciblage publicitaire</strong> : si vous avez visité le site
+          sans finaliser votre inscription, il est possible que des publicités d'ImmoPlatform Pro vous soient
+          ensuite présentées sur Facebook, Instagram ou LinkedIn. Aucun de ces cookies n'est déposé avant votre
+          acceptation explicite pour la finalité concernée ; en cas de refus ou tant que vous n'avez pas
+          répondu, aucune donnée n'est envoyée aux services de cette finalité. Vous pouvez revenir sur votre
+          choix à tout moment, aussi simplement que vous l'avez fait, avec le lien « Gérer mes cookies » en bas
+          des pages du site : le bandeau se rouvre, et le retrait d'une finalité efface les cookies déjà
+          déposés. Votre choix est conservé 13 mois s'il contient un accord, 6 mois pour un refus complet,
+          puis le bandeau vous le redemande.
         </p>
       </LegalSection>
 

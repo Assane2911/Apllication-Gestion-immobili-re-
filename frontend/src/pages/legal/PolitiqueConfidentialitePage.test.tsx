@@ -133,4 +133,21 @@ describe("PolitiqueConfidentialitePage", () => {
     );
     expect(container.textContent).toMatch(/compteurs anti-abus/);
   });
+
+  /**
+   * Le bandeau laisse choisir finalité par finalité : mesure d'audience d'un côté, publicité et reciblage de l'autre, avec « Tout
+   * refuser », « Tout accepter » et « Personnaliser ». La politique doit décrire ce que le visiteur voit, pas un bouton unique.
+   */
+  it("décrit le choix finalité par finalité du bandeau de cookies", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <PolitiqueConfidentialitePage />
+      </MemoryRouter>
+    );
+    const texte = container.textContent ?? "";
+    expect(texte).toMatch(/séparément pour chacune de ces deux finalités/);
+    expect(texte).toMatch(/« Tout refuser »/);
+    expect(texte).toMatch(/« Personnaliser »/);
+    expect(texte).toMatch(/pour la finalité concernée/);
+  });
 });

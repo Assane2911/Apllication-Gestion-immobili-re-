@@ -1385,10 +1385,17 @@ const zone = {
   },
   cookieConsent: {
     message:
-      "Nous utilisons des outils de mesure d'audience et de publicité (Google Analytics, Meta, LinkedIn) pour analyser la fréquentation du site et vous proposer des publicités pertinentes. Aucune donnée n'est collectée sans votre accord.",
+      "Nous utilisons des outils de mesure d'audience (Google Analytics) et de publicité (Meta, LinkedIn) pour analyser la fréquentation du site et vous proposer des publicités pertinentes. Aucune donnée n'est collectée sans votre accord, et vous choisissez finalité par finalité.",
     privacyLink: "En savoir plus",
-    accept: "Accepter",
-    reject: "Refuser",
+    accept: "Tout accepter",
+    reject: "Tout refuser",
+    customize: "Personnaliser",
+    save: "Enregistrer mon choix",
+    purposes: "Finalités",
+    audienceTitle: "Mesure d'audience",
+    audienceHint: "Google Analytics : pages visitées et provenance du trafic sur le site public, pour l'améliorer.",
+    adsTitle: "Publicité et reciblage",
+    adsHint: "Pixel Meta et LinkedIn Insight Tag : mesure des campagnes et affichage d'annonces d'ImmoPlatform Pro sur Facebook, Instagram et LinkedIn.",
     manage: "Gérer mes cookies",
   },
 };
