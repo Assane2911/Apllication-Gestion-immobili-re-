@@ -67,6 +67,13 @@ function renderManagerLayout(entree: string, utilisateur: AuthUser = gestionnair
   );
 }
 
+describe("ManagerLayout — cartouche de feuille", () => {
+  it("la page est dans une zone au moins aussi haute que l'écran : le cartouche reste sous la ligne de flottaison", () => {
+    renderManagerLayout("/proprietaires");
+    expect(screen.getByRole("main").querySelector(".min-h-svh")).toHaveTextContent("Propriétaires");
+  });
+});
+
 describe("ManagerLayout — titre de l'onglet", () => {
   it("porte le nom de la page affichée, pour qu'un changement de page soit annoncé et reconnaissable", () => {
     renderManagerLayout("/tenants");

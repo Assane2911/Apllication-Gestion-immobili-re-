@@ -8,6 +8,7 @@ import BoutonSuggestion from "./BoutonSuggestion";
 import BoutonsHistorique from "./BoutonsHistorique";
 import LanguageSwitcher from "./LanguageSwitcher";
 import CartouchePlan from "./CartouchePlan";
+import ZoneDePage from "./ZoneDePage";
 import { useNonLus } from "../hooks/useNonLus";
 import BoutonOuvrirMenu from "./BoutonOuvrirMenu";
 import MenuLateral, { type GroupeMenu } from "./MenuLateral";
@@ -87,7 +88,9 @@ export default function OwnerLayout() {
               className="mb-4 font-mono text-[11px] uppercase tracking-wider text-slate-600 before:content-[attr(data-groupe)] after:font-bold after:text-ink-900 after:content-[attr(data-page)]"
             />
           )}
-          <Outlet />
+          <ZoneDePage>
+            <Outlet />
+          </ZoneDePage>
           {entree && (
             <CartouchePlan espace={t("nav.ownerSpace")} page={t(`nav.owner.${entree.key}`)} rang={navItems.indexOf(entree) + 1} total={navItems.length} />
           )}

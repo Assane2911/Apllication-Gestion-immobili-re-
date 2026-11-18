@@ -169,7 +169,7 @@ export default function VitrineListingPage() {
       <JsonLd data={buildListingJsonLd(listing)} />
       <VitrineHeader />
 
-      <main id="contenu-principal" tabIndex={-1} className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
+      <main id="contenu-principal" tabIndex={-1} className="mx-auto min-h-svh max-w-6xl space-y-6 px-4 py-8 sm:px-6">
         <Link to="/vitrine" className="inline-block border-b border-ink-900/40 pb-0.5 text-xs font-semibold text-ink-900 transition-colors hover:border-orange-700 hover:text-orange-700">
           {t("vitrine.backToListings")}
         </Link>

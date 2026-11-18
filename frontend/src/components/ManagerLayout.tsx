@@ -27,6 +27,7 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import CartouchePlan from "./CartouchePlan";
+import ZoneDePage from "./ZoneDePage";
 import { NonLusContext } from "../context/nonLus";
 import { useNonLus } from "../hooks/useNonLus";
 import { useResumeAgenda } from "../hooks/useResumeAgenda";
@@ -187,9 +188,11 @@ export default function ManagerLayout() {
           />
         )}
         <TrialBanner />
-        <NonLusContext.Provider value={nonLus}>
-          <Outlet />
-        </NonLusContext.Provider>
+        <ZoneDePage>
+          <NonLusContext.Provider value={nonLus}>
+            <Outlet />
+          </NonLusContext.Provider>
+        </ZoneDePage>
         {/* Cartouche de feuille, en pied de plan : repère décoratif (espace, page, date, numéro de l'entrée du menu). */}
         {rangFeuille >= 0 && entree && (
           <CartouchePlan espace={t("nav.managerSpace")} page={t(`nav.manager.${entree.key}`)} rang={rangFeuille + 1} total={navItems.length} />
