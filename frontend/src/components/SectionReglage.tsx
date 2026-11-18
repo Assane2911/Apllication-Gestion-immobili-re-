@@ -27,9 +27,9 @@ export default function SectionReglage({
         <span aria-hidden="true" className={`font-mono text-[11px] font-semibold ${danger ? "text-rose-700" : "text-orange-700"}`}>
           {numero}
         </span>
-        <h3 id={titreId} className={`font-mono text-xs font-semibold uppercase tracking-wider ${danger ? "text-rose-800" : "text-ink-900"}`}>
+        <h2 id={titreId} className={`font-mono text-xs font-semibold uppercase tracking-wider ${danger ? "text-rose-800" : "text-ink-900"}`}>
           {titre}
-        </h3>
+        </h2>
       </header>
       <div className="p-5">{children}</div>
     </section>

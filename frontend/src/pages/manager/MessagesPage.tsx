@@ -19,10 +19,10 @@ const REPONSES_RAPIDES = ["received", "visit", "thanks", "rent", "receipt"] as c
 const PAGE_SIZE = 20;
 function EnteteDeFiche({ children }: { children: React.ReactNode }) {
   return (
-    <h4 className="mb-2 flex items-center gap-2 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-900">
+    <h3 className="mb-2 flex items-center gap-2 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-900">
       {children}
       <span aria-hidden="true" className="h-px flex-1 bg-slate-300" />
-    </h4>
+    </h3>
   );
 }
 
@@ -62,7 +62,7 @@ export default function MessagesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900">{t("manager.messages.title")}</h2>
+        <h1 className="text-2xl font-semibold text-slate-900">{t("manager.messages.title")}</h1>
         <p className="mt-1 text-sm text-slate-600">{t("manager.messages.subtitle")}</p>
       </div>
       <OngletsMessagerie />
@@ -82,7 +82,7 @@ export default function MessagesPage() {
           className={`${selectedThreadId ? "hidden md:flex" : "flex"} w-full flex-col border-slate-300 bg-slate-50 md:w-80 md:shrink-0 md:border-r`}
         >
           <div className="border-b border-ink-900 bg-ink-900 px-4 py-3 text-white">
-            <h3 className="font-mono text-xs font-semibold uppercase tracking-wider">{t("manager.messages.ongoingDiscussions")}</h3>
+            <h2 className="font-mono text-xs font-semibold uppercase tracking-wider">{t("manager.messages.ongoingDiscussions")}</h2>
             <p className="mt-0.5 font-mono text-[11px] text-white/80">
               {t("manager.messages.conversationCount", { count: total })}
               {nbNonLues > 0 && ` · ${t("manager.messages.unreadCount", { count: nbNonLues })}`}
@@ -208,9 +208,9 @@ export default function MessagesPage() {
                         {t("common.sheet")} {String((page - 1) * PAGE_SIZE + rangActif + 1).padStart(2, "0")}
                       </p>
                     )}
-                    <h3 className="truncate text-sm font-bold text-slate-900">
+                    <h2 className="truncate text-sm font-bold text-slate-900">
                       {activeDetails.tenant?.firstName} {activeDetails.tenant?.lastName}
-                    </h3>
+                    </h2>
                     <p className="truncate text-xs text-slate-600">
                       {activeDetails.property?.title} — {activeDetails.property?.address}
                     </p>

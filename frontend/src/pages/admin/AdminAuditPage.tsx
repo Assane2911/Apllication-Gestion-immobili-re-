@@ -112,7 +112,7 @@ export default function AdminAuditPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-slate-900">{t("admin.audit.title")}</h2>
+        <h1 className="text-xl font-bold text-slate-900">{t("admin.audit.title")}</h1>
         <p className="mt-1 text-xs text-slate-600">{t("admin.audit.subtitle")}</p>
         {donnees && !erreur && (
           <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-600">{t("admin.audit.count", { count: donnees.total })}</p>

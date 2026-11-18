@@ -282,7 +282,7 @@ export default function AgencySettingsPage() {
   return (
     <div className="space-y-6 max-w-5xl">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900">{t("manager.agencySettings.title")}</h2>
+        <h1 className="text-2xl font-semibold text-slate-900">{t("manager.agencySettings.title")}</h1>
         <p className="mt-1 text-sm text-slate-600">{t("manager.agencySettings.subtitle")}</p>
       </div>
 
@@ -333,7 +333,7 @@ export default function AgencySettingsPage() {
 
             <section aria-label={t("manager.agencySettings.profile.label")} className="border border-slate-300 bg-white p-5 shadow-[inset_4px_0_0_var(--color-orange-700)]">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h3 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">{t("manager.agencySettings.profile.title")}</h3>
+                <h2 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">{t("manager.agencySettings.profile.title")}</h2>
                 <p className="font-mono text-xs text-slate-700">{t("manager.agencySettings.profile.count", { done: profil.faits, total: profil.total })}</p>
               </div>
               <div

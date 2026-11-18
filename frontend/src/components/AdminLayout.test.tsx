@@ -66,6 +66,11 @@ describe("AdminLayout", () => {
     expect(screen.getByText("Tableau de bord admin")).toBeInTheDocument();
   });
 
+  it("le menu ne pose aucun titre : le nom de l'application n'est pas le h1, c'est la page qui a le sien", () => {
+    renderAdminLayout();
+    expect(screen.queryAllByRole("heading", { level: 1 })).toEqual([]);
+  });
+
   it("la page est dans une zone au moins aussi haute que l'écran : le cartouche reste sous la ligne de flottaison", () => {
     renderAdminLayout();
     expect(screen.getByText("Tableau de bord admin").closest(".min-h-svh")).not.toBeNull();

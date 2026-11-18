@@ -123,7 +123,7 @@ export default function AdminSuggestionsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900">{t("admin.suggestions.title")}</h2>
+        <h1 className="text-2xl font-semibold text-slate-900">{t("admin.suggestions.title")}</h1>
         <p className="mt-1 text-sm text-slate-600">{t("admin.suggestions.subtitle")}</p>
       </div>
 

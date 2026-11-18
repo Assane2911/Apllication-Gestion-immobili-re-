@@ -107,7 +107,7 @@ export default function AbonnementCalendrier() {
 
   return (
     <section aria-labelledby="agenda-sync-titre" className="border border-slate-300 bg-white">
-      <h3 id="agenda-sync-titre" className="m-0">
+      <h2 id="agenda-sync-titre" className="m-0">
         <button
           type="button"
           onClick={() => setOuvert((o) => !o)}
@@ -118,7 +118,7 @@ export default function AbonnementCalendrier() {
           <CalendarSync size={16} strokeWidth={1.8} aria-hidden="true" className="shrink-0 text-ink-900" />
           {t("manager.agenda.sync.title")}
         </button>
-      </h3>
+      </h2>
 
       {ouvert && (
         <div id="agenda-sync-corps" className="space-y-4 border-t border-slate-200 px-4 py-4">

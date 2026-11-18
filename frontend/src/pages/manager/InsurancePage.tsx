@@ -186,7 +186,7 @@ export default function InsurancePage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.insurance.title")}</h2>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("manager.insurance.title")}</h1>
           <p className="mt-1 text-sm text-slate-600">{t("manager.insurance.subtitle")}</p>
         </div>
         <Bulle texte={t("manager.tips.insuranceCreate")}>
@@ -270,12 +270,12 @@ export default function InsurancePage() {
         <table className="w-full text-sm">
           <thead className="text-left">
             <tr>
-              <th className="px-4 py-3 font-semibold">{t("manager.insurance.table.property")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.insurance.table.insurer")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.insurance.table.policyNumber")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.insurance.table.premium")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.insurance.table.expiryDate")}</th>
-              <th className="px-4 py-3 font-semibold text-right">{t("manager.insurance.table.action")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.insurance.table.property")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.insurance.table.insurer")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.insurance.table.policyNumber")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.insurance.table.premium")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.insurance.table.expiryDate")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold text-right">{t("manager.insurance.table.action")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">

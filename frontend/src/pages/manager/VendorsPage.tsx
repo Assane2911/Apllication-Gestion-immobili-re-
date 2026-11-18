@@ -145,7 +145,7 @@ export default function VendorsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.vendors.title")}</h2>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("manager.vendors.title")}</h1>
           <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.vendors.count", { count: vendors.length })}</p>
         </div>
         <Bulle texte={t("manager.tips.vendorCreate")}>
@@ -286,7 +286,7 @@ export default function VendorsPage() {
                 <div className="flex items-start gap-3 p-4">
                   <Initiales prenom={vendor.name.split(/\s+/)[0]} nom={vendor.name.split(/\s+/)[1]} className="h-10 w-10" />
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-base font-bold leading-snug text-slate-900">{vendor.name}</h3>
+                    <h2 className="text-base font-bold leading-snug text-slate-900">{vendor.name}</h2>
                     {vendor.trade ? (
                       <span className="mt-1 inline-block border border-orange-300 bg-orange-50 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-orange-900">
                         {vendor.trade}

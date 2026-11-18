@@ -244,7 +244,7 @@ export default function AdminManagerDetailPage() {
               <div className="flex min-w-0 items-start gap-4">
                 <Initiales prenom={nomAgence.split(/\s+/)[0]} nom={nomAgence.split(/\s+/)[1]} className="h-12! w-12! text-sm!" />
                 <div className="min-w-0">
-                  <h2 className="wrap-break-word text-2xl font-semibold text-slate-900">{nomAgence}</h2>
+                  <h1 className="wrap-break-word text-2xl font-semibold text-slate-900">{nomAgence}</h1>
                   <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs text-slate-600">
                     <span className="break-all">{manager.email}</span>
                     <button

@@ -255,7 +255,7 @@ export default function ListingsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.listings.title")}</h2>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("manager.listings.title")}</h1>
           <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.listings.count", { count: Math.max(total, listings.length) })}</p>
         </div>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -530,7 +530,7 @@ export default function ListingsPage() {
                 </div>
               )}
               <div className="p-4 sm:p-5">
-                <h3 className="font-bold text-slate-900 text-base leading-snug">{listing.title}</h3>
+                <h2 className="font-bold text-slate-900 text-base leading-snug">{listing.title}</h2>
                 <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-600">
                   <MapPin size={13} aria-hidden="true" className="shrink-0 text-orange-700" />
                   <span className="line-clamp-1">

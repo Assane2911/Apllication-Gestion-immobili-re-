@@ -21,7 +21,7 @@ function Rubrique({ numero, titre, aide, children }: { numero: string; titre: st
         <span aria-hidden="true" className="font-mono text-[11px] font-semibold text-orange-700">
           {numero}
         </span>
-        <h3 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">{titre}</h3>
+        <h2 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">{titre}</h2>
         {aide && <p className="ml-auto text-xs text-slate-600">{aide}</p>}
       </header>
       <div className="p-5">{children}</div>
@@ -68,7 +68,7 @@ export default function AdminDashboardPage() {
   if (error) {
     return (
       <div className="border border-rose-300 bg-rose-50 p-6 text-rose-800">
-        <h3 className="mb-1 text-base font-bold">{t("admin.dashboard.errorTitle")}</h3>
+        <h2 className="mb-1 text-base font-bold">{t("admin.dashboard.errorTitle")}</h2>
         <p className="text-sm">{error}</p>
         <button
           onClick={load}
@@ -129,7 +129,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900">{t("admin.dashboard.title")}</h2>
+        <h1 className="text-2xl font-semibold text-slate-900">{t("admin.dashboard.title")}</h1>
         <p className="mt-1 text-sm text-slate-600">{t("admin.dashboard.subtitle")}</p>
       </div>
 

@@ -92,9 +92,9 @@ export default function ReversementsSection({ crg, edition }: ReversementsSectio
   return (
     <section aria-labelledby="reversements-titre" className="bg-white border border-slate-300 ">
       <div className="p-4 border-b border-slate-300">
-        <h3 id="reversements-titre" className="font-bold text-slate-900 text-sm">
+        <h2 id="reversements-titre" className="font-bold text-slate-900 text-sm">
           {t("components.payouts.title")}
-        </h3>
+        </h2>
       </div>
 
       <div className="p-4 space-y-4">
@@ -151,7 +151,7 @@ export default function ReversementsSection({ crg, edition }: ReversementsSectio
 
         {edition && devises.length > 0 && (
           <form onSubmit={enregistrer} className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-slate-300 pt-4">
-            <h4 className="sm:col-span-2 text-xs font-semibold text-slate-700">{t("components.payouts.formTitle")}</h4>
+            <h3 className="sm:col-span-2 font-sans text-xs font-semibold tracking-normal text-slate-700">{t("components.payouts.formTitle")}</h3>
             {devises.length > 1 && (
               <div>
                 <label htmlFor="payout-currency" className={etiquette}>{t("components.payouts.currency")}</label>

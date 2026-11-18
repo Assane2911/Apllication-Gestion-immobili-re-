@@ -108,16 +108,16 @@ describe("PropertiesPage (manager)", () => {
   });
 
   /**
-   * Régression a11y : le titre de chaque carte de bien sautait de h2 (titre de
-   * la page) directement à h4, sans h3 intermédiaire — un niveau de titre
-   * invalide pour la navigation par en-têtes des lecteurs d'écran.
+   * Régression a11y : le titre de chaque carte de bien ne doit pas sauter de
+   * niveau. La page a son titre en h1 : les cartes sont des h2 (ni h3 ni h4),
+   * ce que la navigation par en-têtes des lecteurs d'écran attend.
    */
-  it("titre chaque carte de bien avec un niveau de titre h3, pas h4", async () => {
+  it("titre chaque carte de bien avec un niveau de titre h2, directement sous le h1 de la page", async () => {
     mockedApi.get.mockResolvedValueOnce(paginated([property()]));
     mockedApi.get.mockResolvedValueOnce(paginatedOwners());
     renderPage();
 
-    expect(await screen.findByRole("heading", { level: 3, name: "Studio Centre-ville" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 2, name: "Studio Centre-ville" })).toBeInTheDocument();
   });
 
   // Régression. L'écran lisait `res.data.items` sans vérifier que c'en était
@@ -317,7 +317,7 @@ describe("PropertiesPage (manager)", () => {
       const user = userEvent.setup();
       await afficher();
       await user.selectOptions(screen.getByLabelText("Trier par"), "Loyer décroissant");
-      const titres = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+      const titres = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
       expect(titres.filter((t) => t !== "Synthèse du parc")).toEqual(["Villa Baobab", "Loft Sacré-Cœur", "Atelier Mermoz", "Studio Plateau"]);
     });
 

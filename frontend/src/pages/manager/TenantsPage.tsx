@@ -310,7 +310,7 @@ export default function TenantsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.tenants.title")}</h2>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("manager.tenants.title")}</h1>
           <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.tenants.count", { count: tenants.length })}</p>
         </div>
         <Bulle texte={t("manager.tips.tenantCreate")}>
@@ -500,13 +500,13 @@ export default function TenantsPage() {
         <table className="w-full text-sm">
           <thead className="text-left">
             <tr>
-              <th className="px-4 py-3 font-semibold">{t("manager.tenants.table.name")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.tenants.table.phone")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.tenants.table.email")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.tenants.table.idDocument")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.tenants.table.reliability")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.tenants.table.portal")}</th>
-              <th className="px-4 py-3 font-semibold">
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.tenants.table.name")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.tenants.table.phone")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.tenants.table.email")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.tenants.table.idDocument")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.tenants.table.reliability")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.tenants.table.portal")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">
                 <span className="sr-only">{t("manager.tenants.table.actions")}</span>
               </th>
             </tr>

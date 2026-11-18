@@ -364,9 +364,9 @@ describe("TenantIssuesPage — suivi, filtres, motifs courants", () => {
 
   it("dit depuis combien de jours un signalement en cours attend, et rien pour un signalement clos", async () => {
     afficher();
-    const fuite = (await screen.findByRole("heading", { level: 4, name: "Fuite d'eau" })).closest("article") as HTMLElement;
+    const fuite = (await screen.findByRole("heading", { level: 3, name: "Fuite d'eau" })).closest("article") as HTMLElement;
     expect(within(fuite).getByText(/Signalé il y a 10 jours/)).toBeInTheDocument();
-    const volet = screen.getByRole("heading", { level: 4, name: "Volet cassé" }).closest("article") as HTMLElement;
+    const volet = screen.getByRole("heading", { level: 3, name: "Volet cassé" }).closest("article") as HTMLElement;
     expect(within(volet).queryByText(/Signalé il y a|Signalé aujourd/)).not.toBeInTheDocument();
   });
 
@@ -376,10 +376,10 @@ describe("TenantIssuesPage — suivi, filtres, motifs courants", () => {
     await screen.findByLabelText("Suivi de vos signalements");
     const groupe = screen.getByRole("group", { name: "Filtrer les signalements" });
     await user.click(within(groupe).getByRole("button", { name: "Traités 1" }));
-    expect(screen.getByRole("heading", { level: 4, name: "Volet cassé" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { level: 4, name: "Fuite d'eau" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 3, name: "Volet cassé" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 3, name: "Fuite d'eau" })).not.toBeInTheDocument();
     await user.click(within(groupe).getByRole("button", { name: "En cours 2" }));
-    expect(screen.queryByRole("heading", { level: 4, name: "Volet cassé" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 3, name: "Volet cassé" })).not.toBeInTheDocument();
   });
 
   it("remplit le titre d'un motif courant et compte les caractères de la description", async () => {

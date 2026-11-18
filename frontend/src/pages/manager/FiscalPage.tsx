@@ -149,7 +149,7 @@ export default function FiscalPage() {
   if (error) {
     return (
       <div className="border border-rose-200 bg-rose-50 p-6 text-rose-700">
-        <h3 className="mb-1 text-base font-bold">{t("manager.fiscal.errorTitle")}</h3>
+        <h2 className="mb-1 text-base font-bold">{t("manager.fiscal.errorTitle")}</h2>
         <p className="text-sm">{error}</p>
         <button
           onClick={() => loadData(year)}
@@ -165,7 +165,7 @@ export default function FiscalPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.fiscal.title")}</h2>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("manager.fiscal.title")}</h1>
           <p className="mt-1 text-sm text-slate-600">{t("manager.fiscal.subtitle")}</p>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -244,7 +244,7 @@ export default function FiscalPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.fiscal.title")}</h2>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("manager.fiscal.title")}</h1>
           <p className="mt-1 text-sm text-slate-600">{t("manager.fiscal.subtitle")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -317,7 +317,7 @@ export default function FiscalPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <h4 className="text-base font-bold text-slate-900">{t("manager.fiscal.charts.revenueVsExpenses", { year })}</h4>
+              <h3 className="font-sans text-base font-bold tracking-normal text-slate-900">{t("manager.fiscal.charts.revenueVsExpenses", { year })}</h3>
               {hasMonthlyData && (
                 <div className="flex flex-wrap items-center gap-2">
                   <div role="group" aria-label={t("manager.fiscal.view.label")} className="inline-flex border border-slate-400">
@@ -386,7 +386,7 @@ export default function FiscalPage() {
           </div>
 
           <div className="border border-slate-300 p-5">
-            <h4 className="mb-4 text-base font-bold text-slate-900">{t("manager.fiscal.charts.categoryBreakdown")}</h4>
+            <h3 className="mb-4 font-sans text-base font-bold tracking-normal text-slate-900">{t("manager.fiscal.charts.categoryBreakdown")}</h3>
             {repartition.length === 0 ? (
               <p className="py-16 text-center text-sm text-slate-600">{t("manager.fiscal.charts.noCategoryData")}</p>
             ) : (
@@ -421,7 +421,7 @@ export default function FiscalPage() {
         <div className="mb-3 flex items-center gap-2">
           <Landmark size={16} className="text-ink-900" aria-hidden="true" />
           <div>
-            <h4 className="text-sm font-bold text-slate-900">{t("manager.fiscal.bilanParBien.title")}</h4>
+            <h3 className="font-sans text-sm font-bold tracking-normal text-slate-900">{t("manager.fiscal.bilanParBien.title")}</h3>
             <p className="text-xs text-slate-600">{t("manager.fiscal.bilanParBien.subtitle")}</p>
           </div>
         </div>
@@ -430,11 +430,11 @@ export default function FiscalPage() {
           <table className="w-full text-sm">
             <thead className="text-left">
               <tr>
-                <th className="px-4 py-3 font-semibold">{t("manager.fiscal.bilanParBien.table.property")}</th>
-                <th className="px-4 py-3 font-semibold">{t("manager.fiscal.bilanParBien.table.currency")}</th>
-                <th className="px-4 py-3 font-semibold">{t("manager.fiscal.bilanParBien.table.revenue")}</th>
-                <th className="px-4 py-3 font-semibold">{t("manager.fiscal.bilanParBien.table.expense")}</th>
-                <th className="px-4 py-3 font-semibold">{t("manager.fiscal.bilanParBien.table.net")}</th>
+                <th scope="col" className="px-4 py-3 font-semibold">{t("manager.fiscal.bilanParBien.table.property")}</th>
+                <th scope="col" className="px-4 py-3 font-semibold">{t("manager.fiscal.bilanParBien.table.currency")}</th>
+                <th scope="col" className="px-4 py-3 font-semibold">{t("manager.fiscal.bilanParBien.table.revenue")}</th>
+                <th scope="col" className="px-4 py-3 font-semibold">{t("manager.fiscal.bilanParBien.table.expense")}</th>
+                <th scope="col" className="px-4 py-3 font-semibold">{t("manager.fiscal.bilanParBien.table.net")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">

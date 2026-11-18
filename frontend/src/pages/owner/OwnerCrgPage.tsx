@@ -118,7 +118,7 @@ export default function OwnerCrgPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">{t("owner.crg.title")}</h2>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("owner.crg.title")}</h1>
           <p className="mt-1 max-w-xl text-sm text-slate-600">{t("owner.crg.subtitle")}</p>
         </div>
         <EtatReversementCrg crg={crg} />
@@ -156,7 +156,7 @@ export default function OwnerCrgPage() {
       <section aria-label={t("owner.crg.bankDetailsTitle")} className="border border-slate-300 bg-white">
         <header className="flex items-baseline gap-3 border-b border-slate-300 bg-slate-50 px-5 py-3">
           <span aria-hidden="true" className="font-mono text-[11px] font-semibold text-orange-700">03</span>
-          <h3 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">{t("owner.crg.bankDetailsTitle")}</h3>
+          <h2 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">{t("owner.crg.bankDetailsTitle")}</h2>
         </header>
         <div className="p-5">
           {crg.iban ? (

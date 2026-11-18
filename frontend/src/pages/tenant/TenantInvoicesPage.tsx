@@ -130,7 +130,7 @@ export default function TenantInvoicesPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{t("tenant.invoices.title")}</h2>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{t("tenant.invoices.title")}</h1>
           <p className="mt-0.5 text-xs text-slate-600 sm:text-sm">{t("tenant.invoices.subtitle")}</p>
         </div>
         {unpaidInvoices.length === 0 && invoices.length > 0 && (

@@ -108,7 +108,7 @@ export default function AgendaPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.agenda.title")}</h2>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("manager.agenda.title")}</h1>
           <p className="mt-1 text-xs text-slate-600">{t("manager.agenda.subtitle")}</p>
         </div>
         <div>
@@ -168,9 +168,9 @@ export default function AgendaPage() {
       {!loading && groupe.enRetard.length > 0 && (
         <section aria-labelledby="agenda-retard" className="space-y-2">
           <div>
-            <h3 id="agenda-retard" className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-orange-800">
+            <h2 id="agenda-retard" className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-orange-800">
               {t("manager.agenda.overdueTitle")} ({groupe.enRetard.length})
-            </h3>
+            </h2>
             <p className="text-xs text-slate-600">{t("manager.agenda.overdueHint")}</p>
           </div>
           <ul className="space-y-1.5">{groupe.enRetard.map(ligne)}</ul>
@@ -180,7 +180,7 @@ export default function AgendaPage() {
       {!loading &&
         groupe.parMois.map((m) => (
           <section key={m.mois} aria-label={libelleMois(m.mois)} className="space-y-3">
-            <h3 className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-900">{libelleMois(m.mois)}</h3>
+            <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-900">{libelleMois(m.mois)}</h2>
             {m.jours.map((j) => (
               <div key={j.jour} className="grid grid-cols-1 gap-2 sm:grid-cols-[9rem_1fr]">
                 <p className="text-xs font-semibold capitalize text-slate-700 sm:pt-3">{libelleJour(j.jour)}</p>

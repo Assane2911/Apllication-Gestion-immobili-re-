@@ -44,10 +44,10 @@ export default function ReferralPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="flex items-center gap-2 text-2xl font-semibold text-slate-900">
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-slate-900">
           <Gift className="text-orange-700" size={22} aria-hidden="true" />
           {t("manager.referral.title")}
-        </h2>
+        </h1>
         <p className="mt-1 text-sm text-slate-600">
           {info ? t("manager.referral.subtitle", { days: info.rewardDays }) : t("manager.referral.subtitleGeneric")}
         </p>

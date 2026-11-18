@@ -77,9 +77,9 @@ export default function DemarrageAgence({ stats }: { stats: Pick<DashboardStats,
     <section aria-labelledby="demarrage-titre" className="border border-ink-900 bg-white p-5 shadow-[inset_4px_0_0_var(--color-orange-700)]">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 id="demarrage-titre" className="font-bold text-slate-900 text-base">
+          <h2 id="demarrage-titre" className="font-bold text-slate-900 text-base">
             {t("manager.demarrage.titre")}
-          </h3>
+          </h2>
           <p className="text-xs text-slate-600 mt-1">
             {pays
               ? t("manager.demarrage.sousTitre", { pays: countryLabel(pays.code, i18n.language), devise: pays.devise })

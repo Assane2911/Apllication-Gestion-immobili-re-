@@ -317,7 +317,7 @@ export default function InvoicesPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.invoices.title")}</h2>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("manager.invoices.title")}</h1>
           <p className="mt-1 text-sm text-slate-600">{t("manager.invoices.subtitle")}</p>
         </div>
         <Bulle texte={t("manager.tips.invoiceSendMonthly")}>
@@ -355,9 +355,9 @@ export default function InvoicesPage() {
       {aMettreEnDemeure.length > 0 && (
         <section aria-labelledby="mises-en-demeure" className="border border-slate-300 bg-white shadow-[inset_4px_0_0_var(--color-orange-700)]">
           <header className="border-b border-slate-300 bg-slate-50 py-3 pl-6 pr-5">
-            <h3 id="mises-en-demeure" className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">
+            <h2 id="mises-en-demeure" className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">
               {t("manager.invoices.formalNotices.title", { count: aMettreEnDemeure.length })}
-            </h3>
+            </h2>
             <p className="mt-1 text-xs text-slate-700">{t("manager.invoices.formalNotices.hint")}</p>
           </header>
           <ul className="divide-y divide-slate-200 py-1 pl-6 pr-5">
@@ -439,7 +439,7 @@ export default function InvoicesPage() {
         <table className="w-full text-sm">
           <thead className="text-left">
             <tr>
-              <th className="w-10 px-4 py-3">
+              <th scope="col" className="w-10 px-4 py-3">
                 <input
                   type="checkbox"
                   aria-label={t("manager.invoices.selection.all")}
@@ -449,14 +449,14 @@ export default function InvoicesPage() {
                   className="size-4 cursor-pointer accent-orange-700"
                 />
               </th>
-              <th className="px-4 py-3 font-semibold">{t("manager.invoices.table.period")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.invoices.table.tenant")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.invoices.table.property")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.invoices.table.amount")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.invoices.table.dueDate")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.invoices.table.method")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.invoices.table.status")}</th>
-              <th className="px-4 py-3 text-right font-semibold">{t("manager.invoices.table.actions")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.invoices.table.period")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.invoices.table.tenant")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.invoices.table.property")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.invoices.table.amount")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.invoices.table.dueDate")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.invoices.table.method")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.invoices.table.status")}</th>
+              <th scope="col" className="px-4 py-3 text-right font-semibold">{t("manager.invoices.table.actions")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">

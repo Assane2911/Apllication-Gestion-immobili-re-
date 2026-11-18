@@ -54,10 +54,10 @@ function renderGuide(user: AuthUser) {
 describe("GuidePage — guide de démarrage de la formule Agence", () => {
   it("présente huit étapes numérotées, dans l'ordre où une nouvelle agence en a besoin", () => {
     renderGuide(utilisateur("ENTERPRISE"));
-    expect(screen.getByRole("heading", { name: "Guide de démarrage", level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Guide de démarrage", level: 1 })).toBeInTheDocument();
     const etapes = within(screen.getByRole("list")).getAllByRole("listitem");
     expect(etapes).toHaveLength(8);
-    const titres = etapes.map((e) => within(e).getByRole("heading", { level: 3 }).textContent);
+    const titres = etapes.map((e) => within(e).getByRole("heading", { level: 2 }).textContent);
     expect(titres[0]).toBe("Renseignez votre agence");
     expect(titres[1]).toBe("Importez vos données existantes");
     expect(titres[7]).toBe("Choisissez votre formule");
@@ -76,7 +76,7 @@ describe("GuidePage — guide de démarrage de la formule Agence", () => {
 
   it("reste ouverte pendant l'essai gratuit : c'est alors qu'une nouvelle agence en a besoin", () => {
     renderGuide(utilisateur("STARTER", true));
-    expect(screen.getByRole("heading", { name: "Guide de démarrage", level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Guide de démarrage", level: 1 })).toBeInTheDocument();
   });
 
   it.each(["STARTER", "PRO"] as const)("renvoie au tableau de bord un gestionnaire de la formule %s hors essai : le guide est propre à la formule Agence", (plan) => {

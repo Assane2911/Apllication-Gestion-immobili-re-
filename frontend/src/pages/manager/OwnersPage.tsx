@@ -301,7 +301,7 @@ export default function OwnersPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.owners.title")}</h2>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("manager.owners.title")}</h1>
           <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.owners.count", { count: owners.length })}</p>
         </div>
         <Bulle texte={t("manager.tips.ownerCreate")}>
@@ -323,12 +323,12 @@ export default function OwnersPage() {
       {synthese && aReverserListe.length > 0 && (
         <section aria-labelledby="reversements-du-mois" className="border border-slate-300 bg-white shadow-[inset_4px_0_0_var(--color-orange-700)]">
           <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-300 bg-slate-50 py-3 pl-6 pr-5">
-            <h3 id="reversements-du-mois" className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">
+            <h2 id="reversements-du-mois" className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">
               {t("manager.owners.payoutsDue.title", {
                 period: new Date(synthese.year, synthese.month - 1, 1).toLocaleDateString(i18n.language, { month: "long", year: "numeric" }),
                 count: aReverserListe.length,
               })}
-            </h3>
+            </h2>
             <p className="font-mono text-xs font-semibold tabular-nums text-orange-700">{t("manager.owners.payoutsDue.total", { amount: formatByCurrency(totalAReverser, formatMoney) })}</p>
           </header>
           <ul className="divide-y divide-slate-200 py-1 pl-6 pr-5">
@@ -519,12 +519,12 @@ export default function OwnersPage() {
         <table className="w-full text-sm">
           <thead className="text-left">
             <tr>
-              <th className="px-4 py-3 font-semibold">{t("manager.owners.table.name")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.owners.table.phone")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.owners.table.email")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.owners.table.feeRate")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.owners.table.portal")}</th>
-              <th className="relative px-4 py-3 font-semibold"><span className="sr-only">{t("common.actions.column")}</span></th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.owners.table.name")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.owners.table.phone")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.owners.table.email")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.owners.table.feeRate")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.owners.table.portal")}</th>
+              <th scope="col" className="relative px-4 py-3 font-semibold"><span className="sr-only">{t("common.actions.column")}</span></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">

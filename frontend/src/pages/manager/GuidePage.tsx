@@ -65,7 +65,7 @@ export default function GuidePage() {
   return (
     <div className="max-w-3xl space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900">{t("manager.guide.title")}</h2>
+        <h1 className="text-2xl font-semibold text-slate-900">{t("manager.guide.title")}</h1>
         <p className="mt-1 text-sm text-slate-600">{t("manager.guide.subtitle")}</p>
       </div>
 
@@ -120,7 +120,7 @@ export default function GuidePage() {
                 {faite ? <Check size={15} strokeWidth={3} /> : String(i + 1).padStart(2, "0")}
               </span>
               <div className="min-w-0 flex-1">
-                <h3 className={`font-semibold ${faite ? "text-slate-600 line-through decoration-slate-400" : "text-slate-900"}`}>{t(`manager.guide.steps.${etape.cle}.title`)}</h3>
+                <h2 className={`font-semibold ${faite ? "text-slate-600 line-through decoration-slate-400" : "text-slate-900"}`}>{t(`manager.guide.steps.${etape.cle}.title`)}</h2>
                 <p className="mt-1 text-sm text-slate-600">{t(`manager.guide.steps.${etape.cle}.desc`)}</p>
                 <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
                   <Link to={etape.vers} className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-900 hover:text-orange-700">

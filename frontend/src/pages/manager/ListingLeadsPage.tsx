@@ -147,7 +147,7 @@ export default function ListingLeadsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.listingLeads.title")}</h2>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("manager.listingLeads.title")}</h1>
           <p className="mt-1 text-sm text-slate-600">{t("manager.listingLeads.subtitle")}</p>
           {!loading && !loadError && <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.listingLeads.count", { count: total })}</p>}
         </div>
@@ -234,7 +234,7 @@ export default function ListingLeadsPage() {
                 <div className="border-b border-slate-300 bg-slate-50 p-5 lg:border-b-0 lg:border-r">
                   <div className="flex items-center gap-3">
                     <Initiales prenom={lead.prospectName.split(/\s+/)[0]} nom={lead.prospectName.split(/\s+/)[1]} />
-                    <h3 className="min-w-0 text-base font-bold leading-snug text-slate-900">{lead.prospectName}</h3>
+                    <h2 className="min-w-0 text-base font-bold leading-snug text-slate-900">{lead.prospectName}</h2>
                   </div>
                   <ul className="mt-4 space-y-2 text-xs">
                     <li className="flex items-center gap-2">

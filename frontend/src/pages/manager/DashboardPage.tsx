@@ -81,7 +81,7 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="border border-rose-200 bg-rose-50 p-6 text-rose-700">
-        <h3 className="mb-1 text-base font-bold">{t("manager.dashboard.errorTitle")}</h3>
+        <h2 className="mb-1 text-base font-bold">{t("manager.dashboard.errorTitle")}</h2>
         <p className="text-sm">{error}</p>
         <button
           onClick={() => charger()}
@@ -97,7 +97,7 @@ export default function DashboardPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.dashboard.title")}</h2>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("manager.dashboard.title")}</h1>
           <p className="mt-1 text-sm text-slate-600">{t("manager.dashboard.loadingHint")}</p>
         </div>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -198,13 +198,13 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="flex flex-wrap items-center gap-3 text-2xl font-semibold text-slate-900">
+          <h1 className="flex flex-wrap items-center gap-3 text-2xl font-semibold text-slate-900">
             <span>{t("manager.dashboard.title")}</span>
             <span className="inline-flex items-center gap-1.5 border border-ink-900 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-900">
               <span aria-hidden="true" className="size-1.5 bg-orange-700" />
               {t("manager.dashboard.liveSystem")}
             </span>
-          </h2>
+          </h1>
           <p className="mt-1 text-sm text-slate-600">{t("manager.dashboard.overviewSubtitle")}</p>
           <p className="mt-2 font-mono text-[11px] uppercase tracking-wider text-slate-600">
             {jour}
@@ -384,7 +384,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <h4 className="text-base font-bold text-slate-900">{t("manager.dashboard.charts.revenueVsExpenses")}</h4>
+              <h3 className="font-sans text-base font-bold tracking-normal text-slate-900">{t("manager.dashboard.charts.revenueVsExpenses")}</h3>
               <div className="flex flex-wrap items-center gap-2">
                 <div role="group" aria-label={t("manager.dashboard.analysisView.label")} className="inline-flex border border-slate-400">
                   {(["graphique", "tableau"] as const).map((choix) => (
@@ -463,7 +463,7 @@ export default function DashboardPage() {
 
           {/* Répartition du parc par statut */}
           <div className="flex flex-col justify-between border border-slate-300 p-5">
-            <h4 className="mb-4 text-base font-bold text-slate-900">{t("manager.dashboard.charts.statusChart")}</h4>
+            <h3 className="mb-4 font-sans text-base font-bold tracking-normal text-slate-900">{t("manager.dashboard.charts.statusChart")}</h3>
             {donutData.length === 0 ? (
               <p className="py-16 text-center text-sm text-slate-600">{t("manager.dashboard.charts.noProperties")}</p>
             ) : (

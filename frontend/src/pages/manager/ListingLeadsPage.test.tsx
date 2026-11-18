@@ -171,7 +171,7 @@ describe("ListingLeadsPage (manager)", () => {
       lead({ id: "l3", prospectName: "Élodie Sow", createdAt: il_y_a(8), status: "CONVERTED" }),
       lead({ id: "l4", prospectName: "Ibrahima Fall", createdAt: il_y_a(3), status: "CONTACTED", requestType: "VISIT" }),
     ];
-    const noms = () => screen.getAllByRole("article").map((a) => within(a).getByRole("heading", { level: 3 }).textContent);
+    const noms = () => screen.getAllByRole("article").map((a) => within(a).getByRole("heading", { level: 2 }).textContent);
 
     async function afficher() {
       mockedApi.get.mockImplementation(async (url: string) => (url === "/listings" ? listingsPaginated() : leadsPaginated(parc())));
@@ -191,20 +191,20 @@ describe("ListingLeadsPage (manager)", () => {
 
     it("signale l'ancienneté de chaque demande et celles à relancer", async () => {
       await afficher();
-      const aicha = screen.getByRole("heading", { level: 3, name: "Aïcha Ndiaye" }).closest("article") as HTMLElement;
+      const aicha = screen.getByRole("heading", { level: 2, name: "Aïcha Ndiaye" }).closest("article") as HTMLElement;
       expect(within(aicha).getByText(/Reçue il y a 5 j/)).toBeInTheDocument();
       expect(within(aicha).getByText("À relancer")).toBeInTheDocument();
 
-      const moussa = screen.getByRole("heading", { level: 3, name: "Moussa Ba" }).closest("article") as HTMLElement;
+      const moussa = screen.getByRole("heading", { level: 2, name: "Moussa Ba" }).closest("article") as HTMLElement;
       expect(within(moussa).getByText(/Reçue aujourd'hui/)).toBeInTheDocument();
       expect(within(moussa).queryByText("À relancer")).not.toBeInTheDocument();
     });
 
     it("ne propose WhatsApp que pour un numéro au format international", async () => {
       await afficher();
-      const aicha = screen.getByRole("heading", { level: 3, name: "Aïcha Ndiaye" }).closest("article") as HTMLElement;
+      const aicha = screen.getByRole("heading", { level: 2, name: "Aïcha Ndiaye" }).closest("article") as HTMLElement;
       expect(within(aicha).getByRole("link", { name: "WhatsApp" })).toHaveAttribute("href", "https://wa.me/221771112233");
-      const moussa = screen.getByRole("heading", { level: 3, name: "Moussa Ba" }).closest("article") as HTMLElement;
+      const moussa = screen.getByRole("heading", { level: 2, name: "Moussa Ba" }).closest("article") as HTMLElement;
       expect(within(moussa).queryByRole("link", { name: "WhatsApp" })).not.toBeInTheDocument();
     });
 

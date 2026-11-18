@@ -159,7 +159,7 @@ export default function IssuesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900">{t("manager.issues.title")}</h2>
+        <h1 className="text-2xl font-semibold text-slate-900">{t("manager.issues.title")}</h1>
         <p className="mt-1 text-sm text-slate-600">{t("manager.issues.subtitle")}</p>
       </div>
 
@@ -271,7 +271,7 @@ export default function IssuesPage() {
                       <p className="font-mono text-[10px] uppercase tracking-wider text-orange-700">
                         {t("manager.issues.fiche.reference")} {String((page - 1) * PAGE_SIZE + rang + 1).padStart(2, "0")}
                       </p>
-                      <h3 className="mt-0.5 text-base font-bold leading-snug text-slate-900">{issue.title}</h3>
+                      <h2 className="mt-0.5 text-base font-bold leading-snug text-slate-900">{issue.title}</h2>
                     </div>
                     <span className={`shrink-0 border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider ${teinte.tag}`}>
                       {t(`common.status.${issue.status}`)}
@@ -313,10 +313,10 @@ export default function IssuesPage() {
 
                   {/* Le traitement : à qui on confie l'intervention, quand, et ce qu'on répond au locataire. */}
                   <div>
-                    <h4 className="mb-3 flex items-center gap-2 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-900">
+                    <h3 className="mb-3 flex items-center gap-2 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-900">
                       {t("manager.issues.fiche.handling")}
                       <span aria-hidden="true" className="h-px flex-1 bg-slate-300" />
-                    </h4>
+                    </h3>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div>
                         <label htmlFor={`issue-vendor-${issue.id}`} className={CLASSE_ETIQUETTE}>
