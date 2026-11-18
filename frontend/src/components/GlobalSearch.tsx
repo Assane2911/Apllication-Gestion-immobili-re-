@@ -21,6 +21,7 @@ export default function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const champRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   // Sans AbortController, une requête lancée pour une saisie plus ancienne
@@ -68,6 +69,26 @@ export default function GlobalSearch() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Échap referme la liste des résultats (la saisie est gardée) ; depuis un résultat, le focus revient au champ. Le focus
+  // est rendu AVANT la fermeture : le champ rouvre la liste quand il reçoit le focus.
+  function surTouche(e: React.KeyboardEvent) {
+    if (e.key !== "Escape" || !open) return;
+    e.stopPropagation();
+    if (document.activeElement !== champRef.current) champRef.current?.focus();
+    setOpen(false);
+  }
+
+  // Annonce aux lecteurs d'écran : recherche en cours, aucun résultat, ou leur nombre. La région existe en permanence
+  // (vide au repos), c'est ce qui permet d'annoncer son contenu quand il change.
+  const annonce =
+    open && query.trim().length >= 2
+      ? loading
+        ? t("components.globalSearch.searching")
+        : results.length === 0
+          ? t("components.globalSearch.noResults", { query })
+          : t("components.globalSearch.resultCount", { count: results.length })
+      : "";
+
   function goTo(item: SearchResultItem) {
     setOpen(false);
     setQuery("");
@@ -75,10 +96,14 @@ export default function GlobalSearch() {
   }
 
   return (
-    <div className="relative flex-1 max-w-md" ref={containerRef}>
+    <div className="relative flex-1 max-w-md" ref={containerRef} onKeyDown={surTouche}>
+      <p role="status" className="sr-only">
+        {annonce}
+      </p>
       <div className="relative">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
+          ref={champRef}
           value={query}
           maxLength={100}
           onChange={(e) => {

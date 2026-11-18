@@ -74,6 +74,7 @@ export default function OwnerLayout() {
           <div className="mb-6 flex items-center gap-3">
             <BoutonOuvrirMenu
               onClick={() => setMenuMobileOuvert(true)}
+              ouvert={menuMobileOuvert}
               enAttente={nonLus.count}
               className="sm:hidden shrink-0 w-9 h-9 bg-white border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors"
             />

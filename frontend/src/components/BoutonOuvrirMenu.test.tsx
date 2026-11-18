@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import BoutonOuvrirMenu from "./BoutonOuvrirMenu";
 
 const afficher = (enAttente?: number, onClick = vi.fn()) =>
-  render(<BoutonOuvrirMenu onClick={onClick} enAttente={enAttente} className="w-9 h-9" />);
+  render(<BoutonOuvrirMenu onClick={onClick} ouvert={false} enAttente={enAttente} className="w-9 h-9" />);
 
 describe("BoutonOuvrirMenu", () => {
   it("n'affiche aucune pastille quand rien n'est en attente, et garde son nom habituel", () => {
@@ -29,5 +29,15 @@ describe("BoutonOuvrirMenu", () => {
     afficher(2, onClick);
     await userEvent.click(screen.getByRole("button", { name: /Ouvrir le menu/ }));
     expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("dit si le tiroir est ouvert (aria-expanded) et lequel il commande (aria-controls)", () => {
+    const { rerender } = render(<BoutonOuvrirMenu onClick={vi.fn()} ouvert={false} className="w-9 h-9" />);
+    const bouton = screen.getByRole("button", { name: "Ouvrir le menu" });
+    expect(bouton).toHaveAttribute("aria-expanded", "false");
+    expect(bouton).toHaveAttribute("aria-controls", "menu-lateral");
+
+    rerender(<BoutonOuvrirMenu onClick={vi.fn()} ouvert className="w-9 h-9" />);
+    expect(screen.getByRole("button", { name: "Ouvrir le menu" })).toHaveAttribute("aria-expanded", "true");
   });
 });

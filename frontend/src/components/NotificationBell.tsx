@@ -1,5 +1,5 @@
 import { AlertTriangle, Bell, CalendarClock, MessageSquare, UserPlus, Wrench } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { api, isRequestCancelled, liste } from "../api/client";
@@ -55,6 +55,8 @@ export default function NotificationBell({
   // ouvert, pour que la personne voie ce qui vient d'arriver.
   const [nouvelles, setNouvelles] = useState<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
+  const boutonRef = useRef<HTMLButtonElement>(null);
+  const idPanneau = useId();
   // Clés que cette personne vient de marquer vues. Une réponse de sondage partie
   // AVANT l'enregistrement peut arriver après : sans ceci, elle rallumerait le
   // badge jusqu'au sondage suivant.
@@ -146,6 +148,20 @@ export default function NotificationBell({
     setAfficherLues(false);
   }
 
+  // Échap referme le panneau et rend le focus à la cloche ; le focus qui quitte le panneau au clavier le referme aussi
+  // (jusque-là, seul un clic de souris à l'extérieur le faisait). Un focus nul (clic dans une zone non focalisable du
+  // panneau) n'est pas une sortie.
+  function surTouche(e: React.KeyboardEvent) {
+    if (e.key !== "Escape" || !open) return;
+    e.stopPropagation();
+    fermer();
+    boutonRef.current?.focus();
+  }
+  function surPerteDeFocus(e: React.FocusEvent) {
+    const suivant = e.relatedTarget;
+    if (open && suivant instanceof Node && !e.currentTarget.contains(suivant)) fermer();
+  }
+
   function toutMarquerLu() {
     const cles = aTraiter.map(cleDe);
     if (cles.length === 0 && masquees.aTraiter === 0) return;
@@ -199,12 +215,15 @@ export default function NotificationBell({
   }, []);
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative" ref={containerRef} onKeyDown={surTouche} onBlur={surPerteDeFocus}>
       <Bulle texte={t(`${i18nPrefix}.tip`)}>
       <button
+        ref={boutonRef}
         onClick={basculer}
         className="relative flex h-9 w-9 cursor-pointer items-center justify-center border border-slate-400 bg-white text-slate-700 transition-colors hover:border-ink-900 hover:bg-slate-50"
-        aria-label={t(`${i18nPrefix}.ariaLabel`)}
+        aria-label={nombreNonVues > 0 ? t(`${i18nPrefix}.ariaLabelNonVues`, { count: nombreNonVues }) : t(`${i18nPrefix}.ariaLabel`)}
+        aria-expanded={open}
+        aria-controls={open ? idPanneau : undefined}
       >
         <Bell size={18} />
         {nombreNonVues > 0 && (
@@ -216,7 +235,7 @@ export default function NotificationBell({
       </Bulle>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 max-h-96 w-80 overflow-y-auto border-2 border-ink-900 bg-white">
+        <div id={idPanneau} className="absolute right-0 z-50 mt-2 max-h-96 w-80 overflow-y-auto border-2 border-ink-900 bg-white">
           <div className="flex items-start justify-between gap-3 border-b border-ink-900 bg-ink-900 px-4 py-3 text-white">
             <div className="min-w-0">
               <h4 className="font-mono text-xs font-semibold uppercase tracking-wider">{t(`${i18nPrefix}.title`)}</h4>

@@ -1165,6 +1165,8 @@ const zone = {
       label: "Recherche globale",
       placeholder: "Rechercher un locataire, un bien, un contrat...",
       clearAria: "Effacer la recherche",
+      resultCount_one: "{{count}} résultat",
+      resultCount_other: "{{count}} résultats",
       searching: "Recherche...",
       noResults: "Aucun résultat pour « {{query}} »",
       types: {
@@ -1177,6 +1179,8 @@ const zone = {
     notificationBell: {
       tip: "Vos alertes : loyers en retard, baux qui arrivent à échéance, incidents ouverts.",
       ariaLabel: "Notifications",
+      ariaLabelNonVues_one: "Notifications, {{count}} non vue",
+      ariaLabelNonVues_other: "Notifications, {{count}} non vues",
       title: "Notifications",
       itemCount_one: "{{count}} élément nécessitant votre attention",
       itemCount_other: "{{count}} éléments nécessitant votre attention",
@@ -1238,6 +1242,8 @@ const zone = {
     notificationBell: {
       tip: "Vos alertes : messages du gestionnaire, loyers à régler, bail arrivant à échéance.",
       ariaLabel: "Notifications",
+      ariaLabelNonVues_one: "Notifications, {{count}} non vue",
+      ariaLabelNonVues_other: "Notifications, {{count}} non vues",
       title: "Notifications",
       itemCount_one: "{{count}} élément nécessitant votre attention",
       itemCount_other: "{{count}} éléments nécessitant votre attention",

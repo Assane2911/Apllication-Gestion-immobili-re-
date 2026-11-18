@@ -1167,6 +1167,8 @@ const zone: ZoneBase = {
       label: "Global search",
       placeholder: "Search a tenant, a property, a contract...",
       clearAria: "Clear the search",
+      resultCount_one: "{{count}} result",
+      resultCount_other: "{{count}} results",
       searching: "Searching...",
       noResults: "No results for \"{{query}}\"",
       types: {
@@ -1179,6 +1181,8 @@ const zone: ZoneBase = {
     notificationBell: {
       tip: "Your alerts: rent in arrears, leases approaching their term, open issues.",
       ariaLabel: "Notifications",
+      ariaLabelNonVues_one: "Notifications, {{count}} unseen",
+      ariaLabelNonVues_other: "Notifications, {{count}} unseen",
       title: "Notifications",
       itemCount_one: "{{count}} item requiring your attention",
       itemCount_other: "{{count}} items requiring your attention",
@@ -1240,6 +1244,8 @@ const zone: ZoneBase = {
     notificationBell: {
       tip: "Your alerts: messages from your property manager, rent to pay, lease ending soon.",
       ariaLabel: "Notifications",
+      ariaLabelNonVues_one: "Notifications, {{count}} unseen",
+      ariaLabelNonVues_other: "Notifications, {{count}} unseen",
       title: "Notifications",
       itemCount_one: "{{count}} item requiring your attention",
       itemCount_other: "{{count}} items requiring your attention",
