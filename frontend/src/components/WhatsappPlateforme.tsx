@@ -88,7 +88,7 @@ export default function WhatsappPlateforme() {
 
       <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div>
-          <h4 className="mb-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-700">{t("admin.dashboard.whatsapp.byMonth")}</h4>
+          <h3 className="mb-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-700">{t("admin.dashboard.whatsapp.byMonth")}</h3>
           <div className="relative overflow-x-auto border border-slate-300">
             <table className="w-full text-xs">
               <thead>
@@ -115,7 +115,7 @@ export default function WhatsappPlateforme() {
 
         <div>
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-            <h4 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-700">{t("admin.dashboard.whatsapp.byAgency")}</h4>
+            <h3 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-700">{t("admin.dashboard.whatsapp.byAgency")}</h3>
             <label className="flex items-center gap-2 text-xs text-slate-700">
               <span>{t("admin.dashboard.whatsapp.month")}</span>
               <select

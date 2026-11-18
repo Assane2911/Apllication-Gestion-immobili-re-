@@ -105,6 +105,20 @@ describe("TenantMessagesPage", () => {
     );
   });
 
+  it("garde le titre de la page (h1) quand aucun contrat actif n'est associé, pour ne pas laisser la page sans titre", async () => {
+    mockedApi.get.mockResolvedValueOnce(conversationsPage([]));
+    renderPage();
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Échanges avec mon gestionnaire" })).toBeInTheDocument();
+  });
+
+  it("garde le titre de la page (h1) quand le chargement échoue", async () => {
+    mockedApi.get.mockRejectedValueOnce({ response: { data: { error: "Erreur serveur" } }, isAxiosError: true });
+    renderPage();
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Échanges avec mon gestionnaire" })).toBeInTheDocument();
+  });
+
   it("affiche une erreur avec un bouton réessayer", async () => {
     mockedApi.get.mockRejectedValueOnce({
       response: { data: { error: "Erreur serveur" } },

@@ -131,7 +131,7 @@ export default function TenantDashboardPage() {
           <div className="mx-auto mb-3 flex size-12 items-center justify-center border border-slate-300 bg-slate-50 text-ink-900">
             <Home size={22} strokeWidth={1.75} aria-hidden="true" />
           </div>
-          <h2 className="text-base font-bold text-slate-900">{t("tenant.dashboard.noContract")}</h2>
+          <h1 className="text-base font-bold text-slate-900">{t("tenant.dashboard.noContract")}</h1>
           <p className="mt-1 text-xs text-slate-600">{t("tenant.dashboard.noLeaseHint")}</p>
         </div>
         {sectionDonneesPersonnelles}
@@ -164,7 +164,7 @@ export default function TenantDashboardPage() {
           <ShieldCheck size={13} aria-hidden="true" />
           {t("tenant.dashboard.verified")}
         </p>
-        <h2 className="text-2xl font-semibold text-slate-900">{t("tenant.dashboard.title")}</h2>
+        <h1 className="text-2xl font-semibold text-slate-900">{t("tenant.dashboard.title")}</h1>
         <p className="mt-1 max-w-xl text-sm text-slate-600">{t("tenant.dashboard.intro")}</p>
       </div>
 
@@ -214,7 +214,7 @@ export default function TenantDashboardPage() {
           <article key={c.id} id={`bail-${c.id}`} className="scroll-mt-6 border border-slate-300 bg-white">
             <header className="flex items-baseline gap-3 border-b border-slate-300 bg-slate-50 px-5 py-3">
               <span aria-hidden="true" className="font-mono text-[11px] font-semibold text-orange-700">{String(index + 2).padStart(2, "0")}</span>
-              <h3 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">{t("tenant.dashboard.mainHousing")}</h3>
+              <h2 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">{t("tenant.dashboard.mainHousing")}</h2>
             </header>
 
             <div className="sm:grid sm:grid-cols-[18rem_1fr]">
@@ -235,7 +235,7 @@ export default function TenantDashboardPage() {
                   <Building2 size={13} aria-hidden="true" />
                   <span>{c.property?.address}</span>
                 </div>
-                <h4 className="mt-1 text-xl font-bold tracking-tight text-slate-900">{c.property?.title}</h4>
+                <h3 className="mt-1 font-sans text-xl font-bold tracking-tight text-slate-900">{c.property?.title}</h3>
                 {adresseCarte && (
                   <a
                     href={adresseCarte}

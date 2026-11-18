@@ -146,7 +146,7 @@ export default function AdminListingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900">{t("admin.listings.title")}</h2>
+        <h1 className="text-2xl font-semibold text-slate-900">{t("admin.listings.title")}</h1>
         <p className="mt-1 text-sm text-slate-600">{t("admin.listings.subtitle")}</p>
         {donnees && !erreur && (
           <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-600">{t("admin.listings.count", { count: donnees.total })}</p>

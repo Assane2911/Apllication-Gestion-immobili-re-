@@ -239,7 +239,7 @@ export default function SubscriptionPage() {
     <div className="space-y-8 max-w-6xl mx-auto">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">{t("manager.subscription.title")}</h2>
+        <h1 className="text-2xl font-bold text-slate-900">{t("manager.subscription.title")}</h1>
         <p className="mt-1 text-sm text-slate-600">{t("manager.subscription.subtitle")}</p>
       </div>
 
@@ -469,7 +469,7 @@ export default function SubscriptionPage() {
 
               <div className="flex flex-1 flex-col p-6">
                 <div className="mb-4">
-                  <h3 className="text-lg font-bold text-slate-900">{nomFormule(plan)}</h3>
+                  <h2 className="text-lg font-bold text-slate-900">{nomFormule(plan)}</h2>
                   <p className="mt-1 min-h-[32px] text-xs text-slate-600">{t(`manager.subscription.planDescriptions.${plan.id}`, { defaultValue: plan.description })}</p>
                 </div>
 
@@ -654,10 +654,10 @@ export default function SubscriptionPage() {
       {history.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <h3 className="flex flex-1 items-center gap-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-900">
+            <h2 className="flex flex-1 items-center gap-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-900">
               {t("manager.subscription.historyTitle")}
               <span aria-hidden="true" className="h-px flex-1 bg-slate-300" />
-            </h3>
+            </h2>
             <button
               type="button"
               onClick={exporterHistorique}
@@ -684,12 +684,12 @@ export default function SubscriptionPage() {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr>
-                  <th className="px-4 py-2.5">{t("manager.subscription.historyTable.date")}</th>
-                  <th className="px-4 py-2.5">{t("manager.subscription.historyTable.plan")}</th>
-                  <th className="px-4 py-2.5">{t("manager.subscription.historyTable.cycle")}</th>
-                  <th className="px-4 py-2.5">{t("manager.subscription.historyTable.amount")}</th>
-                  <th className="px-4 py-2.5">{t("manager.subscription.historyTable.method")}</th>
-                  <th className="px-4 py-2.5">{t("manager.subscription.historyTable.status")}</th>
+                  <th scope="col" className="px-4 py-2.5">{t("manager.subscription.historyTable.date")}</th>
+                  <th scope="col" className="px-4 py-2.5">{t("manager.subscription.historyTable.plan")}</th>
+                  <th scope="col" className="px-4 py-2.5">{t("manager.subscription.historyTable.cycle")}</th>
+                  <th scope="col" className="px-4 py-2.5">{t("manager.subscription.historyTable.amount")}</th>
+                  <th scope="col" className="px-4 py-2.5">{t("manager.subscription.historyTable.method")}</th>
+                  <th scope="col" className="px-4 py-2.5">{t("manager.subscription.historyTable.status")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-300">

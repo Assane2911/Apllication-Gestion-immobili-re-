@@ -24,7 +24,7 @@ export default function EmptyState({ icon: Icon, title, description, action }: E
           {isComponent ? <Icon size={26} strokeWidth={1.75} /> : Icon || <Users size={26} strokeWidth={1.75} />}
         </div>
       </div>
-      <h3 className="font-bold text-slate-900 text-base">{title}</h3>
+      <h2 className="font-bold text-slate-900 text-base">{title}</h2>
       {description && <p className="text-xs text-slate-600 mt-1 max-w-sm">{description}</p>}
       {action && (
         <button

@@ -251,7 +251,7 @@ describe("ListingsPage (manager) — annonce masquée par l'administration", () 
       listing({ id: "c", title: "Atelier Mermoz", price: 600, status: "PUBLISHED", hiddenByAdminAt: "2026-10-01T00:00:00.000Z", moderationReason: "Prix trompeur." }),
       listing({ id: "d", title: "Loft Sacré-Cœur", price: 700, status: "ARCHIVED", location: "Sacré-Cœur, Dakar" }),
     ];
-    const titres = () => screen.getAllByRole("article").map((a) => within(a).getByRole("heading", { level: 3 }).textContent);
+    const titres = () => screen.getAllByRole("article").map((a) => within(a).getByRole("heading", { level: 2 }).textContent);
 
     async function afficher() {
       mockedApi.get.mockResolvedValueOnce(paginated(parc()));
@@ -291,13 +291,13 @@ describe("ListingsPage (manager) — annonce masquée par l'administration", () 
       Object.defineProperty(navigator, "clipboard", { value: { writeText: ecrire }, configurable: true });
       await afficher();
 
-      const villa = screen.getByRole("heading", { level: 3, name: "Villa Baobab" }).closest("article") as HTMLElement;
+      const villa = screen.getByRole("heading", { level: 2, name: "Villa Baobab" }).closest("article") as HTMLElement;
       expect(within(villa).getByRole("link", { name: /Voir sur la vitrine/ })).toHaveAttribute("href", "/vitrine/annonces/a");
       await user.click(within(villa).getByRole("button", { name: /Copier le lien/ }));
       expect(ecrire).toHaveBeenCalledWith(`${window.location.origin}/vitrine/annonces/a`);
       expect(await within(villa).findByText("Lien copié")).toBeInTheDocument();
 
-      const studio = screen.getByRole("heading", { level: 3, name: "Studio Plateau" }).closest("article") as HTMLElement;
+      const studio = screen.getByRole("heading", { level: 2, name: "Studio Plateau" }).closest("article") as HTMLElement;
       expect(within(studio).queryByRole("link", { name: /Voir sur la vitrine/ })).not.toBeInTheDocument();
       mockedApi.put.mockResolvedValueOnce({ data: {} });
       mockedApi.get.mockResolvedValueOnce(paginated(parc()));

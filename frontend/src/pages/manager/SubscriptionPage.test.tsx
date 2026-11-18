@@ -137,15 +137,15 @@ describe("SubscriptionPage", () => {
     mockedApi.post.mockReset();
   });
 
-  it("n'a pas de second titre de niveau 1 : le h1 est celui de l'espace (layout), la page porte un h2", async () => {
+  it("porte l'unique titre de niveau 1 de la page : le menu de l'espace n'en pose plus, le titre est celui de la page", async () => {
     seedUser(authUser());
     queueGet({ data: [plan({ id: "STARTER" })] });
     queueGet({ data: { history: [] } });
 
     renderPage();
 
-    expect(await screen.findByRole("heading", { level: 2, name: "Abonnement & Formules SaaS" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Abonnement & Formules SaaS" })).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
   });
 
   it("annonce le retour d'un paiement et nettoie l'URL", async () => {

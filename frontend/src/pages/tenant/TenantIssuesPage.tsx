@@ -162,7 +162,7 @@ export default function TenantIssuesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900">{t("tenant.issues.title")}</h2>
+        <h1 className="text-2xl font-semibold text-slate-900">{t("tenant.issues.title")}</h1>
         <p className="mt-1 text-sm text-slate-600">{t("tenant.issues.subtitle")}</p>
       </div>
 
@@ -177,10 +177,10 @@ export default function TenantIssuesPage() {
 
       {/* Formulaire de signalement */}
       <form onSubmit={handleSubmit} className="border border-slate-300 bg-white">
-        <h3 className="flex items-baseline gap-3 border-b border-slate-300 bg-slate-50 px-5 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">
+        <h2 className="flex items-baseline gap-3 border-b border-slate-300 bg-slate-50 px-5 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">
           <span aria-hidden="true" className="text-[11px] text-orange-700">01</span>
           {t("tenant.issues.newReport")}
-        </h3>
+        </h2>
         <div className="space-y-4 p-5">
           {contracts.length > 1 && (
             <div>
@@ -284,11 +284,11 @@ export default function TenantIssuesPage() {
 
       {/* Historique des signalements */}
       <div>
-        <h3 className="mb-4 flex items-center gap-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-900">
+        <h2 className="mb-4 flex items-center gap-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-900">
           <span aria-hidden="true" className="text-orange-700">02</span>
           {t("tenant.issues.historyTitle")}
           <span aria-hidden="true" className="h-px flex-1 bg-slate-300" />
-        </h3>
+        </h2>
         {issues.length > 0 && (
           <div className="mb-4 space-y-3">
             <BandeauChiffres
@@ -356,7 +356,7 @@ export default function TenantIssuesPage() {
                         <p aria-hidden="true" className="font-mono text-[10px] uppercase tracking-wider text-orange-700">
                           {t("common.sheet")} {String(rang + 1).padStart(2, "0")}
                         </p>
-                        <h4 className="mt-0.5 text-base font-bold leading-snug text-slate-900">{issue.title}</h4>
+                        <h3 className="mt-0.5 font-sans text-base font-bold leading-snug tracking-normal text-slate-900">{issue.title}</h3>
                       </div>
                       <span className={`shrink-0 border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider ${teinte.tag}`}>
                         {t(`common.status.${issue.status}`)}

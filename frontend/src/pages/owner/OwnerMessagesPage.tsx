@@ -33,7 +33,7 @@ export default function OwnerMessagesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900">{t("owner.messages.title")}</h2>
+        <h1 className="text-2xl font-semibold text-slate-900">{t("owner.messages.title")}</h1>
         <p className="mt-1 text-sm text-slate-600">{t("owner.messages.subtitle")}</p>
       </div>
 
@@ -43,7 +43,7 @@ export default function OwnerMessagesPage() {
             <Building2 size={18} />
           </span>
           <div className="min-w-0">
-            <h3 className="text-sm font-bold">{t("owner.messages.headerTitle")}</h3>
+            <h2 className="text-sm font-bold">{t("owner.messages.headerTitle")}</h2>
             <p className="truncate text-xs text-white/80">{t("owner.messages.headerSubtitle")}</p>
           </div>
         </div>

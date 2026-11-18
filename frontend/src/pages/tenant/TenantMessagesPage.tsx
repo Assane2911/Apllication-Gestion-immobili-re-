@@ -32,6 +32,7 @@ export default function TenantMessagesPage() {
   if (error) {
     return (
       <div className="border border-rose-300 bg-rose-50 p-6 text-rose-800 shadow-[inset_4px_0_0_var(--color-rose-600)]">
+        <h1 className="sr-only">{t("tenant.messages.title")}</h1>
         <p className="text-sm">{error}</p>
         <button
           onClick={() => loadConversations()}
@@ -46,6 +47,7 @@ export default function TenantMessagesPage() {
   if (conversations.length === 0) {
     return (
       <div className="border border-slate-300 bg-white p-8 text-center">
+        <h1 className="sr-only">{t("tenant.messages.title")}</h1>
         <p className="text-sm text-slate-600">{t("tenant.messages.noActiveContract")}</p>
       </div>
     );
@@ -54,7 +56,7 @@ export default function TenantMessagesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900">{t("tenant.messages.title")}</h2>
+        <h1 className="text-2xl font-semibold text-slate-900">{t("tenant.messages.title")}</h1>
         <p className="mt-1 text-sm text-slate-600">{t("tenant.messages.subtitle")}</p>
       </div>
 
@@ -64,7 +66,7 @@ export default function TenantMessagesPage() {
           <div className="flex min-w-0 items-center gap-3">
             <Initiales prenom={t("tenant.messages.manager")} className="bg-white! text-ink-900!" />
             <div className="min-w-0">
-              <h3 className="text-sm font-bold">{t("tenant.messages.headerTitle")}</h3>
+              <h2 className="text-sm font-bold">{t("tenant.messages.headerTitle")}</h2>
               <p className="truncate text-xs text-white/80">
                 {t("tenant.messages.housing", { property: activeContract?.property?.title || t("tenant.messages.yourApartment") })}
               </p>

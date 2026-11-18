@@ -288,7 +288,7 @@ export default function ExpensesPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.expenses.title")}</h2>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("manager.expenses.title")}</h1>
           <p className="mt-1 text-sm text-slate-600">{t("manager.expenses.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -433,13 +433,13 @@ export default function ExpensesPage() {
         <table className="w-full text-sm">
           <thead className="text-left">
             <tr>
-              <th className="px-4 py-3 font-semibold">{t("manager.expenses.table.date")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.expenses.table.property")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.expenses.table.category")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.expenses.table.title")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.expenses.table.amount")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.expenses.table.notes")}</th>
-              <th className="px-4 py-3 font-semibold text-right">{t("manager.expenses.table.action")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.expenses.table.date")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.expenses.table.property")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.expenses.table.category")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.expenses.table.title")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.expenses.table.amount")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.expenses.table.notes")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold text-right">{t("manager.expenses.table.action")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">

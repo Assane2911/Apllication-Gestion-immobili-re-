@@ -225,7 +225,7 @@ export default function InspectionsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.inspections.title")}</h2>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("manager.inspections.title")}</h1>
           <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.inspections.count", { count: inspections.length })}</p>
         </div>
         <button onClick={openCreate} className={BOUTON_PLEIN}>
@@ -290,7 +290,7 @@ export default function InspectionsPage() {
           </div>
 
           <div>
-            <h4 className="mb-2 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-900">{t("manager.inspections.roomsTitle")}</h4>
+            <h3 className="mb-2 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-900">{t("manager.inspections.roomsTitle")}</h3>
             <div className="space-y-2">
               {editForm.rooms.length === 0 && <p className="text-xs text-slate-600">{t("manager.inspections.noRooms")}</p>}
               {editForm.rooms.map((room, i) => (
@@ -356,7 +356,7 @@ export default function InspectionsPage() {
           </div>
 
           <div>
-            <h4 className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-700 mb-2">{t("manager.inspections.metersTitle")}</h4>
+            <h3 className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-700 mb-2">{t("manager.inspections.metersTitle")}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label htmlFor="meter-electricity" className={LIBELLE}>{t("manager.inspections.meterElectricity")}</label>
@@ -374,7 +374,7 @@ export default function InspectionsPage() {
           </div>
 
           <div>
-            <h4 className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-700 mb-2">{t("manager.inspections.keysTitle")}</h4>
+            <h3 className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-700 mb-2">{t("manager.inspections.keysTitle")}</h3>
             <div className="space-y-2">
               {editForm.keys.length === 0 && <p className="text-xs text-slate-600">{t("manager.inspections.noKeys")}</p>}
               {editForm.keys.map((key, i) => (
@@ -487,13 +487,13 @@ export default function InspectionsPage() {
         <table className="w-full text-sm">
           <thead className="text-left">
             <tr>
-              <th className="px-4 py-3 font-semibold">{t("manager.inspections.table.property")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.inspections.table.tenant")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.inspections.table.type")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.inspections.table.date")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.inspections.table.status")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.inspections.table.signatures")}</th>
-              <th className="px-4 py-3 font-semibold text-right">{t("manager.inspections.table.actions")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.inspections.table.property")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.inspections.table.tenant")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.inspections.table.type")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.inspections.table.date")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.inspections.table.status")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.inspections.table.signatures")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold text-right">{t("manager.inspections.table.actions")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">

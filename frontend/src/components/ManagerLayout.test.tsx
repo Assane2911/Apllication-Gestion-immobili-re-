@@ -68,6 +68,11 @@ function renderManagerLayout(entree: string, utilisateur: AuthUser = gestionnair
 }
 
 describe("ManagerLayout — cartouche de feuille", () => {
+  it("le menu ne pose aucun titre : le nom de l'application n'est pas le h1, c'est la page qui a le sien", () => {
+    renderManagerLayout("/proprietaires");
+    expect(screen.queryAllByRole("heading", { level: 1 })).toEqual([]);
+  });
+
   it("la page est dans une zone au moins aussi haute que l'écran : le cartouche reste sous la ligne de flottaison", () => {
     renderManagerLayout("/proprietaires");
     expect(screen.getByRole("main").querySelector(".min-h-svh")).toHaveTextContent("Propriétaires");

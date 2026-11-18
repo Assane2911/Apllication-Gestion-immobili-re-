@@ -128,7 +128,7 @@ export default function DocumentsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.documents.title")}</h2>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("manager.documents.title")}</h1>
           <p className="mt-1 text-xs text-slate-600">{t("manager.documents.subtitle")}</p>
         </div>
         <button

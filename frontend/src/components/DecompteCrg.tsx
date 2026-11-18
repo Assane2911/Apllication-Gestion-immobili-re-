@@ -82,10 +82,10 @@ export default function DecompteCrg({ crg, ns, periode }: Props) {
     <div className="space-y-6">
       <section aria-label={t("common.crgReleve.decompte")} className="border border-slate-300 bg-white">
         <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-300 bg-slate-50 px-5 py-3">
-          <h3 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">
+          <h2 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">
             <span aria-hidden="true" className="mr-3 text-[11px] text-orange-700">01</span>
             {t("common.crgReleve.decompte")}
-          </h3>
+          </h2>
           <p className="font-mono text-[11px] uppercase tracking-wider text-slate-600 first-letter:uppercase">{periode}</p>
         </header>
 
@@ -141,43 +141,43 @@ export default function DecompteCrg({ crg, ns, periode }: Props) {
       <section aria-label={t(`${ns}.table.title`)} className="border border-slate-300 bg-white">
         <header className="flex items-baseline gap-3 border-b border-slate-300 bg-slate-50 px-5 py-3">
           <span aria-hidden="true" className="font-mono text-[11px] font-semibold text-orange-700">02</span>
-          <h3 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">{t(`${ns}.table.title`)}</h3>
+          <h2 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">{t(`${ns}.table.title`)}</h2>
         </header>
         {/* Sur téléphone, le tableau de 6 colonnes (708 px) obligeait à défiler de côté, sans indice, pour atteindre le net à
             reverser de chaque bien : chaque ligne devient une carte (libellé de la colonne devant chaque valeur, via data-label).
             Même contenu, un seul DOM. À partir de `sm`, le tableau reste celui d'origine. */}
         <div className="relative sm:overflow-x-auto">
-          <table className="w-full text-sm max-sm:block">
-            <thead className="max-sm:sr-only">
-              <tr className="text-left">
-                <th scope="col" className="px-4 py-3 font-semibold">{t(`${ns}.table.property`)}</th>
-                <th scope="col" className="px-4 py-3 font-semibold">{t(`${ns}.table.currency`)}</th>
-                <th scope="col" className="px-4 py-3 font-semibold">{t(`${ns}.table.loyers`)}</th>
-                <th scope="col" className="px-4 py-3 font-semibold">{t(`${ns}.table.charges`)}</th>
-                <th scope="col" className="px-4 py-3 font-semibold">{t(`${ns}.table.commission`)}</th>
-                <th scope="col" className="px-4 py-3 font-semibold">{t(`${ns}.table.net`)}</th>
-                <th scope="col" className="px-4 py-3 font-semibold"><span className="sr-only">{t("common.crgReleve.share")}</span></th>
+          <table role="table" className="w-full text-sm max-sm:block">
+            <thead role="rowgroup" className="max-sm:sr-only">
+              <tr role="row" className="text-left">
+                <th scope="col" role="columnheader" className="px-4 py-3 font-semibold">{t(`${ns}.table.property`)}</th>
+                <th scope="col" role="columnheader" className="px-4 py-3 font-semibold">{t(`${ns}.table.currency`)}</th>
+                <th scope="col" role="columnheader" className="px-4 py-3 font-semibold">{t(`${ns}.table.loyers`)}</th>
+                <th scope="col" role="columnheader" className="px-4 py-3 font-semibold">{t(`${ns}.table.charges`)}</th>
+                <th scope="col" role="columnheader" className="px-4 py-3 font-semibold">{t(`${ns}.table.commission`)}</th>
+                <th scope="col" role="columnheader" className="px-4 py-3 font-semibold">{t(`${ns}.table.net`)}</th>
+                <th scope="col" role="columnheader" className="px-4 py-3 font-semibold"><span className="sr-only">{t("common.crgReleve.share")}</span></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 max-sm:block">
+            <tbody role="rowgroup" className="divide-y divide-slate-200 max-sm:block">
               {crg.properties.map((row) => (
-                <tr key={`${row.propertyId}-${row.currency}`} className="hover:bg-slate-50 max-sm:block max-sm:space-y-1 max-sm:p-4">
-                  <td className="px-4 py-3 font-medium text-slate-900 max-sm:block max-sm:p-0 max-sm:pb-1 max-sm:text-base"><NomDuBien titre={row.propertyTitle} id={row.propertyId} /></td>
-                  <td data-label={t(`${ns}.table.currency`)} className={`${CELLULE_CARTE} px-4 py-3 font-mono text-xs text-slate-600`}>{row.currency}</td>
-                  <td data-label={t(`${ns}.table.loyers`)} className={`${CELLULE_CARTE} px-4 py-3 font-semibold tabular-nums text-slate-900`}>{formatMoney(row.loyersEncaisses, row.currency)}</td>
-                  <td data-label={t(`${ns}.table.charges`)} className={`${CELLULE_CARTE} px-4 py-3 font-semibold tabular-nums text-slate-700`}>{formatDeduction(row.chargesDeduites, row.currency, formatMoney)}</td>
-                  <td data-label={t(`${ns}.table.commission`)} className={`${CELLULE_CARTE} px-4 py-3 font-semibold tabular-nums text-orange-800`}>{formatDeduction(row.commission, row.currency, formatMoney)}</td>
-                  <td data-label={t(`${ns}.table.net`)} className={`${CELLULE_CARTE} px-4 py-3 font-bold tabular-nums ${row.netAReverser >= 0 ? "text-ink-900" : "text-orange-700"}`}>
+                <tr role="row" key={`${row.propertyId}-${row.currency}`} className="hover:bg-slate-50 max-sm:block max-sm:space-y-1 max-sm:p-4">
+                  <td role="cell" className="px-4 py-3 font-medium text-slate-900 max-sm:block max-sm:p-0 max-sm:pb-1 max-sm:text-base"><NomDuBien titre={row.propertyTitle} id={row.propertyId} /></td>
+                  <td role="cell" data-label={t(`${ns}.table.currency`)} className={`${CELLULE_CARTE} px-4 py-3 font-mono text-xs text-slate-600`}>{row.currency}</td>
+                  <td role="cell" data-label={t(`${ns}.table.loyers`)} className={`${CELLULE_CARTE} px-4 py-3 font-semibold tabular-nums text-slate-900`}>{formatMoney(row.loyersEncaisses, row.currency)}</td>
+                  <td role="cell" data-label={t(`${ns}.table.charges`)} className={`${CELLULE_CARTE} px-4 py-3 font-semibold tabular-nums text-slate-700`}>{formatDeduction(row.chargesDeduites, row.currency, formatMoney)}</td>
+                  <td role="cell" data-label={t(`${ns}.table.commission`)} className={`${CELLULE_CARTE} px-4 py-3 font-semibold tabular-nums text-orange-800`}>{formatDeduction(row.commission, row.currency, formatMoney)}</td>
+                  <td role="cell" data-label={t(`${ns}.table.net`)} className={`${CELLULE_CARTE} px-4 py-3 font-bold tabular-nums ${row.netAReverser >= 0 ? "text-ink-900" : "text-orange-700"}`}>
                     {formatMoney(row.netAReverser, row.currency)}
                   </td>
-                  <td className="w-32 px-4 py-3 max-sm:block max-sm:w-full max-sm:px-0 max-sm:pb-0 max-sm:pt-2">
+                  <td role="cell" className="w-32 px-4 py-3 max-sm:block max-sm:w-full max-sm:px-0 max-sm:pb-0 max-sm:pt-2">
                     <BarreRepartition loyers={row.loyersEncaisses} charges={row.chargesDeduites} commission={row.commission} net={row.netAReverser} hauteur="h-1.5" />
                   </td>
                 </tr>
               ))}
               {crg.properties.length === 0 && (
-                <tr className="max-sm:block">
-                  <td colSpan={7} className="py-8 text-center text-sm text-slate-600 max-sm:block">
+                <tr role="row" className="max-sm:block">
+                  <td role="cell" colSpan={7} className="py-8 text-center text-sm text-slate-600 max-sm:block">
                     {t(`${ns}.empty`)}
                   </td>
                 </tr>

@@ -77,7 +77,7 @@ export default function AdminSettingsPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900">{t("admin.settings.title")}</h2>
+        <h1 className="text-2xl font-semibold text-slate-900">{t("admin.settings.title")}</h1>
         <p className="mt-1 text-sm text-slate-600">{t("admin.settings.subtitle")}</p>
       </div>
 

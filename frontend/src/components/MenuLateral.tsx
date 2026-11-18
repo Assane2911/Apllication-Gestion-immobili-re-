@@ -93,7 +93,8 @@ export default function MenuLateral({ groupes, prefixeLibelles, prefixeRubriques
           <div className="flex items-center gap-3 min-w-0">
             <Logo />
             <div className={`min-w-0 whitespace-nowrap transition-opacity duration-150 ${etiquette}`}>
-              <h1 className="text-sm font-extrabold leading-tight truncate">{t("common.appName")}</h1>
+              {/* Le nom de l'application n'est pas un titre : le `h1` de chaque page est le titre de la page. */}
+              <p className="font-display text-sm font-extrabold leading-tight tracking-[-0.015em] truncate">{t("common.appName")}</p>
               <p className="font-mono text-[10px] uppercase tracking-wider text-slate-600 truncate">{sousTitre}</p>
             </div>
           </div>

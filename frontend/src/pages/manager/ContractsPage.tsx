@@ -578,7 +578,7 @@ export default function ContractsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.contracts.title")}</h2>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("manager.contracts.title")}</h1>
           <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-600">{t("manager.contracts.count", { count: contracts.length })}</p>
         </div>
         <Bulle texte={t("manager.tips.contractCreate")}>
@@ -600,9 +600,9 @@ export default function ContractsPage() {
       {bauxAReviser.length > 0 && (
         <section aria-labelledby="baux-a-reviser" className="border border-slate-300 bg-white shadow-[inset_4px_0_0_var(--color-orange-700)]">
           <header className="border-b border-slate-300 bg-slate-50 py-3 pl-6 pr-5">
-            <h3 id="baux-a-reviser" className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">
+            <h2 id="baux-a-reviser" className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-900">
               {t("manager.contracts.revisionsDue.title", { count: bauxAReviser.length })}
-            </h3>
+            </h2>
             <p className="mt-1 text-xs text-slate-700">{t("manager.contracts.revisionsDue.hint")}</p>
           </header>
           <ul className="divide-y divide-slate-200 py-1 pl-6 pr-5">
@@ -873,13 +873,13 @@ export default function ContractsPage() {
         <table className="w-full text-sm">
           <thead className="text-left">
             <tr>
-              <th className="px-4 py-3 font-semibold">{t("manager.contracts.table.property")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.contracts.table.tenant")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.contracts.table.rent")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.contracts.table.duration")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.contracts.table.signatures")}</th>
-              <th className="px-4 py-3 font-semibold">{t("manager.contracts.table.status")}</th>
-              <th className="px-4 py-3 font-semibold text-right">{t("manager.contracts.table.actions")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.contracts.table.property")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.contracts.table.tenant")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.contracts.table.rent")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.contracts.table.duration")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.contracts.table.signatures")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold">{t("manager.contracts.table.status")}</th>
+              <th scope="col" className="px-4 py-3 font-semibold text-right">{t("manager.contracts.table.actions")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">

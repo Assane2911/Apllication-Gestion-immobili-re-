@@ -227,7 +227,7 @@ describe("IssuesPage (gestionnaire)", () => {
       issue({ id: "c", title: "Ampoule grillée", createdAt: il_y_a(0), tenant: tenant({ firstName: "Moussa", lastName: "Ba" }) }),
       issue({ id: "d", title: "Volet cassé", status: "RESOLVED", createdAt: il_y_a(20) }),
     ];
-    const titres = () => screen.getAllByRole("article").map((a) => within(a).getByRole("heading", { level: 3 }).textContent);
+    const titres = () => screen.getAllByRole("article").map((a) => within(a).getByRole("heading", { level: 2 }).textContent);
 
     async function afficher() {
       mockedApi.get.mockResolvedValueOnce(paginated(parc()));
@@ -247,11 +247,11 @@ describe("IssuesPage (gestionnaire)", () => {
 
     it("indique l'ancienneté de chaque incident à traiter, et marque l'ancien", async () => {
       await afficher();
-      const fuite = screen.getByRole("heading", { level: 3, name: "Fuite d'eau" }).closest("article") as HTMLElement;
+      const fuite = screen.getByRole("heading", { level: 2, name: "Fuite d'eau" }).closest("article") as HTMLElement;
       expect(within(fuite).getByText(/Signalé il y a 10 j · Ancien/)).toBeInTheDocument();
-      const ampoule = screen.getByRole("heading", { level: 3, name: "Ampoule grillée" }).closest("article") as HTMLElement;
+      const ampoule = screen.getByRole("heading", { level: 2, name: "Ampoule grillée" }).closest("article") as HTMLElement;
       expect(within(ampoule).getByText(/Signalé aujourd'hui/)).toBeInTheDocument();
-      const volet = screen.getByRole("heading", { level: 3, name: "Volet cassé" }).closest("article") as HTMLElement;
+      const volet = screen.getByRole("heading", { level: 2, name: "Volet cassé" }).closest("article") as HTMLElement;
       expect(within(volet).queryByText(/Signalé il y a|Signalé aujourd/)).not.toBeInTheDocument();
     });
 

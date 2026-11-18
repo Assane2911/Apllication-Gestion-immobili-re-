@@ -194,9 +194,9 @@ describe("VendorsPage (manager)", () => {
     it("propose WhatsApp seulement pour un numéro au format international", async () => {
       mockedApi.get.mockResolvedValueOnce({ data: parc() });
       renderPage();
-      const fall = (await screen.findByRole("heading", { level: 3, name: "Plomberie Fall" })).closest("article") as HTMLElement;
+      const fall = (await screen.findByRole("heading", { level: 2, name: "Plomberie Fall" })).closest("article") as HTMLElement;
       expect(within(fall).getByRole("link", { name: "WhatsApp" })).toHaveAttribute("href", "https://wa.me/221770001122");
-      const ndoye = screen.getByRole("heading", { level: 3, name: "Élec Ndoye" }).closest("article") as HTMLElement;
+      const ndoye = screen.getByRole("heading", { level: 2, name: "Élec Ndoye" }).closest("article") as HTMLElement;
       expect(within(ndoye).queryByRole("link", { name: "WhatsApp" })).not.toBeInTheDocument();
     });
 

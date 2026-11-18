@@ -55,7 +55,7 @@ export default function OwnerMessagesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900">{t("manager.ownerMessages.title")}</h2>
+        <h1 className="text-2xl font-semibold text-slate-900">{t("manager.ownerMessages.title")}</h1>
         <p className="mt-1 text-sm text-slate-600">{t("manager.ownerMessages.subtitle")}</p>
       </div>
       <OngletsMessagerie />
@@ -73,7 +73,7 @@ export default function OwnerMessagesPage() {
         {/* 1 · Index des fils : une ligne numérotée par propriétaire. */}
         <div className={`${selectedOwnerId ? "hidden md:flex" : "flex"} w-full flex-col border-slate-300 bg-slate-50 md:w-80 md:shrink-0 md:border-r`}>
           <div className="border-b border-ink-900 bg-ink-900 px-4 py-3 text-white">
-            <h3 className="font-mono text-xs font-semibold uppercase tracking-wider">{t("manager.ownerMessages.ongoingDiscussions")}</h3>
+            <h2 className="font-mono text-xs font-semibold uppercase tracking-wider">{t("manager.ownerMessages.ongoingDiscussions")}</h2>
             <p className="mt-0.5 font-mono text-[11px] text-white/80">
               {t("manager.ownerMessages.conversationCount", { count: total })}
               {nbNonLues > 0 && ` · ${t("manager.ownerMessages.unreadCount", { count: nbNonLues })}`}
@@ -191,7 +191,7 @@ export default function OwnerMessagesPage() {
                         {t("common.sheet")} {String((page - 1) * pageSize + rangActif + 1).padStart(2, "0")}
                       </p>
                     )}
-                    <h3 className="truncate text-sm font-bold text-slate-900">{nomActif}</h3>
+                    <h2 className="truncate text-sm font-bold text-slate-900">{nomActif}</h2>
                   </div>
                 </div>
                 <Link

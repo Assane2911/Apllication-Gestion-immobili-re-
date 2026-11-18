@@ -45,11 +45,11 @@ export default function FriseJournal({ entrees }: { entrees: EntreeFrise[] }) {
     <div className="space-y-8">
       {jours.map((jour) => (
         <section key={jour.cle} aria-label={jour.libelle}>
-          <h3 className="mb-4 flex items-center gap-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-900">
+          <h2 className="mb-4 flex items-center gap-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-900">
             {jour.libelle}
             <span aria-hidden="true" className="h-px flex-1 bg-slate-300" />
             <span className="font-normal text-slate-600">{String(jour.entrees.length).padStart(2, "0")}</span>
-          </h3>
+          </h2>
           <ol className="ml-3 border-l border-slate-400">
             {jour.entrees.map((entree) => {
               const Icone = entree.icone ?? Clock;

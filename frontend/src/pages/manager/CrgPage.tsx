@@ -91,7 +91,7 @@ export default function CrgPage() {
           {t("manager.crg.backToOwners")}
         </Link>
         <div className="border border-red-200 bg-red-50 p-6 text-red-700">
-          <h3 className="mb-1 text-base font-bold">{t("manager.crg.errorTitle")}</h3>
+          <h2 className="mb-1 text-base font-bold">{t("manager.crg.errorTitle")}</h2>
           <p className="text-sm">{error}</p>
           <button
             onClick={() => loadData(month, year)}
@@ -108,7 +108,7 @@ export default function CrgPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.crg.title")}</h2>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("manager.crg.title")}</h1>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -128,7 +128,7 @@ export default function CrgPage() {
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">{t("manager.crg.title")}</h2>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("manager.crg.title")}</h1>
           <p className="mt-1 text-sm text-slate-600">{t("manager.crg.subtitle", { ownerName: crg.ownerName })}</p>
         </div>
         <EtatReversementCrg crg={crg} />
