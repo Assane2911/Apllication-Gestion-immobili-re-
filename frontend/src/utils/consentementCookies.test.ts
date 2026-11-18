@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  choixDepuisFinalites,
   CLE_CHOIX,
   CLE_DATE_CHOIX,
   effacerCookiesTraceurs,
   enregistrerChoixCookies,
   EVENEMENT_ROUVRIR_CHOIX,
+  finalitesAutorisees,
   lireChoixCookies,
   rouvrirChoixCookies,
 } from "./consentementCookies";
@@ -69,5 +71,38 @@ describe("choix sur les cookies", () => {
     expect(document.cookie).not.toMatch(/_ga|_fbp|li_gc/);
     expect(document.cookie).toContain("session_utile=garde");
     document.cookie = "session_utile=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+  });
+
+  /**
+   * Le consentement se donne finalité par finalité (recommandation de la CNIL) : la mesure d'audience (Google Analytics) et la publicité
+   * (pixels Meta et LinkedIn) ne sont plus liées par un seul bouton. « accepted » et « rejected » gardent leur sens (tout, rien) : les
+   * choix déjà enregistrés restent valables.
+   */
+  describe("choix par finalité", () => {
+    it("tout accepter, c'est les deux finalités ; tout refuser (ou ne pas répondre), aucune", () => {
+      expect(finalitesAutorisees("accepted")).toEqual({ audience: true, publicite: true });
+      expect(finalitesAutorisees("rejected")).toEqual({ audience: false, publicite: false });
+      expect(finalitesAutorisees(null)).toEqual({ audience: false, publicite: false });
+    });
+
+    it("un choix partiel n'autorise que sa finalité", () => {
+      expect(finalitesAutorisees("audience")).toEqual({ audience: true, publicite: false });
+      expect(finalitesAutorisees("publicite")).toEqual({ audience: false, publicite: true });
+    });
+
+    it("les quatre combinaisons se convertissent dans les deux sens", () => {
+      expect(choixDepuisFinalites({ audience: true, publicite: true })).toBe("accepted");
+      expect(choixDepuisFinalites({ audience: false, publicite: false })).toBe("rejected");
+      expect(choixDepuisFinalites({ audience: true, publicite: false })).toBe("audience");
+      expect(choixDepuisFinalites({ audience: false, publicite: true })).toBe("publicite");
+    });
+
+    it("un choix partiel s'enregistre, se relit, et dure 13 mois (il contient un accord)", () => {
+      enregistrerChoixCookies("audience", T0);
+      expect(lireChoixCookies(T0 + 390 * JOUR)).toBe("audience");
+      expect(lireChoixCookies(T0 + 396 * JOUR)).toBeNull();
+      enregistrerChoixCookies("publicite", T0);
+      expect(lireChoixCookies(T0 + 390 * JOUR)).toBe("publicite");
+    });
   });
 });

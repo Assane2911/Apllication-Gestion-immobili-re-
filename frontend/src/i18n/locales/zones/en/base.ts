@@ -1387,10 +1387,17 @@ const zone: ZoneBase = {
   },
   cookieConsent: {
     message:
-      "We use audience measurement and advertising tools (Google Analytics, Meta, LinkedIn) to analyze site traffic and show you relevant ads. No data is collected without your consent.",
+      "We use audience measurement (Google Analytics) and advertising (Meta, LinkedIn) tools to analyze site traffic and show you relevant ads. No data is collected without your consent, and you choose purpose by purpose.",
     privacyLink: "Learn more",
-    accept: "Accept",
-    reject: "Reject",
+    accept: "Accept all",
+    reject: "Reject all",
+    customize: "Customize",
+    save: "Save my choice",
+    purposes: "Purposes",
+    audienceTitle: "Audience measurement",
+    audienceHint: "Google Analytics: pages visited and traffic sources on the public site, to improve it.",
+    adsTitle: "Advertising and retargeting",
+    adsHint: "Meta Pixel and LinkedIn Insight Tag: campaign measurement and display of ImmoPlatform Pro ads on Facebook, Instagram and LinkedIn.",
     manage: "Manage my cookies",
   },
 };
