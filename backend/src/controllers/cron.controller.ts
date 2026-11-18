@@ -15,6 +15,7 @@ import { markOverdueInvoices } from "../services/invoice.service";
 import { runRecurringExpenseGeneration } from "../services/recurringExpense.service";
 import { runOverdueReminders } from "../services/relances.service";
 import { budgetTemps } from "../utils/budgetTemps";
+import { signalerBattementDeCoeur } from "../utils/battementDeCoeur";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { erreurSansDonnees } from "../utils/erreurSansDonnees";
 
@@ -216,6 +217,10 @@ export const triggerDailyReminders = asyncHandler(async (req: Request, res: Resp
   const ligne = ligneDeResume(corps);
   if (corps.success) console.log(ligne);
   else console.warn(ligne);
+
+  // Le battement de cœur n'est émis que si TOUT a réussi : c'est son absence, jour après jour, qui alerte la sonde
+  // externe (voir utils/battementDeCoeur.ts). Après le résumé, pour que le journal reste écrit même si la sonde tarde.
+  if (corps.success) await signalerBattementDeCoeur();
 
   res.status(corps.success ? 200 : 500).json(corps);
 });

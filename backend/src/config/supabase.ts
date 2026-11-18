@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
+import { creerFetchAvecDelai } from "../utils/fetchStockage";
 
 const supabaseUrl = process.env.SUPABASE_URL || "https://placeholder.supabase.co";
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder-key";
@@ -19,9 +20,11 @@ if (typeof globalThis.WebSocket === "undefined") {
   };
 }
 
-// Client "admin" côté serveur uniquement (clé service_role)
+// Client "admin" côté serveur uniquement (clé service_role). Son `fetch` est borné : sans cela, un stockage figé
+// laisserait la requête attendre jusqu'à ce que Vercel tue la fonction (voir utils/fetchStockage.ts).
 export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false },
+  global: { fetch: creerFetchAvecDelai() },
 });
 
 /** Adresse du stockage (hôte compris) : sert à reconnaître nos propres URL publiques. */
