@@ -38,7 +38,7 @@ export const COMPANY = {
    */
   governingLaw: "droit français",
   /** Date de dernière mise à jour des documents légaux (à mettre à jour à chaque révision). */
-  lastUpdated: "12 novembre 2026",
+  lastUpdated: "18 novembre 2026",
 };
 
 /** Sous-traitants techniques mentionnés dans la politique de confidentialité. */
@@ -77,6 +77,15 @@ export const SUBPROCESSORS = {
   googleSignIn: {
     name: "Google (Sign-In)",
     role: "Connexion facultative « Se connecter avec Google », réservée aux comptes Gestionnaire. Google transmet au Service l'adresse email, le nom et l'identifiant de compte Google du Gestionnaire qui choisit ce mode de connexion.",
+  },
+  /**
+   * Le workflow « Sauvegarde de la base » (.github/workflows/sauvegarde.yml) dépose chaque nuit sur GitHub une copie de TOUTE la base,
+   * chiffrée avant dépôt. La durée est celle de `retention-days` dans ce workflow : un test (PolitiqueConfidentialitePage.test.tsx)
+   * vérifie que la politique annonce la même.
+   */
+  sauvegardes: {
+    name: "GitHub (GitHub, Inc., société du groupe Microsoft)",
+    role: "Conservation des copies de sauvegarde chiffrées de la base de données (une par nuit). Les copies sont chiffrées (AES-256) avant leur dépôt : GitHub ne détient que des fichiers illisibles, dont la phrase de passe n'est connue que de l'éditeur. Voir la section 6 pour leur durée de conservation.",
   },
   errorMonitoring: {
     name: "Sentry",
