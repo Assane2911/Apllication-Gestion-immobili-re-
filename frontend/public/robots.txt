@@ -34,3 +34,5 @@ Disallow: /pays
 Disallow: /prestataires
 
 Sitemap: https://www.immoplatformpro.com/sitemap.xml
+# Les annonces de la vitrine, à jour à chaque lecture : la vitrine pagine par boutons, un robot n'atteint la suite que par ce plan.
+Sitemap: https://www.immoplatformpro.com/sitemap-annonces.xml

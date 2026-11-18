@@ -14,6 +14,7 @@ import { deviseSchema } from "../utils/devises";
 import { paysSchema } from "../utils/pays";
 import { dateSaisieSchema } from "../utils/dates";
 import { MONTANT_MAXIMUM, SURFACE_MAXIMUM } from "../utils/montant";
+import { construireSitemapAnnonces, PLAFOND_URLS_SITEMAP } from "../services/sitemapAnnonces.service";
 
 /**
  * Module "CRM Leads & Visites" + vitrine publique : annonces (listings)
@@ -180,6 +181,26 @@ export const listPublicListings = asyncHandler(async (req: Request, res: Respons
   ]);
 
   res.json(buildPaginatedResult(rows.map(toPublicListing), count, pagination));
+});
+
+/**
+ * Plan du site des annonces (XML), pour les moteurs de recherche : la vitrine pagine par boutons, donc au-delà de la première page une
+ * annonce n'est atteignable par un robot que par ce plan. Mêmes annonces que la vitrine (visibleSurLaVitrine), servies À LA DEMANDE :
+ * le plan fait au build du site n'est refait qu'à chaque déploiement, alors qu'une annonce se publie à tout moment. Mis en cache une
+ * heure par le réseau de Vercel (une requête par heure, pas une par robot).
+ */
+export const sitemapAnnonces = asyncHandler(async (_req: Request, res: Response) => {
+  const rows = await db
+    .select({ id: listings.id, updatedAt: listings.updatedAt })
+    .from(listings)
+    .where(visibleSurLaVitrine)
+    .orderBy(desc(listings.createdAt))
+    .limit(PLAFOND_URLS_SITEMAP);
+
+  res
+    .type("application/xml")
+    .set("Cache-Control", "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400")
+    .send(construireSitemapAnnonces(rows));
 });
 
 /**

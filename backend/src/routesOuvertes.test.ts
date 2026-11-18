@@ -31,6 +31,7 @@ const PUBLIQUES: Record<string, string> = {
   "GET /api/subscription/plans": "formules d'abonnement, affichées avant l'inscription",
   "GET /api/listings/public": "annonces publiées, visibles par les visiteurs",
   "GET /api/listings/public/countries": "pays des annonces publiées, pour le filtre public",
+  "GET /api/listings/public/sitemap.xml": "plan du site des annonces publiées, lu par les moteurs de recherche (mêmes annonces que la vitrine, aucune donnée non publique)",
   "GET /api/listings/public/:p": "détail d'une annonce publiée",
   "POST /api/listings/public/:p/leads": "demande de contact d'un visiteur sur une annonce (limitée en fréquence)",
   "GET /api/agenda/ics/:p": "flux de calendrier (iCal) lu par Google Agenda, Outlook ou l'iPhone : le jeton secret du lien tient lieu de session, il est révocable et limité en fréquence sur les échecs",
