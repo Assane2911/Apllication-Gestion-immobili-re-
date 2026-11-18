@@ -171,6 +171,7 @@ export default function ManagerLayout() {
         <div className="flex items-center justify-between gap-3 mb-6">
           <BoutonOuvrirMenu
             onClick={() => setMobileNavOpen(true)}
+            ouvert={mobileNavOpen}
             enAttente={nonLus.count + agenda.overdue}
             className="sm:hidden shrink-0 w-9 h-9 bg-white border border-slate-400 flex items-center justify-center text-ink-900 hover:border-ink-900 transition-colors"
           />

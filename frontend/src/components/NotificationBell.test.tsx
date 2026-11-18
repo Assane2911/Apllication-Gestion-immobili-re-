@@ -85,7 +85,7 @@ describe("NotificationBell", () => {
 
     await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith("/notifications/mine", expect.anything()));
 
-    const bouton = screen.getByLabelText("Notifications");
+    const bouton = screen.getByLabelText(/^Notifications/);
     fireEvent.mouseEnter(bouton.parentElement!);
     expect(
       screen.getByText("Vos alertes : messages du gestionnaire, loyers à régler, bail arrivant à échéance.")
@@ -104,9 +104,9 @@ describe("NotificationBell", () => {
     });
     renderBell();
 
-    await waitFor(() => expect(screen.getByLabelText("Notifications")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByLabelText(/^Notifications/)).toBeInTheDocument());
     await waitFor(() => expect(screen.getByText("1")).toBeInTheDocument());
-    fireEvent.click(screen.getByLabelText("Notifications"));
+    fireEvent.click(screen.getByLabelText(/^Notifications/));
 
     expect(await screen.findByText("Demande de visite — Awa Diop")).toBeInTheDocument();
     expect(screen.getByText("Villa Ngor")).toBeInTheDocument();
@@ -114,7 +114,7 @@ describe("NotificationBell", () => {
   });
 
   describe("état « vu »", () => {
-    const bouton = () => screen.getByLabelText("Notifications");
+    const bouton = () => screen.getByLabelText(/^Notifications/);
 
     it("ne compte dans le badge que les notifications non vues", async () => {
       mockedApi.get.mockResolvedValueOnce({
@@ -217,7 +217,7 @@ describe("NotificationBell", () => {
         });
         expect(screen.getByText("1")).toBeInTheDocument();
 
-        fireEvent.click(screen.getByLabelText("Notifications"));
+        fireEvent.click(screen.getByLabelText(/^Notifications/));
         expect(screen.queryByText("1")).not.toBeInTheDocument();
 
         // Le sondage suivant renvoie encore « non vue » (réponse calculée avant l'enregistrement).
@@ -233,7 +233,7 @@ describe("NotificationBell", () => {
   });
 
   describe("« Tout marquer comme lu »", () => {
-    const bouton = () => screen.getByLabelText("Notifications");
+    const bouton = () => screen.getByLabelText(/^Notifications/);
     const deux = () => ({
       data: {
         notifications: [
@@ -342,7 +342,7 @@ describe("NotificationBell", () => {
         await act(async () => {
           await vi.advanceTimersByTimeAsync(10);
         });
-        fireEvent.click(screen.getByLabelText("Notifications"));
+        fireEvent.click(screen.getByLabelText(/^Notifications/));
         fireEvent.click(screen.getByText("Tout marquer comme lu"));
         expect(screen.queryByText("À traiter")).not.toBeInTheDocument();
 
@@ -524,7 +524,7 @@ describe("NotificationBell — changement de langue", () => {
  * montre pas doit rester dans le badge et le décompte, et « marquer vu / lu » doit le couvrir (requête SANS clés).
  */
 describe("NotificationBell — liste plafonnée par le serveur", () => {
-  const bouton = () => screen.getByLabelText("Notifications");
+  const bouton = () => screen.getByLabelText(/^Notifications/);
   beforeEach(() => {
     mockedApi.get.mockReset();
     mockedApi.post.mockReset();

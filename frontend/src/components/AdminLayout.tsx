@@ -8,6 +8,7 @@ import ActivationDeuxFacteursAdmin from "./ActivationDeuxFacteursAdmin";
 import LanguageSwitcher from "./LanguageSwitcher";
 import CartouchePlan from "./CartouchePlan";
 import ZoneDePage from "./ZoneDePage";
+import { ID_MENU_LATERAL } from "../utils/menuLateral";
 import MenuLateral, { type GroupeMenu } from "./MenuLateral";
 
 // Même menu latéral que l'espace gestionnaire (colonne d'icônes qui s'ouvre au survol), rangé en quatre rubriques.
@@ -77,6 +78,8 @@ export default function AdminLayout() {
         <div className="max-w-5xl mx-auto">
           <button
             onClick={() => setMenuMobileOuvert(true)}
+            aria-expanded={menuMobileOuvert}
+            aria-controls={ID_MENU_LATERAL}
             className="sm:hidden mb-4 w-9 h-9 bg-white border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors"
             aria-label={t("components.managerLayout.openMenuAria")}
           >

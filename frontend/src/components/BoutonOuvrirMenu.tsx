@@ -1,18 +1,21 @@
 import { Menu } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { libellePastille } from "../utils/nonLus";
+import { ID_MENU_LATERAL } from "../utils/menuLateral";
 
 /**
  * Bouton qui ouvre le tiroir de navigation sur téléphone. Tant que le tiroir est fermé, les pastilles de ses entrées
  * (messages non lus, échéances en retard) sont cachées avec lui : ce bouton en reprend le total, pour qu'on voie qu'il y
  * a quelque chose à traiter sans l'ouvrir. Le détail par entrée reste dans le tiroir.
  */
-export default function BoutonOuvrirMenu({ onClick, enAttente = 0, className }: { onClick: () => void; enAttente?: number; className: string }) {
+export default function BoutonOuvrirMenu({ onClick, ouvert, enAttente = 0, className }: { onClick: () => void; /** Le tiroir est-il ouvert ? (`aria-expanded`) */ ouvert: boolean; enAttente?: number; className: string }) {
   const { t } = useTranslation();
   return (
     <button
       type="button"
       onClick={onClick}
+      aria-expanded={ouvert}
+      aria-controls={ID_MENU_LATERAL}
       className={`relative ${className}`}
       aria-label={enAttente > 0 ? t("components.managerLayout.openMenuPending", { count: enAttente }) : t("components.managerLayout.openMenuAria")}
     >

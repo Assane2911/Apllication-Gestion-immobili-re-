@@ -1,9 +1,12 @@
 import { ChevronsLeft, ChevronsRight, LogOut, X, type LucideIcon } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
+import { ID_MENU_LATERAL } from "../utils/menuLateral";
 import { libellePastille } from "../utils/nonLus";
 import Logo from "./Logo";
+
+const FOCALISABLES = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export interface EntreeMenu {
   to: string;
@@ -56,6 +59,50 @@ export default function MenuLateral({ groupes, prefixeLibelles, prefixeRubriques
   const { t } = useTranslation();
   const [epingle, setEpingle] = useState(() => lireEpingle(cleStockage));
   const [survol, setSurvol] = useState(false);
+  // Fermé sur téléphone, le tiroir est `visibility: hidden` (hors de la tabulation et des lecteurs d'écran). Cette propriété ne
+  // se transitionne qu'À LA FERMETURE (classe `max-sm:transition-[…,visibility]` du seul état fermé) : à l'ouverture elle doit
+  // basculer tout de suite, sinon le tiroir est encore caché quand le focus y est envoyé et le focus échoue sans bruit.
+  const tiroir = useRef<HTMLElement>(null);
+  const fermerRef = useRef(onFermerMobile);
+  useEffect(() => {
+    fermerRef.current = onFermerMobile;
+  });
+
+  // Tiroir ouvert sur téléphone : le focus y entre, y reste (Tab boucle), Échap le ferme, et le focus revient au bouton qui
+  // l'avait ouvert. Sans cela, le focus restait derrière le voile et Échap ne faisait rien.
+  useEffect(() => {
+    if (!ouvertMobile) return;
+    const conteneur = tiroir.current;
+    if (!conteneur) return;
+    const precedent = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const elements = () => Array.from(conteneur.querySelectorAll<HTMLElement>(FOCALISABLES));
+    elements()[0]?.focus();
+
+    const surTouche = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        fermerRef.current();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const liste = elements();
+      if (liste.length === 0) return;
+      const actif = document.activeElement;
+      if (e.shiftKey && (actif === liste[0] || !conteneur.contains(actif))) {
+        e.preventDefault();
+        liste[liste.length - 1].focus();
+      } else if (!e.shiftKey && (actif === liste[liste.length - 1] || !conteneur.contains(actif))) {
+        e.preventDefault();
+        liste[0].focus();
+      }
+    };
+    document.addEventListener("keydown", surTouche);
+    return () => {
+      document.removeEventListener("keydown", surTouche);
+      // On ne reprend le focus que s'il est resté dans le tiroir (ou perdu) : après un clic sur un lien, la page a pris le focus.
+      const actif = document.activeElement;
+      if (precedent && document.contains(precedent) && (actif === document.body || conteneur.contains(actif))) precedent.focus();
+    };
+  }, [ouvertMobile]);
   const ouvert = epingle || survol;
   const basculerEpingle = () =>
     setEpingle((actuel) => {
@@ -75,6 +122,8 @@ export default function MenuLateral({ groupes, prefixeLibelles, prefixeRubriques
       {/* Réserve la place de la colonne ; le menu, lui, se déploie par-dessus le contenu. */}
       <div aria-hidden="true" className={`hidden sm:block shrink-0 transition-[width] duration-200 ${epingle ? "w-64" : "w-16"}`} />
       <aside
+        ref={tiroir}
+        id={ID_MENU_LATERAL}
         onMouseEnter={() => setSurvol(true)}
         onMouseLeave={(e) => {
           // Une liste déroulante ouverte (monnaie, langue) sort du menu : on ne referme pas sous le choix de la personne.
@@ -87,7 +136,7 @@ export default function MenuLateral({ groupes, prefixeLibelles, prefixeRubriques
         }}
         className={`fixed inset-y-0 left-0 z-40 w-64 ${ouvert ? "sm:w-64" : "sm:w-16"} h-dvh bg-white text-slate-900 border-r border-slate-300 flex flex-col overflow-hidden transform transition-[transform,width,box-shadow] duration-200 ease-in-out ${
           ouvert && !epingle ? "sm:shadow-xl" : ouvertMobile ? "shadow-xl sm:shadow-none" : "sm:shadow-none"
-        } ${ouvertMobile ? "translate-x-0" : "-translate-x-full"} sm:translate-x-0`}
+        } ${ouvertMobile ? "translate-x-0" : "-translate-x-full max-sm:invisible max-sm:transition-[transform,width,box-shadow,visibility]"} sm:translate-x-0`}
       >
         <div className="shrink-0 h-16 px-3.5 flex items-center justify-between gap-3 border-b border-slate-300">
           <div className="flex items-center gap-3 min-w-0">

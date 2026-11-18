@@ -1167,6 +1167,8 @@ const zone: ZoneBase = {
       label: "Búsqueda global",
       placeholder: "Buscar un inquilino, una propiedad, un contrato...",
       clearAria: "Borrar la búsqueda",
+      resultCount_one: "{{count}} resultado",
+      resultCount_other: "{{count}} resultados",
       searching: "Buscando...",
       noResults: "Sin resultados para «{{query}}»",
       types: {
@@ -1179,6 +1181,8 @@ const zone: ZoneBase = {
     notificationBell: {
       tip: "Sus alertas: alquileres atrasados, contratos próximos a vencer, incidencias abiertas.",
       ariaLabel: "Notificaciones",
+      ariaLabelNonVues_one: "Notificaciones, {{count}} sin ver",
+      ariaLabelNonVues_other: "Notificaciones, {{count}} sin ver",
       title: "Notificaciones",
       itemCount_one: "{{count}} elemento requiere su atención",
       itemCount_other: "{{count}} elementos requieren su atención",
@@ -1240,6 +1244,8 @@ const zone: ZoneBase = {
     notificationBell: {
       tip: "Sus alertas: mensajes del gestor, alquiler por pagar, contrato próximo a vencer.",
       ariaLabel: "Notificaciones",
+      ariaLabelNonVues_one: "Notificaciones, {{count}} sin ver",
+      ariaLabelNonVues_other: "Notificaciones, {{count}} sin ver",
       title: "Notificaciones",
       itemCount_one: "{{count}} elemento que requiere su atención",
       itemCount_other: "{{count}} elementos que requieren su atención",

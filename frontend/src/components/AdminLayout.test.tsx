@@ -66,6 +66,16 @@ describe("AdminLayout", () => {
     expect(screen.getByText("Tableau de bord admin")).toBeInTheDocument();
   });
 
+  it("le bouton qui ouvre le tiroir dit s'il est ouvert (aria-expanded) et lequel il commande", async () => {
+    renderAdminLayout();
+    const bouton = screen.getByRole("button", { name: "Ouvrir le menu" });
+    expect(bouton).toHaveAttribute("aria-expanded", "false");
+    expect(bouton).toHaveAttribute("aria-controls", "menu-lateral");
+
+    await userEvent.click(bouton);
+    expect(screen.getByRole("button", { name: "Ouvrir le menu" })).toHaveAttribute("aria-expanded", "true");
+  });
+
   it("le menu ne pose aucun titre : le nom de l'application n'est pas le h1, c'est la page qui a le sien", () => {
     renderAdminLayout();
     expect(screen.queryAllByRole("heading", { level: 1 })).toEqual([]);
