@@ -1,12 +1,12 @@
 import { CheckCircle2, Circle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { api } from "../api/client";
 import { useAuth } from "../context/auth";
 import { paysParCode } from "../data/pays";
 import type { DashboardStats } from "../types";
 import { countryLabel } from "../utils/countries";
+import { CLE_MASQUE_DEMARRAGE, lireMasque } from "../utils/guideDemarrage";
 
 /**
  * Liste de démarrage d'une agence, sur le tableau de bord : les quatre gestes qui produisent ses premiers documents — ses
@@ -14,44 +14,24 @@ import { countryLabel } from "../utils/countries";
  * Rien n'est bloquant : c'est un repère, qui disparaît seul quand tout est fait, ou quand le gestionnaire le masque.
  *
  * Le pays de l'agence ne change que le texte de la première étape et le rappel de la devise ; la liste est la même partout.
- * L'étape des identifiants lit les réglages de l'agence : si cette lecture échoue, elle est omise plutôt que supposée faite
- * ou à faire.
+ * L'étape des identifiants dépend des réglages de l'agence, lus par la PAGE en même temps que les statistiques (voir
+ * `lireIdentifiantsSaisis`) : si cette lecture échoue, elle est omise plutôt que supposée faite ou à faire. Le guide ne les
+ * lit pas lui-même : quand les trois premiers gestes sont faits, il ne s'affiche que si les identifiants manquent, et
+ * l'apparaître après coup repoussait toute la page vers le bas (décalage d'affichage de 0,13 sur ordinateur, 0,27 sur téléphone).
  */
-const CLE_MASQUE = "immoplatform.demarrage.masque";
-
-function lireMasque(): boolean {
-  try {
-    return localStorage.getItem(CLE_MASQUE) === "1";
-  } catch {
-    return false;
-  }
-}
-
 type Etape = { cle: "ids" | "bien" | "locataire" | "bail"; faite: boolean; lien: string };
 
-export default function DemarrageAgence({ stats }: { stats: Pick<DashboardStats, "totalProperties" | "totalTenants" | "activeContracts"> }) {
+export default function DemarrageAgence({
+  stats,
+  identifiantsSaisis,
+}: {
+  stats: Pick<DashboardStats, "totalProperties" | "totalTenants" | "activeContracts">;
+  /** Voir `lireIdentifiantsSaisis` : `null` omet l'étape des identifiants. */
+  identifiantsSaisis: boolean | null;
+}) {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [masque, setMasque] = useState(lireMasque);
-  // `null` : réglages pas encore lus ou illisibles ; sinon, vrai quand des identifiants légaux sont saisis.
-  const [identifiantsSaisis, setIdentifiantsSaisis] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    if (masque) return;
-    let annule = false;
-    (async () => {
-      try {
-        const res = await api.get<{ siretOrId?: string | null }>("/agency");
-        if (!annule && res?.data) setIdentifiantsSaisis(Boolean(res.data.siretOrId?.trim()));
-      } catch {
-        // Réglages illisibles : l'étape des identifiants est omise.
-      }
-    })();
-    return () => {
-      annule = true;
-    };
-  }, [masque]);
-
   const etapes: Etape[] = [
     ...(identifiantsSaisis === null ? [] : [{ cle: "ids" as const, faite: identifiantsSaisis, lien: "/agency" }]),
     { cle: "bien", faite: stats.totalProperties > 0, lien: "/properties" },
@@ -66,7 +46,7 @@ export default function DemarrageAgence({ stats }: { stats: Pick<DashboardStats,
 
   function masquer() {
     try {
-      localStorage.setItem(CLE_MASQUE, "1");
+      localStorage.setItem(CLE_MASQUE_DEMARRAGE, "1");
     } catch {
       // Stockage indisponible : le guide se masque pour cette visite seulement.
     }
