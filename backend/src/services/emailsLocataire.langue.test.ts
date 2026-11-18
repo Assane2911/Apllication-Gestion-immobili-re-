@@ -56,7 +56,7 @@ describe("avis d'échéance du mois (cron)", () => {
     const [pourColoc] = messagesVers("moussa@test.local");
     expect(pourTitulaire.sujet).toContain("Rent due August 2026");
     expect(pourTitulaire.html).toContain("Hello <strong>Awa");
-    expect(pourColoc.sujet).toContain("Vencimento do aluguel agosto 2026");
+    expect(pourColoc.sujet).toContain("Vencimento da renda agosto 2026");
     expect(pourColoc.html).toContain("Olá <strong>Moussa");
   });
 
@@ -94,7 +94,7 @@ describe("rappel avant échéance et rappel manuel", () => {
     const res = await sendSingleInvoiceReminder(facture.id, manager.id);
 
     expect(res.success).toBe(true);
-    expect(messagesVers("awa@test.local")[0].sujet).toContain("Vencimento do aluguel agosto 2026");
+    expect(messagesVers("awa@test.local")[0].sujet).toContain("Vencimento da renda agosto 2026");
   });
 });
 

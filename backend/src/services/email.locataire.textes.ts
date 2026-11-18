@@ -238,60 +238,60 @@ const es: TextesLocataire = {
 
 const pt: TextesLocataire = {
   avisEcheance: {
-    sujet: (mois, annee, dateLimite) => `📢 Vencimento do aluguel ${mois} ${annee} — Pagamento esperado até ${dateLimite}`,
-    bandeau: "Aviso de vencimento do aluguel",
+    sujet: (mois, annee, dateLimite) => `📢 Vencimento da renda ${mois} ${annee} — Pagamento esperado até ${dateLimite}`,
+    bandeau: "Aviso de vencimento da renda",
     sousTitre: (mois, annee, bien) => `${mois} ${annee} • ${bien}`,
     bonjour: (nom) => `Olá <strong>${nom}</strong>,`,
-    intro: (mois, annee, bien) => `Seu aviso de vencimento do aluguel de <strong>${mois} ${annee}</strong> referente ao imóvel <strong>${bien}</strong> já foi emitido.`,
-    montantLabel: "Valor a pagar",
+    intro: (mois, annee, bien) => `O seu aviso de vencimento da renda de <strong>${mois} ${annee}</strong> relativo ao imóvel <strong>${bien}</strong> já foi emitido.`,
+    montantLabel: "Montante a pagar",
     delai: (date) => `⏰ Prazo de pagamento: até ${date}`,
-    conformite: "Conforme o seu contrato de locação, pedimos que efetue o pagamento do aluguel dentro do prazo.",
-    bouton: "Pagar meu aluguel →",
-    moyens: "Meios aceitos: cartão bancário, PayDunya (Orange Money, Wave, MTN...), transferência bancária.",
+    conformite: "Em conformidade com o seu contrato de arrendamento, pedimos que efetue o pagamento da renda dentro do prazo.",
+    bouton: "Pagar a minha renda →",
+    moyens: "Meios aceites: cartão bancário, PayDunya (Orange Money, Wave, MTN...), transferência bancária.",
     pied: "Este e-mail foi enviado automaticamente pela sua imobiliária.",
   },
   rappelAvantEcheance: {
-    sujet: (mois, jours) => `⏰ Lembrete: seu aluguel de ${mois} vence em ${jours} ${jours === 1 ? "dia" : "dias"}`,
+    sujet: (mois, jours) => `⏰ Lembrete: a sua renda de ${mois} vence em ${jours} ${jours === 1 ? "dia" : "dias"}`,
     bandeau: "⏰ Lembrete antes do vencimento",
     bonjour: (nom) => `Olá <strong>${nom}</strong>,`,
     intro: (mois, annee, bien, date, jours) =>
-      `Seu aluguel de <strong>${mois} ${annee}</strong> referente ao imóvel <strong>${bien}</strong> ainda não foi pago e vence em <strong>${date}</strong> (em ${jours} dia${jours > 1 ? "s" : ""}).`,
-    bouton: "Pagar meu aluguel agora →",
+      `A sua renda de <strong>${mois} ${annee}</strong> relativa ao imóvel <strong>${bien}</strong> ainda não foi paga e vence em <strong>${date}</strong> (dentro de ${jours} dia${jours > 1 ? "s" : ""}).`,
+    bouton: "Pagar a minha renda agora →",
     pied: "Este e-mail foi enviado automaticamente pela sua imobiliária.",
   },
   relance: {
-    titres: { 1: "Lembrete: aluguel não pago", 2: "Segundo aviso: aluguel em atraso", 3: "Último aviso: aluguel em atraso" },
+    titres: { 1: "Lembrete: renda por pagar", 2: "Segundo aviso: renda em atraso", 3: "Último aviso: renda em atraso" },
     corps: {
       1: (p) =>
-        `Salvo engano da nossa parte, o aluguel de <strong>${p}</strong> ainda não foi pago. Se foi um esquecimento, pedimos que efetue o pagamento o mais rápido possível. Se já pagou, pode ignorar esta mensagem.`,
+        `Salvo erro da nossa parte, a renda de <strong>${p}</strong> ainda não foi paga. Se foi um esquecimento, pedimos que efetue o pagamento o mais rapidamente possível. Se já pagou, pode ignorar esta mensagem.`,
       2: (p) =>
-        `Apesar do nosso lembrete anterior, o aluguel de <strong>${p}</strong> continua em atraso. Pedimos que o pague sem demora, ou que entre em contato com a sua imobiliária se estiver com dificuldade.`,
+        `Apesar do nosso lembrete anterior, a renda de <strong>${p}</strong> continua em atraso. Pedimos que a pague sem demora, ou que contacte a sua imobiliária se estiver com dificuldades.`,
       3: (p) =>
-        `O aluguel de <strong>${p}</strong> continua em atraso apesar dos nossos lembretes. Sem o pagamento ou um contato rápido da sua parte, a sua imobiliária poderá dar a este atraso o encaminhamento previsto no seu contrato.`,
+        `A renda de <strong>${p}</strong> continua em atraso apesar dos nossos lembretes. Sem o pagamento ou um contacto rápido da sua parte, a sua imobiliária poderá dar a este atraso o seguimento previsto no seu contrato.`,
     },
     bonjour: (nom) => `Olá <strong>${nom}</strong>,`,
-    resteAPayer: "Valor em aberto",
+    resteAPayer: "Montante em dívida",
     echeance: (date, jours) => `Vencimento em ${date} — ${jours} ${jours === 1 ? "dia" : "dias"} de atraso`,
-    instruction: "Você pode pagar este aluguel pelo seu espaço do inquilino.",
+    instruction: "Pode pagar esta renda através do seu espaço de inquilino.",
   },
   quittance: {
-    sujet: (mois, annee) => `Recibo de aluguel — ${mois} ${annee}`,
-    titre: "✅ Pagamento do aluguel confirmado",
+    sujet: (mois, annee) => `Recibo de renda — ${mois} ${annee}`,
+    titre: "✅ Pagamento da renda confirmado",
     bonjour: (nom) => `Olá ${nom},`,
     corps: (mois, annee, bien, montant) =>
-      `Confirmamos o recebimento do seu pagamento do aluguel de <strong>${mois} ${annee}</strong> referente ao imóvel <strong>${bien}</strong>, no valor de <strong>${montant}</strong>.`,
-    jointe: "Seu recibo de aluguel segue anexo a este e-mail em formato PDF. O documento do recibo é emitido em francês.",
+      `Confirmamos a receção do seu pagamento da renda de <strong>${mois} ${annee}</strong> relativo ao imóvel <strong>${bien}</strong>, no montante de <strong>${montant}</strong>.`,
+    jointe: "O seu recibo de renda segue em anexo a este e-mail em formato PDF. O documento do recibo é emitido em francês.",
   },
   recuPartiel: {
-    sujet: (mois, annee) => `Recibo de pagamento parcial — aluguel de ${mois} ${annee}`,
+    sujet: (mois, annee) => `Recibo de pagamento parcial — renda de ${mois} ${annee}`,
     titre: "Recibo de pagamento parcial",
     bonjour: (nom) => `Olá ${nom},`,
     corps: (montant, date, moyen, mois, annee, bien) =>
-      `Recebemos um pagamento de <strong>${montant}</strong> em ${date} (${moyen}) referente ao aluguel de <strong>${mois} ${annee}</strong>, imóvel <strong>${bien}</strong>.`,
-    loyer: "Aluguel",
+      `Recebemos um pagamento de <strong>${montant}</strong> em ${date} (${moyen}) relativo à renda de <strong>${mois} ${annee}</strong>, imóvel <strong>${bien}</strong>.`,
+    loyer: "Renda",
     dejaRegle: "Já pago",
-    reste: "Valor em aberto",
-    note: "Este documento é um <strong>recibo de pagamento parcial</strong>, e não um recibo de aluguel: o recibo de aluguel será emitido quando o aluguel for integralmente pago.",
+    reste: "Montante em dívida",
+    note: "Este documento é um <strong>recibo de pagamento parcial</strong>, e não um recibo de renda: o recibo de renda será emitido quando a renda estiver integralmente paga.",
   },
 };
 

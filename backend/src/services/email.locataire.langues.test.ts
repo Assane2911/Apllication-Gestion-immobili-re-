@@ -102,8 +102,8 @@ describe("rappel avant échéance — pluriel", () => {
     expect(corps("en", 3)).toContain("in 3 days)");
     expect(corps("es", 1)).toContain("dentro de 1 día)");
     expect(corps("es", 3)).toContain("dentro de 3 días)");
-    expect(corps("pt", 1)).toContain("em 1 dia)");
-    expect(corps("pt", 3)).toContain("em 3 dias)");
+    expect(corps("pt", 1)).toContain("dentro de 1 dia)");
+    expect(corps("pt", 3)).toContain("dentro de 3 dias)");
   });
 });
 

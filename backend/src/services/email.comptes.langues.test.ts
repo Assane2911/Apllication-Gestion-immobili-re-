@@ -83,7 +83,7 @@ describe("contenu qui dépend d'une valeur", () => {
     expect(en.subject).toContain("Your agency");
     expect(en.subject).not.toMatch(/Votre/);
     const owner = ownerInvitationEmail({ ownerName: "Awa", inviteUrl: URL, langue: "pt" });
-    expect(owner.subject).toContain("Sua agência");
+    expect(owner.subject).toContain("A sua agência");
   });
 
   it("le compte déjà existant garde ses deux liens distincts, échappés", () => {

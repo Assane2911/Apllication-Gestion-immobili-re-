@@ -264,72 +264,72 @@ const es: TextesCompte = {
 };
 
 const pt: TextesCompte = {
-  pied: "Este e-mail foi enviado automaticamente pelo seu aplicativo de gestão imobiliária.",
+  pied: "Este e-mail foi enviado automaticamente pela sua aplicação de gestão imobiliária.",
   bonjour: "Olá,",
   bonjourNom: (nom) => `Olá ${nom},`,
   motDePasseOublie: {
-    sujet: "🔒 Redefina sua senha",
-    titre: "🔒 Redefina sua senha",
+    sujet: "🔒 Redefina a sua palavra-passe",
+    titre: "🔒 Redefina a sua palavra-passe",
     intro:
-      "Você solicitou a redefinição da senha da sua conta. Clique no botão abaixo para escolher uma nova senha. Este link é válido por <strong>1 hora</strong>.",
-    bouton: "Redefinir minha senha →",
-    ignorer: "Se você não fez este pedido, pode ignorar este e-mail sem risco: sua senha atual permanece inalterada.",
+      "Pediu a redefinição da palavra-passe da sua conta. Clique no botão abaixo para escolher uma nova palavra-passe. Esta ligação é válida durante <strong>1 hora</strong>.",
+    bouton: "Redefinir a minha palavra-passe →",
+    ignorer: "Se não fez este pedido, pode ignorar este e-mail sem receio: a sua palavra-passe atual mantém-se inalterada.",
   },
   invitationEquipe: {
-    sujet: (personne, agence) => `🔑 ${personne} convida você para se juntar a ${agence}`,
-    titre: "🔑 Convite para ingressar na agência",
+    sujet: (personne, agence) => `🔑 ${personne} convida-o a juntar-se a ${agence}`,
+    titre: "🔑 Convite para integrar a agência",
     intro: (personne, agence) =>
-      `<strong>${personne}</strong> convida você para se juntar a <strong>${agence}</strong> como colaborador: você terá acesso aos mesmos imóveis, inquilinos e contratos que o restante da agência. Clique no botão abaixo para escolher sua senha e ativar seu acesso. Este link é válido por <strong>7 dias</strong>.`,
-    bouton: "Ativar meu acesso →",
+      `<strong>${personne}</strong> convida-o a juntar-se a <strong>${agence}</strong> como colaborador: terá acesso aos mesmos imóveis, inquilinos e contratos que o resto da agência. Clique no botão abaixo para escolher a sua palavra-passe e ativar o seu acesso. Esta ligação é válida durante <strong>7 dias</strong>.`,
+    bouton: "Ativar o meu acesso →",
     ignorer:
-      "Se você não esperava este convite, pode ignorar este e-mail sem risco: nenhum acesso será criado sem a sua confirmação.",
-    agenceParDefaut: "Sua agência",
-    gestionnaireParDefaut: "Seu gestor",
+      "Se não esperava este convite, pode ignorar este e-mail sem receio: nenhum acesso será criado sem a sua confirmação.",
+    agenceParDefaut: "A sua agência",
+    gestionnaireParDefaut: "O seu gestor",
   },
   invitationProprietaire: {
-    sujet: (agence) => `🔑 ${agence} convida você para o seu espaço de proprietário`,
-    titre: "🔑 Seu espaço de proprietário",
+    sujet: (agence) => `🔑 ${agence} convida-o para o seu espaço de proprietário`,
+    titre: "🔑 O seu espaço de proprietário",
     intro: (agence) =>
-      `<strong>${agence}</strong> convida você a acessar o seu espaço de proprietário, onde poderá acompanhar o aluguel recebido e pendente dos seus imóveis. Clique no botão abaixo para escolher sua senha e ativar seu acesso. Este link é válido por <strong>7 dias</strong>.`,
-    bouton: "Ativar meu acesso →",
+      `<strong>${agence}</strong> convida-o a aceder ao seu espaço de proprietário, onde poderá acompanhar a renda recebida e pendente dos seus imóveis. Clique no botão abaixo para escolher a sua palavra-passe e ativar o seu acesso. Esta ligação é válida durante <strong>7 dias</strong>.`,
+    bouton: "Ativar o meu acesso →",
     ignorer:
-      "Se você não esperava este convite, pode ignorar este e-mail sem risco: nenhum acesso será criado sem a sua confirmação.",
-    agenceParDefaut: "Sua agência",
+      "Se não esperava este convite, pode ignorar este e-mail sem receio: nenhum acesso será criado sem a sua confirmação.",
+    agenceParDefaut: "A sua agência",
   },
   confirmationAdresse: {
-    sujet: "✅ Confirme seu endereço de e-mail",
-    titre: "✅ Confirme seu endereço de e-mail",
+    sujet: "✅ Confirme o seu endereço de e-mail",
+    titre: "✅ Confirme o seu endereço de e-mail",
     intro:
-      "Obrigado por se cadastrar! Falta apenas uma etapa para você poder entrar: confirme seu endereço de e-mail clicando no botão abaixo. Este link é válido por <strong>24 horas</strong>.",
-    bouton: "Confirmar meu e-mail →",
+      "Obrigado por se registar! Falta apenas um passo para poder entrar: confirme o seu endereço de e-mail clicando no botão abaixo. Esta ligação é válida durante <strong>24 horas</strong>.",
+    bouton: "Confirmar o meu e-mail →",
     ignorer:
-      "Se não foi você quem se cadastrou, pode ignorar este e-mail sem risco: nenhuma conta será ativada sem confirmação.",
+      "Se não foi o próprio a registar-se, pode ignorar este e-mail sem receio: nenhuma conta será ativada sem confirmação.",
   },
   bienvenueGoogle: {
     sujet: "👋 Bem-vindo ao ImmoPlatform Pro",
     titre: "👋 Bem-vindo ao ImmoPlatform Pro!",
     intro: (n) =>
-      `Sua conta acabou de ser criada com a sua conta do Google: seu endereço já está confirmado, não há mais nada a validar. Seu <strong>teste gratuito de ${n} dias</strong> começou, com os recursos do plano Profissional.`,
+      `A sua conta acabou de ser criada com a sua conta Google: o seu endereço já está confirmado, não há mais nada a validar. O seu <strong>teste gratuito de ${n} dias</strong> começou, com as funcionalidades do plano Profissional.`,
     pourDemarrer: "Para começar bem:",
     etapes: [
-      "Adicione seu primeiro imóvel.",
-      "Cadastre seu inquilino.",
-      "Crie o contrato de locação: os aluguéis e os recibos são gerados depois automaticamente.",
+      "Adicione o seu primeiro imóvel.",
+      "Registe o seu inquilino.",
+      "Crie o contrato de arrendamento: as rendas e os recibos são depois gerados automaticamente.",
     ],
-    bouton: "Acessar meu espaço →",
+    bouton: "Aceder ao meu espaço →",
     noteMotDePasse:
-      "Você entra com o Google. Se também quiser poder entrar com uma senha, use «Esqueci minha senha» na página de login.",
-    noteIgnorer: "Se não foi você quem se cadastrou, basta responder a esta mensagem ou ignorá-la.",
+      "Entra com o Google. Se também quiser poder entrar com uma palavra-passe, utilize «Esqueci-me da palavra-passe» na página de início de sessão.",
+    noteIgnorer: "Se não foi o próprio a registar-se, basta responder a esta mensagem ou ignorá-la.",
   },
   compteDejaExistant: {
-    sujet: "Você já tem uma conta conosco",
-    titre: "Você já tem uma conta",
+    sujet: "Já tem uma conta connosco",
+    titre: "Já tem uma conta",
     intro:
-      "Alguém acabou de tentar se cadastrar com este endereço de e-mail, mas já existe uma conta. Não é preciso criar uma segunda: basta entrar.",
+      "Alguém acabou de tentar registar-se com este endereço de e-mail, mas já existe uma conta. Não é preciso criar uma segunda: basta entrar.",
     bouton: "Entrar →",
-    motDePasseOublie: (lien) => `Esqueceu sua senha? <a href="${lien}">Redefina-a aqui</a>.`,
+    motDePasseOublie: (lien) => `Esqueceu-se da palavra-passe? <a href="${lien}">Redefina-a aqui</a>.`,
     ignorer:
-      "Se não foi você quem tentou, pode ignorar este e-mail: sua conta não foi modificada e ninguém teve acesso a ela.",
+      "Se não foi o próprio a tentar, pode ignorar este e-mail: a sua conta não foi modificada e ninguém teve acesso a ela.",
   },
 };
 

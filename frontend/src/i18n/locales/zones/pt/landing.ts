@@ -80,11 +80,11 @@ const zone: ZoneLanding = {
       },
       multiCurrency: {
         title: "Multi-Moedas",
-        desc: "Exiba e receba as rendas na moeda da sua escolha, adaptada ao seu mercado e ao dos seus inquilinos.",
+        desc: "Apresente e receba as rendas na moeda da sua escolha, adaptada ao seu mercado e ao dos seus inquilinos.",
       },
       multiLanguage: {
         title: "Interface Multilíngue",
-        desc: "Francês, inglês, português e espanhol: cada utilizador escolhe o seu idioma de exibição num clique, sem qualquer configuração.",
+        desc: "Francês, inglês, português e espanhol: cada utilizador escolhe o seu idioma de apresentação num clique, sem qualquer configuração.",
       },
     },
     featuresSection: {
@@ -162,7 +162,7 @@ const zone: ZoneLanding = {
         },
         {
           q: "Que meios de pagamento os meus inquilinos podem utilizar?",
-          a: "A transferência bancária para a conta da sua agência: o inquilino declara-a na aplicação e você marca a fatura como paga quando a receber. O pagamento da renda por cartão ou Mobile Money não é oferecido por agora.",
+          a: "A transferência bancária para a conta da sua agência: o inquilino declara-a na aplicação e o gestor marca a fatura como paga quando a receber. O pagamento da renda por cartão ou Mobile Money não é oferecido por agora.",
         },
         {
           q: "Posso cancelar a minha subscrição a qualquer momento?",
@@ -170,7 +170,7 @@ const zone: ZoneLanding = {
         },
         {
           q: "O serviço funciona fora de França?",
-          a: "Sim: moeda de exibição personalizável, interface em 4 idiomas e meios de pagamento adaptados tanto a África francófona como ao contexto internacional.",
+          a: "Sim: moeda de apresentação personalizável, interface em 4 idiomas e meios de pagamento adaptados tanto a África francófona como ao contexto internacional.",
         },
       ],
     },

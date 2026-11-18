@@ -445,7 +445,7 @@ const zone: ZoneAdmin = {
       waiting_one: "há {{count}} dia",
       waiting_other: "há {{count}} dias",
       title: "Transferências bancárias pendentes",
-      subtitle: "Assinaturas SaaS pagas por transferência bancária, aguardando confirmação manual",
+      subtitle: "Assinaturas SaaS pagas por transferência bancária, a aguardar confirmação manual",
       emptyTitle: "Nenhuma transferência pendente",
       emptyDescription: "Todas as assinaturas pagas por transferência bancária foram confirmadas.",
       table: {
