@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { environnementSentry, estProductionReelle } from "./environnementDeploiement";
+import { environnementSentry, estProductionReelle, schemaAMettreAJour } from "./environnementDeploiement";
 
 describe("estProductionReelle", () => {
   it("la production Vercel est la production", () => {
@@ -34,5 +34,26 @@ describe("environnementSentry", () => {
     expect(environnementSentry("production", "production")).toBe("production");
     expect(environnementSentry(undefined, "production")).toBe("production");
     expect(environnementSentry(undefined, "development")).toBe("development");
+  });
+});
+
+describe("schemaAMettreAJour", () => {
+  it("la production met le schéma à jour (c'est ainsi que la base de production évolue)", () => {
+    expect(schemaAMettreAJour("production", undefined)).toBe(true);
+  });
+
+  it("un aperçu Vercel NE touche PAS au schéma : il partage la base de production", () => {
+    expect(schemaAMettreAJour("preview", undefined)).toBe(false);
+    expect(schemaAMettreAJour("preview", "")).toBe(false);
+    expect(schemaAMettreAJour("preview", "false")).toBe(false);
+  });
+
+  it("un aperçu qui a SA PROPRE base peut le demander explicitement (PREVIEW_DB_MIGRATIONS=true)", () => {
+    expect(schemaAMettreAJour("preview", "true")).toBe(true);
+  });
+
+  it("hors aperçu (développement local, démarrage réel de la CI, tests), le schéma est mis à jour comme avant", () => {
+    expect(schemaAMettreAJour(undefined, undefined)).toBe(true);
+    expect(schemaAMettreAJour("development", undefined)).toBe(true);
   });
 });
