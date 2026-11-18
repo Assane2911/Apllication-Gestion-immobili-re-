@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, DELAI_UPLOAD_MS, fileUrl, isRequestCancelled, liste, MAX_UPLOAD_SIZE_MB } from "../../api/client";
 import { preparerPhoto } from "../../utils/fichiers";
-import BandeauChiffres from "../../components/BandeauChiffres";
+import BandeauChiffres, { BandeauChiffresSquelette } from "../../components/BandeauChiffres";
 import BarreListe from "../../components/BarreListe";
 import PlanLogement from "../../components/PlanLogement";
 import Badge from "../../components/Badge";
@@ -336,6 +336,7 @@ export default function PropertiesPage() {
         </SectionReglage>
       )}
 
+      {loading && <BandeauChiffresSquelette />}
       {!loading && properties.length > 0 && (
         <BandeauChiffres
           etiquette={t("manager.properties.summary.label")}

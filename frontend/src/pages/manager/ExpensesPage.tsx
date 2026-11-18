@@ -3,7 +3,7 @@ import { csvEscape, csvMontant, CSV_BOM } from "../../utils/csv";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, isRequestCancelled, liste } from "../../api/client";
-import BandeauChiffres from "../../components/BandeauChiffres";
+import BandeauChiffres, { BandeauChiffresSquelette } from "../../components/BandeauChiffres";
 import BarreListe from "../../components/BarreListe";
 import Pagination from "../../components/Pagination";
 import SectionReglage from "../../components/SectionReglage";
@@ -314,6 +314,7 @@ export default function ExpensesPage() {
         </div>
       )}
 
+      {!summary && !loadError && <BandeauChiffresSquelette />}
       {summary && (
         <>
           <BandeauChiffres

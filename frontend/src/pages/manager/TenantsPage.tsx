@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, DELAI_UPLOAD_MS, isRequestCancelled, liste, MAX_UPLOAD_SIZE_MB } from "../../api/client";
 import { SUPPORTED_LANGUAGES } from "../../i18n";
 import { preparerFichier } from "../../utils/fichiers";
-import BandeauChiffres from "../../components/BandeauChiffres";
+import BandeauChiffres, { BandeauChiffresSquelette } from "../../components/BandeauChiffres";
 import BarreListe from "../../components/BarreListe";
 import ChampTelephone from "../../components/ChampTelephone";
 import SectionReglage from "../../components/SectionReglage";
@@ -412,6 +412,7 @@ export default function TenantsPage() {
         </SectionReglage>
       )}
 
+      {loading && <BandeauChiffresSquelette />}
       {!loading && tenants.length > 0 && (
         <BandeauChiffres
           etiquette={t("manager.tenants.summary.label")}

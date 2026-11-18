@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Skeleton } from "./Skeleton";
 
 export interface CaseChiffre {
   libelle: string;
@@ -37,5 +38,25 @@ export default function BandeauChiffres({ cases, etiquette }: { cases: CaseChiff
         />
       ))}
     </dl>
+  );
+}
+
+/**
+ * Place réservée au bandeau pendant le chargement de la liste, aux mêmes dimensions que le vrai (quatre cases, deux colonnes sur
+ * téléphone). Sans elle, le bandeau s'insérait au-dessus de la liste à l'arrivée des données et la repoussait de 100 à 240 px :
+ * un décalage de mise en page (CLS) de 0,15 à 0,6 mesuré sur les listes de factures, d'incidents, de locataires, de biens,
+ * de propriétaires et de dépenses. À retirer dès que le chargement est fini, qu'il y ait des chiffres à montrer ou non.
+ */
+export function BandeauChiffresSquelette() {
+  return (
+    <div aria-hidden="true" data-squelette-bandeau="" className="grid grid-cols-2 gap-px border border-slate-300 bg-slate-300 lg:grid-cols-4">
+      {Array.from({ length: 4 }, (_, i) => (
+        <div key={i} className="min-h-[6.25rem] bg-white p-4 max-lg:min-h-[6.5rem]">
+          <Skeleton className="h-2.5 w-20" />
+          <Skeleton className="mt-2.5 h-5 w-24" />
+          <Skeleton className="mt-2.5 h-3 w-28" />
+        </div>
+      ))}
+    </div>
   );
 }

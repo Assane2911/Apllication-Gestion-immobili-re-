@@ -2,7 +2,7 @@ import { Camera, Phone } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage, fileUrl, isRequestCancelled, liste } from "../../api/client";
-import BandeauChiffres from "../../components/BandeauChiffres";
+import BandeauChiffres, { BandeauChiffresSquelette } from "../../components/BandeauChiffres";
 import BarreListe from "../../components/BarreListe";
 import Pagination from "../../components/Pagination";
 import PhotoLightbox from "../../components/PhotoLightbox";
@@ -48,6 +48,8 @@ export default function IssuesPage() {
   // Photo affichée en grand pour chaque incident (la première par défaut).
   const [photoChoisie, setPhotoChoisie] = useState<Record<string, number>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Faux tant que la première réponse n'est pas arrivée : le bandeau de chiffres a sa place réservée (voir BandeauChiffresSquelette).
+  const [charge, setCharge] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -65,10 +67,12 @@ export default function IssuesPage() {
         setTotal(res.data.total);
         setTotalPages(res.data.totalPages);
         setLoadError(null);
+        setCharge(true);
       })
       .catch((err) => {
         if (isRequestCancelled(err)) return;
         setLoadError(apiErrorMessage(err));
+        setCharge(true);
       });
   }
 
@@ -159,6 +163,7 @@ export default function IssuesPage() {
         <p className="mt-1 text-sm text-slate-600">{t("manager.issues.subtitle")}</p>
       </div>
 
+      {!charge && <BandeauChiffresSquelette />}
       {issues.length > 0 && (
         <BandeauChiffres
           etiquette={t("manager.issues.summary.label")}
