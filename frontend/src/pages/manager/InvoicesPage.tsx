@@ -2,7 +2,7 @@ import { CheckCircle2, Clock, Download, Megaphone, Send } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { api, apiErrorMessage, isRequestCancelled, liste } from "../../api/client";
-import BandeauChiffres from "../../components/BandeauChiffres";
+import BandeauChiffres, { BandeauChiffresSquelette } from "../../components/BandeauChiffres";
 import BarreListe from "../../components/BarreListe";
 import Badge from "../../components/Badge";
 import DocumentModal from "../../components/DocumentModal";
@@ -61,6 +61,8 @@ export default function InvoicesPage() {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Faux tant que la première réponse n'est pas arrivée : le bandeau de chiffres a sa place réservée (voir BandeauChiffresSquelette).
+  const [charge, setCharge] = useState(false);
   const [activeReceiptInvoice, setActiveReceiptInvoice] = useState<Invoice | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -92,11 +94,13 @@ export default function InvoicesPage() {
         setInvoices(liste<Invoice>(res.data, "items"));
         setTotal(res.data.total);
         setTotalPages(res.data.totalPages);
+        setCharge(true);
         chargerMisesEnDemeure(signal);
       })
       .catch((err) => {
         if (isRequestCancelled(err)) return;
         setError(apiErrorMessage(err));
+        setCharge(true);
       });
   }
 
@@ -375,6 +379,7 @@ export default function InvoicesPage() {
         </section>
       )}
 
+      {!charge && <BandeauChiffresSquelette />}
       {invoices.length > 0 && (
         <BandeauChiffres
           etiquette={t("manager.invoices.summary.label")}

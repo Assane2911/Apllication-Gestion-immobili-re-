@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { useCurrency } from "../../context/currency";
 import { api, apiErrorMessage, isRequestCancelled, liste } from "../../api/client";
 import { SUPPORTED_LANGUAGES } from "../../i18n";
-import BandeauChiffres from "../../components/BandeauChiffres";
+import BandeauChiffres, { BandeauChiffresSquelette } from "../../components/BandeauChiffres";
 import BarreListe from "../../components/BarreListe";
 import ChampTelephone from "../../components/ChampTelephone";
 import SectionReglage from "../../components/SectionReglage";
@@ -436,6 +436,7 @@ export default function OwnersPage() {
         </SectionReglage>
       )}
 
+      {loading && <BandeauChiffresSquelette />}
       {!loading && owners.length > 0 && (
         <BandeauChiffres
           etiquette={t("manager.owners.summary.label")}
