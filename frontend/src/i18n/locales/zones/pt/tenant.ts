@@ -57,6 +57,7 @@ const zone: ZoneTenant = {
         download: "Descarregar os meus dados",
         downloading: "A preparar o ficheiro…",
       },
+      loading: "A carregar o seu espaço…",
       noContract: "Nenhum contrato de arrendamento está associado à sua conta neste momento.",
       title: "A Minha Habitação & O Meu Contrato",
       monthlyRent: "Renda mensal",

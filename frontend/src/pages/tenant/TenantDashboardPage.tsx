@@ -25,6 +25,7 @@ import SignatureModal from "../../components/SignatureModal";
 import { useCurrency } from "../../context/currency";
 import type { Contract, Inspection } from "../../types";
 import Bulle from "../../components/Bulle";
+import { Skeleton } from "../../components/Skeleton";
 import PlanLogement from "../../components/PlanLogement";
 import { ecartEnJours, formaterJour } from "../../utils/jourCivil";
 
@@ -54,6 +55,8 @@ export default function TenantDashboardPage() {
   const [viewingReportInspection, setViewingReportInspection] = useState<Inspection | null>(null);
   const [comparingInspection, setComparingInspection] = useState<Inspection | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Faux tant que la première réponse n'est pas arrivée : sans lui, « aucun contrat » s'affichait à tort, puis la vraie page le repoussait.
+  const [charge, setCharge] = useState(false);
   const [exportingData, setExportingData] = useState(false);
 
   async function handleExportMyData() {
@@ -79,6 +82,7 @@ export default function TenantDashboardPage() {
         setContracts(liste<Contract>(contractsRes.data));
         setInspections(liste<Inspection>(inspectionsRes.data));
         setError(null);
+        setCharge(true);
       })
       .catch((err) => setError(apiErrorMessage(err)));
   }
@@ -97,6 +101,24 @@ export default function TenantDashboardPage() {
         >
           {t("common.actions.retry")}
         </button>
+      </div>
+    );
+  }
+
+  // Place réservée à la hauteur de la vraie page (titre, section « À faire », premier bail) tant que les baux ne sont pas arrivés.
+  if (!charge) {
+    return (
+      <div aria-busy="true" role="status" className="space-y-6">
+        <span className="sr-only">{t("tenant.dashboard.loading")}</span>
+        <div aria-hidden="true" className="space-y-2">
+          <Skeleton className="h-6 w-28" />
+          <Skeleton className="h-8 w-64 max-w-full" />
+          <Skeleton className="h-4 w-80 max-w-full" />
+        </div>
+        <div aria-hidden="true" className="space-y-6">
+          <Skeleton className="h-56 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
       </div>
     );
   }
