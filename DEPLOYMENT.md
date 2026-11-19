@@ -83,6 +83,8 @@ Ce projet est un monorepo avec deux applications (`backend/` et `frontend/`) : c
 
 > **Économie de constructions** : chaque dossier porte, dans son `vercel.json`, une `ignoreCommand` (`git cat-file -e ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}^{commit} 2>/dev/null || exit 1; git diff --quiet ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} HEAD -- .`). Vercel l'exécute dans le Root Directory du projet avant de construire : si rien n'a changé dans ce dossier depuis le dernier déploiement réussi de la branche, la construction est ignorée (code de sortie 0). Un commit qui ne touche que `frontend/` ne reconstruit donc pas le backend, et inversement ; un commit de réalignement sans changement de contenu ne reconstruit rien. Si le commit de comparaison est introuvable dans le clone (cas d'un réalignement de branche après une fusion en squash : l'ancien commit n'existe plus), la première partie sort avec le code 1 et la construction a lieu. Il faut y veiller : `git diff` seul sortirait avec le code 128, que Vercel traite comme une erreur et non comme « construire » (déploiement marqué en erreur sans construction). On construit de trop plutôt que pas assez.
 
+> **Changer une variable d'environnement du backend ne suffit pas** : Vercel ne la lit qu'au démarrage d'un nouveau déploiement, et un « Redeploy » d'un commit déjà construit est annulé par l'`ignoreCommand` ci-dessus (« Ignored Build Step »). Pour qu'une variable prenne effet, fusionnez un commit qui touche `backend/`, puis vérifiez que le déploiement de production est READY.
+
 ### 3.1 Déployer le backend
 
 1. Sur [vercel.com](https://vercel.com) → **Add New → Project** → importez le dépôt GitHub `Apllication-Gestion-immobili-re-`.
@@ -171,9 +173,18 @@ Les appels à Supabase Storage (dépôt de photo, suppression, téléchargement)
 
 Le secret TOTP de chaque compte (`users.totp_secret`) est chiffré en base (AES-256-GCM) avec la clé `TOTP_ENCRYPTION_KEY`. Sans cela, quiconque lit la base pourrait calculer les codes à 6 chiffres du compte, dont celui de l'administrateur.
 
-1. Générez la clé : `openssl rand -base64 32`.
+1. Générez la clé : `openssl rand -base64 32`. Sous Windows PowerShell, où `openssl` n'existe pas : `$o = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($o); [Convert]::ToBase64String($o)` (une ligne de 44 caractères terminée par `=`).
 2. Ajoutez-la dans Vercel (Settings → Environment Variables), nom `TOTP_ENCRYPTION_KEY`, **type « sensitive »**, pour Production, puis redéployez.
 3. **Conservez-la dans un gestionnaire de mots de passe, hors de GitHub.** Elle est distincte de `JWT_SECRET` : changer l'un ne rend pas l'autre illisible. Sans la clé, un secret chiffré est irrécupérable : il faut alors remettre à zéro la double authentification du compte dans la base (`totp_secret`, `totp_enabled_at` et `totp_backup_codes_hash` à `NULL`), puis la reconfigurer.
+
+### Remplacer la clé (clé perdue, ou soupçon de fuite)
+
+À ne faire que dans ces deux cas : les secrets déjà chiffrés avec l'ancienne clé deviennent illisibles. Dans l'état actuel, un seul compte est concerné (l'administrateur) ; vérifiez avec `select role, count(*) filter (where totp_secret like 'v1:%') from users group by role`.
+
+1. Rangez la nouvelle clé dans le gestionnaire de mots de passe, puis **remplacez la valeur** de `TOTP_ENCRYPTION_KEY` sur Vercel (Sensitive, Production).
+2. **Faites construire un vrai déploiement du backend.** Une variable n'est lue qu'au démarrage d'un NOUVEAU déploiement. Un « Redeploy » sans changement de code est **annulé** par l'`ignoreCommand` (message « Ignored Build Step », constaté le 19/11/2026) : l'ancienne clé reste alors en service sans que rien ne le dise. Il faut un commit qui touche `backend/` (même un commentaire de `backend/.env.example`), fusionné normalement. Vérifiez que le déploiement de production est **READY** et sur ce commit.
+3. **Alors seulement**, remettez à zéro la double authentification de l'administrateur : `npm run reset-admin-2fa` (voir plus bas), ou, depuis l'éditeur SQL de Supabase, la même requête qui efface `totp_secret`, `totp_enabled_at`, `totp_backup_codes_hash`, `totp_last_used_step` et ajoute 1 à `token_version` pour le compte `ADMIN`. Si vous la faites AVANT le déploiement, une connexion de l'administrateur entre-temps rechiffrerait son secret avec l'ancienne clé.
+4. Connectez-vous : l'administration impose de réactiver la double authentification (secret chiffré avec la nouvelle clé, nouveaux codes de secours à ranger, un par ligne, dans le gestionnaire de mots de passe). Contrôle en lecture seule : le compte a `totp_secret like 'v1:%'`.
 
 Tant que la clé est absente, les secrets restent en clair et le démarrage le signale en production (journal et Sentry : « TOTP_ENCRYPTION_KEY est absente »). Les secrets déjà en clair restent lisibles, et sont chiffrés à la première connexion réussie du compte après la pose de la clé. Ne changez pas la clé une fois posée : les secrets déjà chiffrés ne seraient plus lisibles.
 
