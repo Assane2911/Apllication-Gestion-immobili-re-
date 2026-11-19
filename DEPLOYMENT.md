@@ -159,9 +159,23 @@ sont plus longs que ceux d'un utilisateur à Dakar, c'est normal, seule la dispo
 
 Une sonde posée sur `/api/health/ready` ne voit que ce qui **répond** : si le cron Vercel s'arrête (désactivé, secret absent, déploiement cassé) ou si une étape de la tâche échoue, le site reste au vert et personne n'est prévenu, alors que les avis d'échéance, les relances et le passage des factures en retard ne partent plus. Pour couvrir ce cas, la tâche quotidienne appelle, **seulement quand toutes ses étapes ont réussi**, l'adresse `CRON_HEARTBEAT_URL`.
 
+Deux sondes conviennent. Elles reçoivent le même signal (une requête GET en https) : seule l'adresse change.
+
+**Option A : UptimeRobot (offre payante).** Les monitors de type Heartbeat n'existent pas sur l'offre gratuite.
+
 1. UptimeRobot → *Add new monitor* → type **Heartbeat**, intervalle **24 h** avec 2 à 3 h de marge (le cron part à 08 h UTC). Contacts d'alerte : e-mail et notification Android. UptimeRobot donne une adresse `https://heartbeat.uptimerobot.com/…`.
-2. Vercel → projet backend → *Environment Variables* → `CRON_HEARTBEAT_URL` = cette adresse, en variable **sensible** (elle contient un jeton). Redéployez.
-3. Contrôle : lancer à la main `/api/cron/daily` (voir plus haut) ; le monitor passe à « Up » dans la minute.
+2. Vercel → projet backend → *Environment Variables* → `CRON_HEARTBEAT_URL` = cette adresse, en variable **sensible**, pour *Production* seulement.
+
+**Option B : Sentry (déjà en place pour les erreurs).** Un « cron monitor » Sentry attend un signal à heure fixe et ouvre un incident s'il manque.
+
+1. Sentry → *Monitors* → *Cron* → créer un monitor : slug `cron-daily`, projet du backend, planification `0 8 * * *` en **UTC**, marge (*check-in margin*) de **180 minutes**, un seul échec ou absence suffit pour ouvrir l'incident.
+2. L'adresse du signal se compose à partir de la `SENTRY_DSN` du projet (`https://<clé>@<hôte>/<id du projet>`) : `https://<hôte>/api/<id du projet>/cron/cron-daily/<clé>/?status=ok`. Elle ne contient que la clé de collecte du projet, conçue pour ne servir qu'à envoyer des signaux, jamais à lire des données ; on la traite quand même comme sensible.
+3. Vercel → projet backend → `CRON_HEARTBEAT_URL` = cette adresse, en variable **sensible**, pour *Production* seulement (sans quoi chaque aperçu signalerait à la place de la production).
+4. Sentry ne détecte aucune absence **avant d'avoir reçu un premier signal** : le monitor reste en « Waiting for first Check-in » jusqu'au premier passage réussi de la tâche.
+
+**Dans les deux cas, la variable ne s'applique qu'à un nouveau déploiement.** Redéployez le backend avec un vrai changement dans `backend/` : un « Redeploy » d'un commit inchangé est annulé par la commande d'« Ignored Build Step » du projet (voir « Changer une variable d'environnement du backend ne suffit pas »).
+
+Contrôle : lancer à la main `/api/cron/daily` (voir plus haut) ; le monitor passe à « Up » (UptimeRobot) ou « OK » (Sentry) dans la minute.
 
 Sans la variable, rien n'est envoyé et rien ne change. L'adresse n'apparaît jamais dans les journaux.
 
