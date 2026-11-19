@@ -15,7 +15,6 @@ import {
   createTeamMember,
   createTenant,
   createVendor,
-  tokenFor,
   tokenLocataire,
   tokenProprietaire,
 } from "./test/authHelpers";

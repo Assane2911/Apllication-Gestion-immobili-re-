@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
 import { app } from "../app";
-import { owners, properties, users } from "../db/schema";
+import { owners, users } from "../db/schema";
 import * as emailService from "../services/email.service";
 import {
   authHeader,

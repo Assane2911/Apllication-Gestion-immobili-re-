@@ -129,7 +129,7 @@ describe("Révocation des jetons par version", () => {
   });
 
   it("efface aussi le cookie httpOnly du navigateur appelant lors d'une déconnexion de tous les appareils", async () => {
-    const manager = await createManager({ email: "cookie-logout-all@test.local" });
+    await createManager({ email: "cookie-logout-all@test.local" });
     const agent = request.agent(app);
     await agent.post("/api/auth/login").send({ email: "cookie-logout-all@test.local", password: "Password123!" });
 

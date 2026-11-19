@@ -13,7 +13,6 @@ import {
   createProperty,
   createTenant,
   tokenFor,
-  createPortalUser,
   tokenLocataire,
 } from "../test/authHelpers";
 
