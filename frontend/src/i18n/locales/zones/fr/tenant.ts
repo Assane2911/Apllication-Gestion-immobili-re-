@@ -55,6 +55,7 @@ const zone = {
         download: "Télécharger mes données",
         downloading: "Préparation du fichier…",
       },
+      loading: "Chargement de votre espace…",
       noContract: "Aucun contrat de location n'est associé à votre compte pour le moment.",
       title: "Mon logement & Mon Bail",
       monthlyRent: "Loyer mensuel",

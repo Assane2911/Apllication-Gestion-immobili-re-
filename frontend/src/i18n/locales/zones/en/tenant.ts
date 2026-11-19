@@ -57,6 +57,7 @@ const zone: ZoneTenant = {
         download: "Download my data",
         downloading: "Preparing the file…",
       },
+      loading: "Loading your space…",
       noContract: "No lease contract is currently associated with your account.",
       title: "My Home & My Lease",
       monthlyRent: "Monthly rent",

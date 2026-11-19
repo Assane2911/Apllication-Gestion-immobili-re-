@@ -71,6 +71,29 @@ describe("TenantDashboardPage", () => {
     mockedApi.get.mockReset();
   });
 
+  it("n'affiche pas « aucun contrat » pendant que les données arrivent (ni décalage de page, ni message faux)", async () => {
+    let repondre: (v: { data: Contract[] }) => void = () => {};
+    mockedApi.get.mockReturnValueOnce(new Promise((r) => { repondre = r; }));
+    mockedApi.get.mockResolvedValueOnce(emptyInspections());
+    const { container } = renderPage();
+
+    // Avant la réponse : une place réservée, annoncée comme occupée, et surtout pas le message « aucun contrat ».
+    expect(container.querySelector("[aria-busy='true']")).not.toBeNull();
+    expect(screen.queryByText(/Aucun contrat de location/)).not.toBeInTheDocument();
+
+    repondre({ data: [contract()] });
+    await waitFor(() => expect(screen.getByText("Studio Centre-ville")).toBeInTheDocument());
+    expect(container.querySelector("[aria-busy='true']")).toBeNull();
+    expect(screen.queryByText(/Aucun contrat de location/)).not.toBeInTheDocument();
+  });
+
+  it("dit qu'aucun contrat n'est associé une fois la réponse reçue, quand il n'y en a vraiment pas", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: [] });
+    mockedApi.get.mockResolvedValueOnce(emptyInspections());
+    renderPage();
+    expect(await screen.findByText(/Aucun contrat de location/)).toBeInTheDocument();
+  });
+
   it("affiche le logement, le loyer et les dates du bail", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: [contract()] });
     mockedApi.get.mockResolvedValueOnce(emptyInspections());
