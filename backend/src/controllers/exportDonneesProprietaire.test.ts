@@ -1,7 +1,7 @@
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../app";
-import { activityLogs, agencySettings, ownerFeeRates, ownerMessages, ownerPayouts, owners } from "../db/schema";
+import { activityLogs, agencySettings, ownerFeeRates, ownerPayouts, owners } from "../db/schema";
 import * as emailService from "../services/email.service";
 import * as storageService from "../services/storage.service";
 import { authHeader, createContract, createManager, createOwner, createProperty, createTenant, tokenFor, tokenProprietaire } from "../test/authHelpers";

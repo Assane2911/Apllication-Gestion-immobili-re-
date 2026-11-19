@@ -4,7 +4,6 @@ import { eq } from "drizzle-orm";
 import { app } from "../app";
 import { issueReports, users } from "../db/schema";
 import * as storageService from "../services/storage.service";
-import { ApiError } from "../utils/asyncHandler";
 import {
   authHeader,
   createAdmin,
@@ -14,7 +13,6 @@ import {
   createTenant,
   createVendor,
   fakeJpegBuffer,
-  createPortalUser,
   tokenFor,
   tokenLocataire,
 } from "../test/authHelpers";
@@ -24,11 +22,6 @@ import { testDb } from "../test/setupTestDb";
 // forgé sur un identifiant inventé est refusé en 401 (voir authenticate).
 async function tenantToken(tenantId: string) {
   return authHeader(await tokenLocataire(tenantId));
-}
-
-/** Un compte locataire qui n'est rattaché à AUCUNE fiche : l'intrus. */
-async function tokenIntrus(tenantId: string) {
-  return authHeader(tokenFor(await createPortalUser("TENANT"), tenantId));
 }
 
 describe("POST /api/issues", () => {

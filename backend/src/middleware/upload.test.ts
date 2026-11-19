@@ -9,7 +9,6 @@ import {
   createTenant,
   fakeJpegBuffer,
   tokenFor,
-  createPortalUser,
   tokenLocataire,
 } from "../test/authHelpers";
 import { MAX_UPLOAD_SIZE_MB } from "./upload";

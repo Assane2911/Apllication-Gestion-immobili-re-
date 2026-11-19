@@ -27,8 +27,6 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const MARS = new Date(Date.UTC(2025, 2, 15));
-
 /** Un bail terminé : loyer 500, dépôt 1000, commencé le 1er janvier 2025. Janvier réglé, février réglé en partie, mars impayé. */
 async function agence(statut: "ENDED" | "ACTIVE" | "TERMINATED" = "ENDED") {
   const manager = await createManager();

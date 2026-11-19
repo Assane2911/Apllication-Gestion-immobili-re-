@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
 import { db } from "../db/client";
-import { contractCotenants, contracts, messages, ownerMessages, properties, tenants, users } from "../db/schema";
+import { contracts, messages, ownerMessages, properties, tenants, users } from "../db/schema";
 import { bauxDuLocataire, estColocataire } from "../services/colocation.service";
 import { newMessageFromManagerEmail, sendEmail } from "../services/email.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
@@ -30,8 +30,6 @@ function conditionDuFil(contractId: string, tenantId: string, titulaireId: strin
 }
 
 const idDuFil = (contractId: string, tenantId: string) => `${contractId}:${tenantId}`;
-
-type LigneMessage = typeof messages.$inferSelect;
 
 /**
  * Le message tel que le client le reçoit : le chemin de stockage de l'enregistrement ne sort jamais (il révélerait

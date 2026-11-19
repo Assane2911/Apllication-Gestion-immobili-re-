@@ -699,7 +699,7 @@ describe("POST /api/payments/stripe/webhook", () => {
     });
 
     it("ignore la toute première facture d'un abonnement (déjà activée via checkout.session.completed)", async () => {
-      const manager = await createManager({
+      await createManager({
         subscriptionStatus: "ACTIVE",
         subscriptionEndsAt: new Date(2026, 8, 1),
         stripeSubscriptionId: "sub_stripe_premiere",

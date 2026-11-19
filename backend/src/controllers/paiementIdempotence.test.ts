@@ -9,10 +9,8 @@ import {
   createContract,
   createInvoice,
   createManager,
-  createPortalUser,
   createProperty,
   createTenant,
-  tokenFor,
   tokenLocataire,
 } from "../test/authHelpers";
 import { enregistrerCompteAgence } from "../services/comptePaiementAgence.service";

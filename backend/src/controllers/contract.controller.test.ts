@@ -12,7 +12,6 @@ import {
   createProperty,
   createTenant,
   tokenFor,
-  createPortalUser,
   tokenLocataire,
 } from "../test/authHelpers";
 import { testDb } from "../test/setupTestDb";

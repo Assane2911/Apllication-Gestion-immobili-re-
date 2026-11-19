@@ -8,7 +8,6 @@ import {
   createContract,
   createInvoice,
   createManager,
-  createPortalUser,
   createProperty,
   createTenant,
   tokenFor,

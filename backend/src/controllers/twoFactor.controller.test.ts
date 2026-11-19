@@ -265,7 +265,7 @@ describe("2FA et comptes collaborateurs (multi-utilisateurs)", () => {
 
   it("la connexion du propriétaire n'exige pas la 2FA activée par son collaborateur, et réciproquement", async () => {
     const manager = await createManager({ email: "owner-no2fa@test.local" });
-    const collaborateur = await createTeamMember(manager.id, { email: "collab-only2fa@test.local" });
+    await createTeamMember(manager.id, { email: "collab-only2fa@test.local" });
 
     const collabLogin = await request(app).post("/api/auth/login").send({ email: "collab-only2fa@test.local", password: "Password123!" });
     await activerDeuxFa(collabLogin.body.token);

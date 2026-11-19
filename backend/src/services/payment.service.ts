@@ -619,7 +619,8 @@ export async function cancelStripeSubscriptionNow(stripeSubscriptionId: string):
  */
 async function initiatePaydunyaPayment(
   amount: number,
-  currency: string,
+  // Non lue ici : la devise est contrôlée AVANT, par `indisponibiliteSelonUsage` (refus si elle diffère de celle du compte PayDunya).
+  _currency: string,
   reference: string,
   payerEmail: string,
   returnPath?: string,

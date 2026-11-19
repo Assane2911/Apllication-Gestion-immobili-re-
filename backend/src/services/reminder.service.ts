@@ -1,5 +1,5 @@
 import { adresseDeReponseAgence } from "./reponseAgence.service";
-import { SQL, and, desc, eq, gte, inArray, isNull, lt, lte, or } from "drizzle-orm";
+import { SQL, and, eq, gte, inArray, isNull, lt, lte, or } from "drizzle-orm";
 import cron from "node-cron";
 import { env } from "../config/env";
 import { db } from "../db/client";
@@ -227,7 +227,7 @@ export async function runContractEndingReminders(budget: BudgetTemps = SANS_LIMI
   let sent = 0;
   let echecs = 0;
   let interrompu = false;
-  const parLots = await traiterParLots(rows, env.cronConcurrence, budget, async (row, rang) => {
+  const parLots = await traiterParLots(rows, env.cronConcurrence, budget, async (row) => {
     // Le budget se consulte AVANT de réclamer la ligne : s'arrêter ici la
     // laisse non marquée, donc reprenable telle quelle par l'exécution
     // suivante (voir utils/budgetTemps.ts).
@@ -327,7 +327,7 @@ export async function runInsurancePolicyExpiryReminders(budget: BudgetTemps = SA
   let sent = 0;
   let echecs = 0;
   let interrompu = false;
-  const parLots = await traiterParLots(rows, env.cronConcurrence, budget, async (row, rang) => {
+  const parLots = await traiterParLots(rows, env.cronConcurrence, budget, async (row) => {
 
     // Réclamation atomique AVANT l'envoi — même course concurrentielle que
     // runContractEndingReminders (chevauchement du cron quotidien).

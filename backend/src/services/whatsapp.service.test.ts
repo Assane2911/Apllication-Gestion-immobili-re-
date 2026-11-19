@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { env } from "../config/env";
-import { enregistrerEnvoiWhatsapp } from "./whatsappUsage.service";
 import {
   avisEcheanceWhatsapp,
   envoyerMessageWhatsapp,

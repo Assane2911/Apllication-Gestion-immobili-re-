@@ -2,7 +2,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
-import { contracts, expenses, owners, properties, tenants, users } from "../db/schema";
+import { contracts, expenses, owners, properties, tenants } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { uploadPublicFile } from "../services/storage.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
