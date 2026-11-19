@@ -227,4 +227,61 @@ describe.skipIf(!dispo)("documentation de la configuration", () => {
     }
     expect(lues.has("PAYMENT_KEYS_ENCRYPTION_KEY") && lues.has("TOTP_ENCRYPTION_KEY")).toBe(true);
   });
+
+  /**
+   * Le guide s'est décollé du code sur des détails qui font perdre du temps à qui le suit : un travail planifié qui n'existe plus,
+   * un fichier de départ introuvable, un « Redeploy » conseillé alors qu'il est annulé, des réglages du frontend oubliés.
+   * Et 28 variables de `.env.example` n'y figuraient nulle part : le guide les range maintenant par thème.
+   */
+  describe("DEPLOYMENT.md reste d'accord avec le code et la configuration livrés", () => {
+    const guide = () => lire("DEPLOYMENT.md");
+
+    it("cite chaque variable de backend/.env.example et de frontend/.env.example (rangées par thème)", () => {
+      const g = guide();
+      const manquantes = [...variablesDocumentees(lire("backend/.env.example")), ...variablesDocumentees(lire("frontend/.env.example"))]
+        .filter((v) => !g.includes(v))
+        .sort();
+      expect(manquantes, `variables absentes de DEPLOYMENT.md : ${manquantes.join(", ")}`).toEqual([]);
+    });
+
+    it("annonce les tâches planifiées que backend/vercel.json déclare, et pas un travail qui n'y figure plus", () => {
+      const g = guide();
+      const declarees = [...lire("backend/vercel.json").matchAll(/"path":\s*"([^"]+)"/g)].map((m) => m[1]);
+      expect(declarees.length).toBeGreaterThan(0);
+      for (const chemin of declarees) expect(g, `tâche ${chemin} absente du guide`).toContain(chemin);
+      // « contract-reminders » n'est plus planifié (la route existe, mais Vercel ne l'appelle pas) : le guide ne doit plus
+      // demander de le chercher dans « Project Settings → Cron Jobs ».
+      expect(g).not.toMatch(/que `contract-reminders` apparaît/);
+    });
+
+    it("ne renvoie pas à un fichier de départ ou à un dossier qui n'existent pas", () => {
+      const g = guide();
+      expect(g).not.toContain("gestion-immo-source.zip");
+      expect(g).not.toMatch(/dossier `gestion-immo`/);
+    });
+
+    it("ne conseille pas un « Redeploy » seul pour appliquer FRONTEND_URL : il est annulé si backend/ n'a pas changé", () => {
+      const g = guide();
+      expect(g).not.toContain("(Vercel → Deployments → Redeploy)");
+      const debut = g.indexOf("### 3.3");
+      const fin = g.indexOf("## Étape 4");
+      const section = g.slice(debut, fin);
+      expect(section).toMatch(/Ignored Build Step|ignoreCommand/);
+      expect(section).toMatch(/backend\//);
+      expect(section).toMatch(/READY/);
+    });
+
+    it("décrit ce que frontend/vercel.json ajoute : redirection du plan de site, politique de sécurité, en-têtes, cache", () => {
+      const g = guide();
+      const vercel = lire("frontend/vercel.json");
+      expect(vercel).toContain("sitemap-annonces.xml");
+      for (const mot of ["sitemap-annonces.xml", "Content-Security-Policy", "Content-Security-Policy-Report-Only", "/api/csp-report", "immutable"]) {
+        expect(g, `${mot} absent de la section sur le frontend`).toContain(mot);
+      }
+    });
+
+    it("ne parle pas d'une application mobile : il n'y en a pas", () => {
+      expect(guide()).not.toMatch(/application mobile/i);
+    });
+  });
 });

@@ -11,8 +11,8 @@ L'application a déjà été adaptée pour cette cible : base de données Postgr
 Antigravity est une application de bureau (Windows/macOS/Linux) : ce travail se fait sur votre ordinateur.
 
 1. Installez Antigravity depuis [antigravity.google](https://antigravity.google) si ce n'est pas déjà fait.
-2. Décompressez le projet que je vous ai fourni (`gestion-immo-source.zip` ou via le dépôt GitHub une fois poussé).
-3. Dans Antigravity : cliquez sur l'icône dossier **+** dans la barre latérale → **New Project** → **Add Folder** → sélectionnez le dossier `gestion-immo` → **Create**.
+2. Récupérez le projet : clonez le dépôt GitHub `Apllication-Gestion-immobili-re-` (`git clone`), ou téléchargez-le en ZIP depuis GitHub (*Code → Download ZIP*) puis décompressez-le.
+3. Dans Antigravity : cliquez sur l'icône dossier **+** dans la barre latérale → **New Project** → **Add Folder** → sélectionnez le dossier du projet (celui qui contient `backend/` et `frontend/`) → **Create**.
 4. Laissez l'agent indexer le projet, puis posez-lui des questions pour vous approprier le code avant de le modifier ou de le déployer, par exemple :
    - *"Explique-moi l'architecture du backend et comment les rôles gestionnaire/locataire sont séparés."*
    - *"Où est gérée la génération automatique des factures de loyer ?"*
@@ -102,7 +102,7 @@ Ce projet est un monorepo avec deux applications (`backend/` et `frontend/`) : c
    - `CRON_BUDGET_SECONDS` (facultatif, 240 par défaut) : temps qu'une route cron s'autorise avant de s'arrêter d'elle-même. Vercel tue une fonction au-delà de sa durée maximale (300 s par défaut) ; en s'arrêtant avant, la tâche laisse le reliquat non réclamé, et l'exécution du lendemain le reprend. À augmenter seulement de pair avec `maxDuration`.
    - `FRONTEND_URL` : à renseigner une fois le frontend déployé (étape suivante), pour l'autorisation CORS
 5. Déployez. Notez l'URL générée (ex: `https://gestion-immo-api.vercel.app`).
-6. Une fois déployé, vérifiez dans **Project Settings → Cron Jobs** que `contract-reminders` apparaît bien planifié.
+6. Une fois déployé, vérifiez dans **Project Settings → Cron Jobs** que les deux tâches de `backend/vercel.json` apparaissent, planifiées : `/api/cron/daily` (`0 8 * * *`, chaque jour à 08 h UTC) et `/api/cron/rent-due-reminders` (`0 8 1 * *`, le 1er du mois). La route `/api/cron/contract-reminders` existe encore, mais Vercel ne l'appelle pas : la tâche quotidienne couvre le rappel de fin de bail.
 
 > **Région d'exécution** : `backend/vercel.json` fixe `"regions": ["cdg1"]` (Paris), la même région que la base Supabase (`eu-west-3`, Paris). Sans ce réglage, Vercel exécute les fonctions dans sa région par défaut (`iad1`, côte Est des États-Unis) : chaque requête SQL traverse l'Atlantique, et une page qui en enchaîne plusieurs attend cet aller-retour à chaque fois. **Si vous créez ou déplacez le projet Supabase dans une autre région, changez `regions` en conséquence** (Paris `cdg1`, Francfort `fra1`, Londres `lhr1`, Dublin `dub1`, Virginie `iad1`, San Francisco `sfo1`…) : la fonction doit rester à côté de la base. Une seule région est voulue ici, car la base n'est qu'à Paris : une fonction ailleurs ne ferait qu'ajouter de la distance. Le plan gratuit (Hobby) n'en accepte d'ailleurs qu'une seule ; le plan Pro, celui du projet de production, en accepte plusieurs. Le frontend (fichiers statiques) est servi depuis tous les points de présence et n'est pas concerné.
 
@@ -113,12 +113,12 @@ Ce projet est un monorepo avec deux applications (`backend/` et `frontend/`) : c
 1. **Add New → Project** → même dépôt GitHub, mais **Root Directory** : `frontend`.
 2. Vercel détecte automatiquement Vite (zero-config).
 3. Variable d'environnement : `VITE_API_URL` = l'URL du backend déployé à l'étape 3.1 (ex: `https://gestion-immo-api.vercel.app`).
-   **Production : mettez le backend sur un sous-domaine du site** (ex. `https://api.immoplatformpro.com`, à ajouter au projet backend dans *Settings → Domains*), et non sur son adresse `*.vercel.app`. La session voyage dans un cookie ; sur un autre domaine que le site, ce cookie est un cookie « tiers » que la navigation privée, Safari (donc tous les iPhone), Firefox en protection stricte et Brave refusent : la connexion semble réussir puis renvoie à la page de connexion. Sur un sous-domaine du même site, le cookie est accepté partout. Gardez l'adresse `*.vercel.app` pour les aperçus (variable `VITE_API_URL` limitée à *Preview*) et pour l'application mobile.
+   **Production : mettez le backend sur un sous-domaine du site** (ex. `https://api.immoplatformpro.com`, à ajouter au projet backend dans *Settings → Domains*), et non sur son adresse `*.vercel.app`. La session voyage dans un cookie ; sur un autre domaine que le site, ce cookie est un cookie « tiers » que la navigation privée, Safari (donc tous les iPhone), Firefox en protection stricte et Brave refusent : la connexion semble réussir puis renvoie à la page de connexion. Sur un sous-domaine du même site, le cookie est accepté partout. Gardez l'adresse `*.vercel.app` pour les aperçus (variable `VITE_API_URL` limitée à *Preview*).
 4. Déployez. Notez l'URL générée (ex: `https://gestion-immo.vercel.app`).
 
 ### 3.3 Boucler la boucle CORS
 
-Retournez dans les variables d'environnement du **projet backend** sur Vercel et mettez à jour `FRONTEND_URL` avec l'URL du frontend déployé, puis redéployez le backend (Vercel → Deployments → Redeploy) pour que le changement prenne effet.
+Retournez dans les variables d'environnement du **projet backend** sur Vercel et mettez à jour `FRONTEND_URL` avec l'URL du frontend déployé, puis faites construire un **vrai** déploiement du backend pour que le changement prenne effet. Ne vous contentez pas de *Deployments → Redeploy* : Vercel l'annule (« Ignored Build Step », voir l'avertissement au début de l'étape 3) quand rien n'a changé dans `backend/` depuis le dernier déploiement, et l'ancienne valeur reste alors en service sans que rien ne le dise. Poussez un commit qui touche `backend/` (même un commentaire), fusionnez-le, puis vérifiez que le déploiement de production est **READY** (et non CANCELED) sur ce commit.
 
 ---
 
@@ -133,6 +133,128 @@ Retournez dans les variables d'environnement du **projet backend** sur Vercel et
   curl -H "Authorization: Bearer VOTRE_CRON_SECRET" https://votre-backend.vercel.app/api/cron/daily
   ```
 - Vérifiez dans Supabase → Storage que les fichiers uploadés (image d'un bien, photo d'incident) apparaissent bien dans `public-uploads`.
+
+---
+
+## Référence des variables d'environnement, par thème
+
+La liste de référence, avec tous les commentaires, reste `backend/.env.example` et `frontend/.env.example` (un test vérifie qu'elle suit le code, et que ce guide cite chaque variable). Voici la même liste rangée par thème. Sur Vercel, posez en **« sensible »** tout ce qui est un secret (mot de passe, clé, jeton), et pour *Production* seulement quand la valeur ne sert pas aux aperçus. Une variable ne s'applique qu'à un **nouveau** déploiement (voir l'avertissement de l'étape 3).
+
+**Injectées par Vercel, à ne jamais définir à la main :** `VERCEL`, `VERCEL_ENV`, `VERCEL_PROJECT_PRODUCTION_URL`.
+
+### Serveur et adresses (backend)
+
+| Variable | Rôle | Défaut / remarque |
+|---|---|---|
+| `PORT` | port d'écoute en local | `4000` ; sans effet sur Vercel |
+| `NODE_ENV` | environnement d'exécution | `development` en local ; `production` sur un déploiement |
+| `FRONTEND_URL` | adresse du frontend, autorisée par CORS | **obligatoire** en production |
+| `PUBLIC_BACKEND_URL` | adresse publique du backend, pour les retours des prestataires de paiement | vide sur Vercel (`VERCEL_PROJECT_PRODUCTION_URL` fait l'affaire) |
+
+### Base de données
+
+| Variable | Rôle | Défaut / remarque |
+|---|---|---|
+| `DATABASE_URL` | chaîne de connexion Supabase, **Transaction pooler** (port 6543) | **obligatoire**, sensible |
+| `DB_DELAI_REQUETE_MS` | délai au-delà duquel une requête est tenue pour bloquée | `15000` ; ne changer qu'en cas de besoin constaté |
+| `DB_DELAI_TRANSACTION_MS` | idem pour une transaction entière | `120000` |
+| `PREVIEW_DB_MIGRATIONS` | un aperçu Vercel met-il le schéma à jour ? | `false` ; `true` seulement si l'aperçu a **sa propre** base, jamais sur celle de production |
+
+### Données de démonstration (local uniquement)
+
+| Variable | Rôle | Défaut / remarque |
+|---|---|---|
+| `SEED_ALLOW_REMOTE` | autorise `npm run seed` sur une base non locale | jamais sur la base de production (voir l'avertissement de l'étape 2.5) |
+| `SEED_PASSWORD` | mot de passe des comptes de démonstration | sans elle, un mot de passe aléatoire est généré et affiché une seule fois |
+
+### Stockage de fichiers (Supabase)
+
+| Variable | Rôle | Défaut / remarque |
+|---|---|---|
+| `SUPABASE_URL` | adresse du projet Supabase | **obligatoire** |
+| `SUPABASE_SERVICE_ROLE_KEY` | clé `service_role`, utilisée par le backend seul | **obligatoire**, sensible, jamais côté frontend |
+| `SUPABASE_PUBLIC_BUCKET` | bucket public (photos de biens, d'incidents) | `public-uploads` |
+| `SUPABASE_PRIVATE_BUCKET` | bucket privé (pièces d'identité) | `private-uploads` |
+
+### Authentification et sécurité
+
+| Variable | Rôle | Défaut / remarque |
+|---|---|---|
+| `JWT_SECRET` | signe les jetons de connexion | **obligatoire**, sensible, 32 caractères au minimum |
+| `JWT_EXPIRES_IN` | durée de validité d'un jeton de connexion | `7d` |
+| `TOTP_ENCRYPTION_KEY` | chiffre les secrets de double authentification | recommandée, sensible ; voir « Chiffrement du secret de double authentification » |
+| `GOOGLE_CLIENT_ID` | connexion avec Google (gestionnaires) | vide : route désactivée ; doit correspondre à `VITE_GOOGLE_CLIENT_ID` |
+
+### E-mail (SMTP)
+
+| Variable | Rôle | Défaut / remarque |
+|---|---|---|
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE` | serveur d'envoi | voir « Délivrabilité des e-mails » ; le défaut du code (Gmail) ne convient qu'en local |
+| `SMTP_USER` | boîte d'envoi | |
+| `SMTP_APP_PASSWORD` | mot de passe **d'application** | sensible |
+| `EMAIL_FROM` | expéditeur | même adresse que `SMTP_USER` |
+
+### Rappels et tâches planifiées
+
+| Variable | Rôle | Défaut / remarque |
+|---|---|---|
+| `CRON_SECRET` | authentifie les appels des tâches planifiées | **obligatoire**, sensible ; identique sur Vercel (que Vercel envoie en `Authorization`) |
+| `ENABLE_INTERNAL_CRON` | planificateur interne `node-cron` | `false` sur Vercel (ce sont les Cron Jobs de `vercel.json` qui travaillent) |
+| `REMINDER_CRON` | horaire du planificateur interne | `0 8 * * *` ; local seulement |
+| `CRON_BUDGET_SECONDS` | temps qu'une tâche s'autorise avant de s'arrêter d'elle-même | `240` |
+| `CRON_ENVOIS_PARALLELES` | envois (e-mail, WhatsApp) menés de front | `5` ; revenir à `1` si des envois échouent en rafale |
+| `CRON_HEARTBEAT_URL` | signal envoyé quand la tâche quotidienne a tout réussi | vide : rien n'est envoyé ; voir « Alerte si la tâche quotidienne ne s'exécute plus » |
+| `CONTRACT_REMINDER_DAYS` | jours avant la fin d'un bail pour prévenir le gestionnaire | `14` |
+| `RENT_DUE_SOON_DAYS` | jours avant l'échéance pour le rappel « dernière minute » au locataire | `3` |
+| `INSURANCE_REMINDER_DAYS` | jours avant l'échéance d'une assurance | `30` |
+| `DOCUMENT_REMINDER_DAYS` | jours avant l'expiration d'un document rangé | `30` |
+
+### Paiements
+
+| Variable | Rôle | Défaut / remarque |
+|---|---|---|
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | paiement par carte (abonnements des agences) | sensibles |
+| `STRIPE_CURRENCIES` | devises que le paiement par carte accepte | `EUR` seul si absente ; n'ajouter que ce que votre compte Stripe accepte |
+| `PAYDUNYA_MASTER_KEY`, `PAYDUNYA_PRIVATE_KEY`, `PAYDUNYA_PUBLIC_KEY`, `PAYDUNYA_TOKEN` | Orange Money, Wave, Free Money, MTN, carte (abonnements des agences) | sensibles |
+| `PAYDUNYA_MODE` | `test` (bac à sable) ou `live` | `test` |
+| `PAYDUNYA_STORE_NAME` | nom affiché sur la page PayDunya | `ImmoPlatform Pro` |
+| `PAYDUNYA_CURRENCY` | devise du compte marchand PayDunya | `XOF` |
+| `PAYMENTS_STORE_NAME` | nom affiché au payeur (Stripe **et** PayDunya) | prime sur `PAYDUNYA_STORE_NAME` |
+| `PAYMENTS_DEMO_MODE` | paiements simulés, sans vraie transaction | **ne pas définir sur Vercel** : `true` y est ignoré et signalé |
+| `RENT_ONLINE_PAYMENTS` | loyer payé en ligne par Stripe | laisser `false` |
+| `PAYMENT_KEYS_ENCRYPTION_KEY` | chiffre les identifiants PayDunya de chaque agence | sensible, Production seulement ; **ne plus la changer** une fois des comptes enregistrés |
+
+### WhatsApp (API Meta Cloud)
+
+Sans `META_WHATSAPP_ACCESS_TOKEN` et `META_WHATSAPP_PHONE_NUMBER_ID`, l'envoi retombe sur une simulation : aucun message réel n'est envoyé.
+
+| Variable | Rôle | Défaut / remarque |
+|---|---|---|
+| `META_WHATSAPP_ACCESS_TOKEN` | jeton permanent d'un « System User » (pas un jeton de test de 24 h) | sensible |
+| `META_WHATSAPP_PHONE_NUMBER_ID` | identifiant du numéro expéditeur (pas le numéro lui-même) | |
+| `META_WHATSAPP_TEMPLATE_RENT_DUE` | modèle approuvé de l'avis d'échéance (ancien, « le 5 » en dur) | obligatoire pour envoyer |
+| `META_WHATSAPP_TEMPLATE_RENT_DUE_SOON` | modèle approuvé du rappel avant échéance | obligatoire pour envoyer |
+| `META_WHATSAPP_TEMPLATE_RENT_DUE_DATED` | modèle de l'avis d'échéance avec la vraie date limite | remplace `META_WHATSAPP_TEMPLATE_RENT_DUE` quand il est renseigné |
+| `META_WHATSAPP_TEMPLATE_OVERDUE` | modèle de relance d'un loyer impayé | vide : les relances partent par e-mail seulement |
+| `META_WHATSAPP_TEMPLATE_LANGUAGE` | code langue déclaré chez Meta | `fr` |
+| `META_WHATSAPP_COST_UTILITY_USD` | tarif d'un message « utility », pour estimer le coût affiché dans l'administration | `0.004` ; la facture de Meta fait foi |
+
+### Suivi des erreurs (Sentry)
+
+| Variable | Rôle | Défaut / remarque |
+|---|---|---|
+| `SENTRY_DSN` | projet Sentry du backend | vide : Sentry désactivé |
+| `VITE_SENTRY_DSN` | projet Sentry du frontend | vide : Sentry désactivé |
+
+### Frontend (projet Vercel `frontend`)
+
+| Variable | Rôle | Défaut / remarque |
+|---|---|---|
+| `VITE_API_URL` | adresse du backend | **obligatoire** ; en production, un sous-domaine du site (voir l'étape 3.2) |
+| `VITE_GOOGLE_CLIENT_ID` | bouton « Se connecter avec Google » | vide : bouton masqué ; doit correspondre à `GOOGLE_CLIENT_ID` |
+| `VITE_GA_MEASUREMENT_ID` | Google Analytics 4 (`G-XXXXXXXXXX`) | vide : désactivé ; chargé après consentement |
+| `VITE_META_PIXEL_ID` | pixel Meta | vide : désactivé ; chargé après consentement |
+| `VITE_LINKEDIN_PARTNER_ID` | LinkedIn Insight Tag | vide : désactivé ; chargé après consentement |
 
 ---
 
@@ -364,4 +486,4 @@ Ne pas régler `max_pipeline: 0` sur `postgres-js` à la place : cela casse `sql
 - **Rappels planifiés** : `node-cron` reste actif en développement local (`ENABLE_INTERNAL_CRON=true`) mais est désactivé en production ; `backend/vercel.json` déclare deux Vercel Cron Jobs, protégés par le header `Authorization: Bearer $CRON_SECRET` que Vercel envoie automatiquement :
   - `GET /api/cron/daily` (`0 8 * * *`) enchaîne les trois travaux quotidiens : rappel de fin de bail au gestionnaire, rappel « avant échéance » au locataire (avec passage en retard des factures dépassées), et génération des factures du mois suivie de l'avis d'échéance ;
   - `GET /api/cron/rent-due-reminders` (`0 8 1 * *`) refait ce dernier travail le 1er du mois. Ce n'est plus son unique déclencheur : la route quotidienne le couvre aussi, pour qu'un échec ponctuel ne coûte pas un mois entier de facturation. Les deux ne font jamais double emploi — une facture déjà traitée porte son `reminderSentAt`.
-- **Frontend** : `frontend/vercel.json` ajoute une règle de réécriture pour que le routage côté client (React Router) fonctionne aussi sur un rechargement de page ou un lien direct (ex: `/portail/paiements`).
+- **Frontend** : `frontend/vercel.json` porte quatre réglages : (1) une règle de réécriture pour que le routage côté client (React Router) fonctionne aussi sur un rechargement de page ou un lien direct (ex: `/portail/paiements`) ; (2) une réécriture de `/sitemap-annonces.xml` vers le plan de site des annonces publiques que sert le backend (`api.immoplatformpro.com/api/listings/public/sitemap.xml`) ; (3) des en-têtes de sécurité sur toutes les pages : `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, et la politique de sécurité de contenu, en deux versions : `Content-Security-Policy` est appliquée (scripts, objets, formulaires, cadres), `Content-Security-Policy-Report-Only` observe le reste et envoie les violations au backend (`/api/csp-report`) ; (4) un cache d'un an, `immutable`, sur les fichiers de `/assets/`, dont le nom change à chaque construction. Si le backend change d'adresse, mettez à jour celle de la réécriture du plan de site, ainsi que `report-uri` et `connect-src` dans la politique de sécurité.
