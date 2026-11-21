@@ -339,7 +339,7 @@ Si le mot de passe est lui aussi perdu, `npm run create-admin -- <email> "<nouve
 
 ## Sauvegarde et restauration
 
-Le plan gratuit de Supabase **ne fait aucune sauvegarde automatique** : après une fausse manipulation (un `DROP`, un `UPDATE` sans `WHERE`) ou une panne, il n'y aurait aucun moyen de revenir en arrière. Le workflow `.github/workflows/sauvegarde.yml` y supplée : chaque nuit (02 h 43 UTC), il copie la base (schéma `public`, celui de l'application), **chiffre** la copie, **prouve qu'elle se restaure** (dans un PostgreSQL jetable, avec le nombre de lignes de chaque table dans le résumé du run), puis la dépose comme artefact du run, conservé 30 jours. Un échec ouvre un ticket.
+Le plan gratuit de Supabase **ne fait aucune sauvegarde automatique** : après une fausse manipulation (un `DROP`, un `UPDATE` sans `WHERE`) ou une panne, il n'y aurait aucun moyen de revenir en arrière. Le workflow `.github/workflows/sauvegarde.yml` y supplée : chaque jour (programmé à 02 h 43 UTC, mais GitHub le lance en pratique entre 09 h et 11 h UTC : relevé du 14 au 21 novembre 2026, l'heure exacte varie avec la charge de GitHub), il copie la base (schéma `public`, celui de l'application), **chiffre** la copie, **prouve qu'elle se restaure** (dans un PostgreSQL jetable, avec le nombre de lignes de chaque table dans le résumé du run), puis la dépose comme artefact du run, conservé 30 jours. Un échec ouvre un ticket.
 
 > Le vrai filet est le plan **Pro** de Supabase (sauvegardes quotidiennes conservées 7 jours, retour à un instant donné en option). À prévoir dès le premier client payant ; cette sauvegarde reste utile en complément, car elle vit hors de Supabase.
 
@@ -370,10 +370,10 @@ Pour simplement lire une copie : `gpg --decrypt immoplatform-….dump.gpg > base
 ### Ce que cette sauvegarde ne couvre pas
 
 - **Les fichiers déposés** (photos d'incident, justificatifs, pièces : espaces de stockage `public-uploads` et `private-uploads`) ne sont pas dans une copie de base. Supabase ne les sauvegarde pas non plus sur le plan gratuit. Il n'y en a presque pas aujourd'hui ; c'est à traiter avant un usage réel.
-- **Jusqu'à 24 h de données** peuvent être perdues (une copie par nuit).
+- **Jusqu'à 24 h de données** peuvent être perdues (une copie par jour), et **jusqu'à environ 32 h au pire** : GitHub lance le workflow avec plusieurs heures de retard sur 02 h 43 UTC, donc deux copies successives peuvent être espacées de plus de 24 h.
 - La copie est dans **le même compte GitHub** que le code : elle protège d'une erreur sur la base, pas de la perte du compte. Téléchargez-en une de temps en temps, ailleurs.
 - Le quota d'artefacts de GitHub est limité (500 Mo en plan gratuit) : à quelques Mo par copie, 30 jours tiennent largement ; à surveiller si la base grossit (sinon, réduire `retention-days`).
-- Le workflow rejoue chaque nuit une restauration à blanc, mais un **essai complet dans un projet Supabase neuf**, une fois par trimestre, reste la seule preuve de bout en bout (adresse du backend comprise).
+- Le workflow rejoue à chaque copie une restauration à blanc, mais un **essai complet dans un projet Supabase neuf**, une fois par trimestre, reste la seule preuve de bout en bout (adresse du backend comprise).
 
 ---
 
@@ -409,7 +409,7 @@ Le défaut du code (`smtp.gmail.com`) ne convient **pas** à un expéditeur en `
 | Ce qui arrive | Que faire |
 |---|---|
 | Un déploiement casse le site (500 partout) | Vercel → *Deployments* → le dernier déploiement sain → **Instant Rollback**, puis corriger (voir « Le site entier est en panne »). Quelques minutes. |
-| La base est abîmée ou vidée par erreur | Restaurer la dernière copie chiffrée (section « Sauvegarde et restauration »). **Perte possible : jusqu'à 24 h**, plus le retard de lancement du workflow (GitHub le déclenche parfois plusieurs heures après 02 h 43 UTC). |
+| La base est abîmée ou vidée par erreur | Restaurer la dernière copie chiffrée (section « Sauvegarde et restauration »). **Perte possible : jusqu'à 24 h**, plus le retard de lancement du workflow (GitHub le déclenche en pratique entre 09 h et 11 h UTC, soit jusqu'à environ 32 h au total). |
 | Le projet Supabase est en pause ou supprimé | Plan gratuit : un projet sans activité pendant 7 jours est mis en pause. Dans Supabase, *Restore project* le réveille (possible plusieurs semaines après). Si le projet n'existe plus : nouveau projet + restauration d'une copie. |
 | Le compte Vercel est perdu | Recréer les deux projets (racines `backend` et `frontend`), leurs variables, puis les domaines (voir plus bas). |
 | Le compte GitHub est perdu | Le code **et** les copies de la base disparaissent avec lui : gardez ailleurs une copie du dépôt et, une fois par trimestre, une copie chiffrée téléchargée. |
