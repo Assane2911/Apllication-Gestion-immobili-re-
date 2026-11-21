@@ -395,4 +395,33 @@ describe("renewSubscriptionFromStripeInvoice", () => {
 
     expect(rejeu?.paymentRef).toBe("in_tardive");
   });
+
+  /**
+   * `Math.abs(NaN - 29) >= 0.01` est FAUX : un montant qui n'est pas un nombre passait la comparaison « écart toléré » comme s'il
+   * était égal à l'attendu, et l'accès était prolongé pour un prélèvement dont on ne connaissait pas le montant. Le webhook
+   * Stripe filtre déjà ce cas, mais le service ne doit pas dépendre de ce seul filet.
+   */
+  it("ne prolonge pas l'accès quand le montant payé n'est pas un nombre (NaN)", async () => {
+    const finActuelle = new Date(Date.now() + 10 * JOUR);
+    const manager = await createManager({
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "PRO",
+      subscriptionEndsAt: finActuelle,
+      stripeSubscriptionId: "sub_nan",
+    });
+    await createPlatformSubscription(manager.id, { status: "PAID", plan: "PRO", paymentMethod: "STRIPE", amount: 29 });
+
+    const resultat = await renewSubscriptionFromStripeInvoice({
+      stripeSubscriptionId: "sub_nan",
+      stripeInvoiceId: "in_nan",
+      montantPaye: Number.NaN,
+      devise: "EUR",
+    });
+
+    expect(resultat).toBeNull();
+    const lignes = await testDb.select().from(platformSubscriptions).where(eq(platformSubscriptions.userId, manager.id));
+    expect(lignes).toHaveLength(1); // aucune ligne de renouvellement ajoutée
+    const [compte] = await testDb.select().from(users).where(eq(users.id, manager.id));
+    expect(compte.subscriptionEndsAt?.getTime()).toBe(finActuelle.getTime());
+  });
 });
