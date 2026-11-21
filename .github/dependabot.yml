@@ -1,0 +1,58 @@
+# Mises à jour automatiques des dépendances : une seule pull request par semaine et par dossier, qui regroupe les
+# mises à jour MINEURES et les CORRECTIFS. Les versions MAJEURES ne sont jamais proposées : chacune est une migration
+# à décider et à tester à part (par exemple express 5, vite 8, typescript 7).
+#
+# Chaque pull request passe la CI complète (types, tests, démarrage réel, construction) avant d'être fusionnée.
+# Les avis de sécurité sont suivis à part, chaque semaine, par .github/workflows/avis-securite.yml.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "Dépendances (backend) :"
+    groups:
+      mineures-et-correctifs:
+        update-types: ["minor", "patch"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "Dépendances (frontend) :"
+    groups:
+      mineures-et-correctifs:
+        update-types: ["minor", "patch"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: "Dépendances (workflows) :"
+    groups:
+      mineures-et-correctifs:
+        update-types: ["minor", "patch"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]

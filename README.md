@@ -145,7 +145,7 @@ En résumé :
 - Pensez à définir `FRONTEND_URL` (backend) et `VITE_API_URL` (frontend) vers les URLs publiques réelles une fois les deux projets déployés.
 - **Sauvegarde** : le plan gratuit de Supabase ne sauvegarde rien. Un workflow GitHub copie la base chaque nuit (copie chiffrée, restaurée à blanc pour vérification) ; mise en place et restauration : `DEPLOYMENT.md`, « Sauvegarde et restauration ».
 - **Surveillance** : `/api/health` (la fonction démarre) et `/api/health/ready` (la base répond) pour les sondes UptimeRobot ; erreurs dans Sentry ; mise en place : `DEPLOYMENT.md`, « Surveillance de la disponibilité ».
-- **CI** (`.github/workflows/ci.yml`) : à chaque push et pull request, types du backend (variables et imports inutilisés interdits), tests du backend en trois tranches parallèles, démarrage réel du backend sous Node 24, puis types, tests, construction et analyse (oxlint) du frontend. `avis-securite.yml` contrôle chaque semaine les dépendances de production, et `sauvegarde.yml` copie la base chaque nuit.
+- **CI** (`.github/workflows/ci.yml`) : à chaque push et pull request, types du backend (variables et imports inutilisés interdits), tests du backend en trois tranches parallèles, démarrage réel du backend sous Node 24, puis types, tests, construction et analyse (oxlint) du frontend. `avis-securite.yml` contrôle chaque semaine les dépendances de production, `dependabot.yml` propose chaque lundi une pull request de mises à jour mineures et correctifs (jamais de version majeure), et `sauvegarde.yml` copie la base chaque nuit.
 
 ## Sécurité
 
@@ -166,6 +166,7 @@ Les écrans relus en boucle (menu, tableau de bord, agenda, cloche de notificati
 .
 ├── README.md, DEPLOYMENT.md  # ce guide, et le guide de déploiement (Supabase, Vercel, surveillance, sauvegarde, reprise après sinistre)
 ├── .github/workflows/      # ci.yml (types, tests, construction), avis-securite.yml (hebdomadaire), sauvegarde.yml (nocturne)
+├── .github/dependabot.yml  # mises à jour mineures et correctifs, chaque lundi (jamais de version majeure)
 ├── backend/
 │   ├── scripts/            # sauvegarde/ (sauvegarde chiffrée et restauration de la base), verifier-demarrage.js (démarrage réel pour la CI)
 │   ├── vercel.json         # deux Cron Jobs (/api/cron/daily, /api/cron/rent-due-reminders), région d'exécution, ignoreCommand
