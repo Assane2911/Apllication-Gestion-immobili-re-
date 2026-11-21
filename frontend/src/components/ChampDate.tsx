@@ -145,7 +145,8 @@ export default function ChampDate({ onClick, ...champ }: Props) {
           // Seule l'icône (extrémité droite) ouvre le calendrier ; ailleurs, on saisit au clavier, segment par segment.
           if (!e.defaultPrevented && souris() && !champ.disabled && !champ.readOnly && e.clientX >= r.right - 36) {
             e.preventDefault();
-            ouvert ? fermer(false) : ouvrir();
+            if (ouvert) fermer(false);
+            else ouvrir();
           }
         }}
       />
