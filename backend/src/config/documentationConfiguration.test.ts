@@ -229,6 +229,68 @@ describe.skipIf(!dispo)("documentation de la configuration", () => {
   });
 
   /**
+   * Le README disait de « compléter initiateStripePayment avec le SDK stripe » alors que Stripe est branché depuis longtemps (sans
+   * SDK), présentait une seule tâche planifiée alors qu'il y en a deux et que la quotidienne en enchaîne dix, annonçait un avis de
+   * sécurité sur esbuild réglé depuis, et décrivait un arbre de dossiers sans la moitié de ceux qui existent.
+   */
+  describe("le README décrit ce qui existe réellement dans le code", () => {
+    const readme = () => lire("README.md");
+    const dossiers = (relatif: string) =>
+      readdirSync(join(RACINE, relatif))
+        .filter((nom) => statSync(join(RACINE, relatif, nom)).isDirectory() && !nom.startsWith("__") && nom !== "node_modules")
+        .sort();
+
+    it("ne demande plus de brancher Stripe : il l'est, sans SDK, et le webhook est décrit", () => {
+      const r = readme();
+      expect(r).not.toMatch(/complétez `initiateStripePayment`/);
+      expect(JSON.parse(lire("backend/package.json")).dependencies?.stripe).toBeUndefined(); // le texte « sans SDK » est vrai
+      expect(r).toMatch(/\/api\/payments\/stripe\/webhook/);
+      expect(r).toContain("STRIPE_CURRENCIES");
+    });
+
+    it("annonce les tâches planifiées que backend/vercel.json déclare, et plus « le rappel de fin de contrat » comme seule tâche", () => {
+      const r = readme();
+      const declarees = [...lire("backend/vercel.json").matchAll(/"path":\s*"([^"]+)"/g)].map((m) => m[1]);
+      expect(declarees.length).toBeGreaterThan(0);
+      for (const chemin of declarees) expect(r, `tâche ${chemin} absente du README`).toContain(chemin);
+      expect(r).not.toMatch(/Les rappels automatiques de fin de contrat passent par un \*\*Vercel Cron Job\*\*/);
+      expect(r).not.toMatch(/config Vercel Cron Job \(rappels de fin de contrat\)/);
+    });
+
+    it("n'annonce plus un avis de sécurité sur esbuild réglé par `overrides`", () => {
+      const r = readme();
+      expect(lire("backend/package.json")).toMatch(/"esbuild":\s*"\^0\.25/); // le correctif existe bien
+      expect(r).not.toMatch(/avis de sécurité concernant son serveur de développement/);
+    });
+
+    it("nomme chaque dossier de backend/src et de frontend/src dans l'arbre du projet", () => {
+      const r = readme();
+      const absents = [...dossiers("backend/src"), ...dossiers("frontend/src")].filter((d) => !r.includes(`${d}/`));
+      expect(absents, `dossiers absents du README : ${[...new Set(absents)].join(", ")}`).toEqual([]);
+    });
+
+    it("ne cite pas un dossier racine qui n'existe pas, et cite chaque workflow GitHub", () => {
+      const r = readme();
+      expect(r).not.toContain("gestion-immo/");
+      for (const workflow of readdirSync(join(RACINE, ".github/workflows")).filter((f) => f.endsWith(".yml"))) {
+        expect(r, `workflow ${workflow} absent du README`).toContain(workflow);
+      }
+    });
+
+    it("présente la surveillance (routes de santé qui existent, Sentry) et les intégrations (Google, WhatsApp)", () => {
+      const r = readme();
+      expect(readFileSync(join(RACINE, "backend/src/app.ts"), "utf8")).toContain('"/api/health/ready"');
+      expect(r).toContain("/api/health/ready");
+      for (const mot of [/Sentry/, /UptimeRobot/, /WhatsApp/, /connexion avec Google/i, /CRON_HEARTBEAT_URL/]) expect(r).toMatch(mot);
+    });
+
+    it("présente les fonctions des pages qui existent : parrainage, guide de démarrage, administration, site public", () => {
+      const r = readme();
+      for (const mot of [/[Pp]arrainage/, /guide de démarrage/i, /maintenance/i, /vitrine/i, /pages légales/i]) expect(r).toMatch(mot);
+    });
+  });
+
+  /**
    * Le guide s'est décollé du code sur des détails qui font perdre du temps à qui le suit : un travail planifié qui n'existe plus,
    * un fichier de départ introuvable, un « Redeploy » conseillé alors qu'il est annulé, des réglages du frontend oubliés.
    * Et 28 variables de `.env.example` n'y figuraient nulle part : le guide les range maintenant par thème.
