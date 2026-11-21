@@ -219,7 +219,13 @@ export async function renewSubscriptionFromStripeInvoice(params: {
     // écart signalerait soit un changement de prix côté Stripe non répercuté
     // ici, soit une facture qui ne concerne pas ce cycle. Dans le doute, on
     // n'étend pas l'accès plutôt que de l'étendre sur un montant faux.
-    if (Math.abs(montantPaye - dernierPaiement.amount) >= 0.01 || devise.toUpperCase() !== dernierPaiement.currency.toUpperCase()) {
+    // `!Number.isFinite` d'abord : `Math.abs(NaN - x) >= 0.01` est FAUX, donc un montant qui n'est pas un nombre passait
+    // pour « égal à l'attendu » et l'accès était prolongé sans que le prélèvement soit connu.
+    if (
+      !Number.isFinite(montantPaye) ||
+      Math.abs(montantPaye - dernierPaiement.amount) >= 0.01 ||
+      devise.toUpperCase() !== dernierPaiement.currency.toUpperCase()
+    ) {
       console.warn(
         `[stripe] Renouvellement rejeté pour l'abonnement Stripe ${stripeSubscriptionId} : montant/devise confirmés (${montantPaye} ${devise}) ≠ attendus (${dernierPaiement.amount} ${dernierPaiement.currency}).`
       );
