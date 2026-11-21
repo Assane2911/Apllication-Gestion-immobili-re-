@@ -27,8 +27,11 @@ export function useDialogue({ onClose, titreId, libelle, fermable = true }: { on
   const ref = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   const fermableRef = useRef(fermable);
-  onCloseRef.current = onClose;
-  fermableRef.current = fermable;
+  // Mis à jour après chaque rendu (jamais pendant) : le gestionnaire clavier lit toujours la dernière valeur.
+  useEffect(() => {
+    onCloseRef.current = onClose;
+    fermableRef.current = fermable;
+  });
 
   useEffect(() => {
     const conteneur = ref.current;
