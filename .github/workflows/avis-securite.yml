@@ -19,10 +19,12 @@ permissions:
   contents: read
   issues: write
 
+# Délai maximal : un `npm audit` qui ne répond pas ne doit pas tourner 6 heures (le défaut de GitHub).
 jobs:
   audit:
     name: Dépendances de production (${{ matrix.dossier }})
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       # Un dossier en alerte ne doit pas empêcher de contrôler l'autre.
       fail-fast: false

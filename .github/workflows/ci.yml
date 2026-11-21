@@ -21,6 +21,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Délai maximal par job : sans lui, un test qui se bloque tourne 6 heures (le défaut de GitHub) et consomme des minutes
+# pour rien. Une tranche de tests dure environ 6 minutes ; ces plafonds laissent une grande marge sans laisser un blocage
+# s'éterniser.
 jobs:
   # Les tests du backend (207 fichiers, chacun sur sa propre base PGlite) étaient la seule étape lente de la CI : environ
   # 12 minutes sur un seul job, contre moins de 2 minutes pour tout le reste. Ils sont donc répartis en TRANCHES qui
@@ -30,6 +33,7 @@ jobs:
   backend-types:
     name: Backend — types
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -50,6 +54,7 @@ jobs:
   backend-tests:
     name: Backend — tests (tranche ${{ matrix.tranche }}/3)
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     strategy:
       # Une tranche en échec ne doit pas interrompre les autres : on veut voir TOUS les tests qui cassent d'un coup.
       fail-fast: false
@@ -79,6 +84,7 @@ jobs:
   backend:
     name: Backend — types et tests
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [backend-types, backend-tests]
     # `always()` : sans lui, ce job serait IGNORÉ (et non en échec) quand un job dont il dépend échoue, et un contrôle
     # ignoré peut être pris pour un succès. Il échoue donc explicitement.
@@ -101,6 +107,7 @@ jobs:
   demarrage:
     name: Backend — démarrage réel (Node 24)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -130,6 +137,7 @@ jobs:
   frontend:
     name: Frontend — build et tests
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 

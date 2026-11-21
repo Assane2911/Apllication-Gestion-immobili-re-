@@ -1,7 +1,7 @@
 name: Sauvegarde de la base
 
 # Le projet Supabase est sur le plan gratuit : aucune sauvegarde automatique, donc aucun retour en arrière après une
-# fausse manipulation (un DROP, un UPDATE sans WHERE) ou une panne. Chaque nuit, ce workflow copie la base (schéma
+# fausse manipulation (un DROP, un UPDATE sans WHERE) ou une panne. Chaque jour (programmé la nuit, lancé par GitHub avec plusieurs heures de retard), ce workflow copie la base (schéma
 # `public`), chiffre la copie, PROUVE qu'elle se restaure (dans un PostgreSQL jetable, avec le compte des lignes de
 # chaque table) et ne la dépose qu'ensuite, comme artefact du run. Un échec ouvre un ticket.
 #
