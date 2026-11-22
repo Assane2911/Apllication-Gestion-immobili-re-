@@ -160,6 +160,52 @@ describe("POST /api/contracts", () => {
     expect(overlapping.status).toBe(409);
     expect(overlapping.body.error).toContain("contrat actif");
   });
+
+  it("un bail ENDED créé sur un bien AVAILABLE laisse le bien AVAILABLE", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id, { status: "AVAILABLE" });
+    const tenant = await createTenant(manager.id);
+
+    const res = await request(app)
+      .post("/api/contracts")
+      .set(authHeader(tokenFor(manager)))
+      .send({
+        propertyId: property.id,
+        tenantId: tenant.id,
+        rent: 500,
+        deposit: 1000,
+        startDate: "2025-01-01",
+        endDate: "2025-12-31",
+        status: "ENDED",
+      });
+
+    expect(res.status).toBe(201);
+    const [apres] = await testDb.select().from(properties).where(eq(properties.id, property.id));
+    expect(apres.status).toBe("AVAILABLE");
+  });
+
+  it("un bail ACTIVE créé sur un bien AVAILABLE passe le bien en OCCUPIED", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id, { status: "AVAILABLE" });
+    const tenant = await createTenant(manager.id);
+
+    const res = await request(app)
+      .post("/api/contracts")
+      .set(authHeader(tokenFor(manager)))
+      .send({
+        propertyId: property.id,
+        tenantId: tenant.id,
+        rent: 500,
+        deposit: 1000,
+        startDate: "2026-06-01",
+        endDate: "2027-05-31",
+        status: "ACTIVE",
+      });
+
+    expect(res.status).toBe(201);
+    const [apres] = await testDb.select().from(properties).where(eq(properties.id, property.id));
+    expect(apres.status).toBe("OCCUPIED");
+  });
 });
 
 describe("GET /api/contracts/:id — isolation entre gestionnaires", () => {
