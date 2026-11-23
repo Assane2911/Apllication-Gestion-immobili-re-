@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/node";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { eq } from "drizzle-orm";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
@@ -12,7 +13,8 @@ import { owners, tenants, users } from "../db/schema";
 import * as emailService from "../services/email.service";
 import { accountAlreadyExistsEmail, emailVerificationEmail, passwordResetEmail } from "../services/email.service";
 import * as referral from "../services/referral.service";
-import { genererCodeTotp } from "../services/totp.service";
+import { chiffrerSecretTotp } from "../services/secretTotpChiffre";
+import { genererCodeTotp, genererSecretTotp } from "../services/totp.service";
 import {
   authHeader,
   createManager,
@@ -465,6 +467,26 @@ describe("deuxième étape de connexion (double authentification)", () => {
   });
 });
 
+describe("secret TOTP déjà chiffré", () => {
+  it("la connexion en deux étapes ne réécrit pas un secret déjà chiffré", async () => {
+    const avant = env.totpEncryptionKey;
+    env.totpEncryptionKey = crypto.randomBytes(32);
+    try {
+      const secret = genererSecretTotp();
+      const stocke = chiffrerSecretTotp(secret);
+      const manager = await createManager({ totpSecret: stocke, totpEnabledAt: new Date(), totpBackupCodesHash: "[]" });
+      const etape1 = await request(app).post("/api/auth/login").send({ email: manager.email, password: PASSWORD });
+
+      const etape2 = await request(app).post("/api/auth/2fa/verify-login").send({ pendingToken: etape1.body.pendingToken, code: await genererCodeTotp(secret) });
+
+      expect(etape2.status).toBe(200);
+      expect((await ligne(manager.id)).totpSecret).toBe(stocke);
+    } finally {
+      env.totpEncryptionKey = avant;
+    }
+  });
+});
+
 describe("connexion avec Google", () => {
   const charge = (extra: Record<string, unknown> = {}) => ({ sub: `google-${Math.random()}`, email: `google-${Date.now()}@test.local`, email_verified: true, ...extra });
   const connecter = (corps: Record<string, unknown> = {}, langue = "fr") => request(app).post("/api/auth/google").set("Accept-Language", langue).send({ credential: "jeton-google", ...corps });
@@ -515,6 +537,16 @@ describe("connexion avec Google", () => {
     expect(compte.hasPassword).toBe(false);
     expect(proche(compte.trialEndsAt, Date.now() + 15 * JOUR)).toBe(true);
     expect(compte.language).toBe("en");
+  });
+
+  it("un nouveau compte créé sans langue demandée prend le français par défaut", async () => {
+    verifierGoogle.mockResolvedValue({ getPayload: () => charge({ sub: "google-sans-langue" }) });
+
+    const res = await request(app).post("/api/auth/google").send({ credential: "jeton-google" });
+
+    expect(res.status).toBe(200);
+    const [compte] = await testDb.select().from(users).where(eq(users.googleId, "google-sans-langue"));
+    expect(compte.language).toBe("fr");
   });
 
   it("un échec de la récompense de parrainage ne bloque pas la création du compte", async () => {
