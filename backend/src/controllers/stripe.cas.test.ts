@@ -227,6 +227,14 @@ describe("webhook Stripe — abonnement de la plateforme", () => {
     expect((await abonnementDe(ligne.id)).status).toBe("PENDING");
   });
 
+  it("n'active pas un abonnement à 0 payé 1 centime : l'écart d'un centime exact est refusé", async () => {
+    const { ligne } = await abonnement({ amount: 0 });
+
+    await livrer(session({ id: "cs_abo", client_reference_id: `sub_${ligne.userId}_1`, amount_total: 1 }));
+
+    expect((await abonnementDe(ligne.id)).status).toBe("PENDING");
+  });
+
   it.each([
     ["5 centimes", 2905],
     ["50 centimes", 2950],
