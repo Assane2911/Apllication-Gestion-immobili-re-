@@ -299,7 +299,11 @@ export const createContract = asyncHandler(async (req: Request, res: Response) =
       await assertAucunChevauchementActif(tx, body.propertyId, body.startDate, body.endDate);
     }
     const [created] = await tx.insert(contracts).values(contractValues).returning();
-    await tx.update(properties).set({ status: "OCCUPIED" }).where(eq(properties.id, body.propertyId));
+    // Le bien n'est occupé que s'il existe un bail ACTIF : un bail historique
+    // (ENDED/TERMINATED) saisi a posteriori ne doit pas l'occuper.
+    if (contractStatus === "ACTIVE") {
+      await tx.update(properties).set({ status: "OCCUPIED" }).where(eq(properties.id, body.propertyId));
+    }
     await generateInvoicesForContract(created, tx);
     return created;
   });
