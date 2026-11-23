@@ -288,6 +288,7 @@ describe("Propriétaires — anonymisation", () => {
     await testDb.insert(ownerMessages).values([
       message(cible.id, compteCible.id, "owner-messages/cible.webm"),
       message(cible.id, compteCible.id, null),
+      { ...message(cible.id, manager.id, null), senderRole: "MANAGER" as const, content: "réponse de l'agence" },
       message(autre.id, compteAutre.id, "owner-messages/autre.webm"),
     ]);
     await testDb.insert(activityLogs).values([
@@ -395,8 +396,8 @@ describe("Propriétaires — invitation au portail", () => {
   it("écrit l'e-mail avec le nom de l'agence du gestionnaire, la civilité et sa langue, puis la ligne du journal", async () => {
     const manager = await createManager();
     const autreAgence = await createManager();
-    await testDb.insert(agencySettings).values({ userId: manager.id, agencyName: "Agence du Port" });
     await testDb.insert(agencySettings).values({ userId: autreAgence.id, agencyName: "Agence du Rival" });
+    await testDb.insert(agencySettings).values({ userId: manager.id, agencyName: "Agence du Port" });
     const owner = await createOwner(manager.id, { civility: "MME", firstName: "Awa", lastName: "Sow", email: "awa.invite@test.local" });
 
     const res = await request(app).post(`/api/owners/${owner.id}/invite`).set(authHeader(tokenFor(manager))).set("Accept-Language", "en");
