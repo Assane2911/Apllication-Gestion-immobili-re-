@@ -49,7 +49,7 @@ describe("Pages légales", () => {
 
     const texte = container.textContent ?? "";
     expect(texte).toMatch(/Adresse\s*:\s*\S/);
-    expect(texte).toContain("assane@immoplatformpro.com");
+    expect(texte).toContain("contact@immoplatformpro.com");
   });
 
   it("présente l'éditeur comme la LLC immatriculée, avec son EIN, son État et son adresse — plus comme une société « en cours de formation »", () => {
