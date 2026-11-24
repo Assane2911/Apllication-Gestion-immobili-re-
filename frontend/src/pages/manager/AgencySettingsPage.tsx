@@ -1,5 +1,5 @@
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
@@ -43,6 +43,14 @@ export default function AgencySettingsPage() {
   const { logout, user, refreshUser } = useAuth();
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  // Minuteur qui efface le message de succès : annulé au démontage et avant d'en armer un nouveau.
+  const minuteurSucces = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (minuteurSucces.current) clearTimeout(minuteurSucces.current);
+    },
+    []
+  );
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -224,6 +232,7 @@ export default function AgencySettingsPage() {
     setSaving(true);
     setSuccess(false);
     setError(null);
+    if (minuteurSucces.current) clearTimeout(minuteurSucces.current);
     try {
       await api.put<AgencySettings>("/agency", {
         ...form,
@@ -232,7 +241,7 @@ export default function AgencySettingsPage() {
       });
       setEnregistre(form);
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 4000);
+      minuteurSucces.current = setTimeout(() => setSuccess(false), 4000);
     } catch (err) {
       setError(apiErrorMessage(err));
     } finally {
