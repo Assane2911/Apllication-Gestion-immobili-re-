@@ -155,7 +155,9 @@ describe("PayDunya : appel de confirmation", () => {
     confirmer({ reference: "autre-reference" });
     await ipn("pd_autre", autre.invoice.id);
     expect((await facture(autre.invoice.id)).status).toBe("PENDING");
-    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining(`référence PayDunya 'autre-reference' ≠ référence reçue '${autre.invoice.id}'`));
+    expect(console.warn).toHaveBeenCalledWith(
+      `[paydunya] Confirmation pour pd_autre : référence PayDunya 'autre-reference' ≠ référence reçue '${autre.invoice.id}' — IPN ignorée.`
+    );
   });
 });
 
