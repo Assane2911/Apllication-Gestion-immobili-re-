@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import { AuthProvider } from "../../context/AuthContext";
 import type { AgencySettings } from "../../types";
@@ -57,6 +57,10 @@ function settings(overrides: Partial<AgencySettings> = {}): AgencySettings {
 }
 
 describe("AgencySettingsPage", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   beforeEach(() => {
     mockedApi.get.mockReset();
     mockedApi.put.mockReset();
@@ -189,6 +193,24 @@ describe("AgencySettingsPage", () => {
       "/agency",
       expect.objectContaining({ agencyName: "Agence du Port Renommée" })
     );
+  });
+
+  it("annule le minuteur du message de succès quand la page est quittée", async () => {
+    const armer = vi.spyOn(globalThis, "setTimeout");
+    const annuler = vi.spyOn(globalThis, "clearTimeout");
+    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    mockedApi.put.mockResolvedValueOnce({ data: settings() });
+    const { unmount } = renderPage();
+
+    await waitFor(() => expect(screen.getByLabelText("Nom commercial de l'agence *")).toHaveValue("Agence du Port"));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Enregistrer les paramètres" }));
+    await waitFor(() => expect(screen.getByRole("status")).toBeInTheDocument());
+
+    const idMinuteur = armer.mock.results[armer.mock.calls.findIndex(([, delai]) => delai === 4000)]?.value;
+    expect(idMinuteur).toBeDefined();
+    expect(annuler).not.toHaveBeenCalledWith(idMinuteur);
+    unmount();
+    expect(annuler).toHaveBeenCalledWith(idMinuteur);
   });
 
   it("affiche une erreur si l'enregistrement échoue", async () => {
