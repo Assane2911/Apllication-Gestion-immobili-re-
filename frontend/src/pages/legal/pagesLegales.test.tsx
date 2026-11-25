@@ -74,6 +74,24 @@ describe("Pages légales", () => {
     }
   });
 
+  it("les CGU/CGV ne présentent pas PayDunya comme moyen de payer l'abonnement tant que le compte de l'éditeur n'est pas actif", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <CGUPage />
+      </MemoryRouter>
+    );
+
+    const texte = (container.textContent ?? "").replace(/\s+/g, " ");
+    // L'abonnement se paie par virement et, lorsqu'elle est proposée, par carte via Stripe.
+    expect(texte).toContain("virement bancaire et, lorsqu'il est proposé dans l'interface, paiement par carte bancaire via Stripe");
+    expect(texte).not.toMatch(/mobile money et carte bancaire par PayDunya/);
+    expect(texte).toContain("Le compte Stripe de l'éditeur ne sert qu'à régler l'abonnement");
+    expect(texte).not.toMatch(/comptes Stripe et PayDunya de l'éditeur/);
+    // La fonction existe encore côté agence (son PROPRE compte PayDunya, identifiants chiffrés) : elle reste décrite.
+    expect(texte).toContain("avec son propre compte PayDunya");
+    expect(texte).toContain("Les identifiants PayDunya que le Gestionnaire enregistre pour son agence sont conservés chiffrés");
+  });
+
   it.each(PAGES)("%s ne parle plus d'une société en cours de constitution", (_nom, Page) => {
     const { container } = render(
       <MemoryRouter>
