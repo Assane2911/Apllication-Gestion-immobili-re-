@@ -52,7 +52,7 @@ describe("Pages légales", () => {
     expect(texte).toContain("contact@immoplatformpro.com");
   });
 
-  it("présente l'éditeur comme la LLC immatriculée, avec son EIN, son État et son adresse — plus comme une société « en cours de formation »", () => {
+  it("présente l'éditeur comme la LLC immatriculée, avec son État et son adresse, sans publier son EIN — plus comme une société « en cours de formation »", () => {
     const { container } = render(
       <MemoryRouter>
         <MentionsLegalesPage />
@@ -62,8 +62,9 @@ describe("Pages légales", () => {
     const texte = container.textContent ?? "";
     expect(texte).toContain("ImmoPlatform Pro LLC");
     expect(texte).toContain("Wyoming");
-    expect(texte).toContain("EIN");
-    expect(texte).toContain("30-1510500");
+    // L'EIN est un identifiant fiscal sensible : il ne figure sur aucune page publique, ni sous son nom, ni sous la forme NN-NNNNNNN.
+    expect(texte).not.toContain("EIN");
+    expect(texte).not.toMatch(/\b\d{2}-\d{7}\b/);
     expect(texte).toContain("30 N Gould St");
     expect(texte).toContain("Sheridan");
     expect(texte).toMatch(/Représentant légal\s*:\s*Imame Assane Thiam/);
