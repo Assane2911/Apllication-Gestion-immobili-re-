@@ -263,6 +263,17 @@ describe("centre de notifications du locataire : contenu exact", () => {
     ]);
   });
 
+  it("un bail qui se termine dans 8 jours est un avertissement, pas une alerte (seuil à 7 jours)", async () => {
+    const manager = await createManager();
+    const t = await createTenant(manager.id);
+    const bien = await createProperty(manager.id);
+    await createContract(bien.id, t.id, { status: "ACTIVE", endDate: dans(7.2 * JOUR) });
+
+    const res = await request(app).get("/api/notifications/mine").set(authHeader(await tokenLocataire(t.id)));
+
+    expect(res.body.notifications.map((n: { title: string; severity: string }) => [n.title, n.severity])).toEqual([["Votre bail se termine dans 8 jours", "warning"]]);
+  });
+
   it("un message d'avant le rattrapage (sans locataire) sur le bail d'un AUTRE locataire n'est pas le sien", async () => {
     const x = await bailLocataire();
 
