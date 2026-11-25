@@ -17,7 +17,6 @@ export default function MentionsLegalesPage() {
             <>Statut juridique : {COMPANY.legalStatus}</>,
             <>Représentant légal : {COMPANY.representative} (membre unique)</>,
             <>Numéro SIRET : {COMPANY.siret}</>,
-            <>Numéro d'identification fiscale américain (EIN) : {COMPANY.ein}</>,
             <>Adresse : {COMPANY.address}</>,
             <>Email de contact : {COMPANY.contactEmail}</>,
             <>Pays : {COMPANY.country}</>,
