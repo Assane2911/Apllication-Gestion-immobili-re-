@@ -471,6 +471,8 @@ describe("CRM du gestionnaire : demandes", () => {
 
     expect(nouvelles.body).toMatchObject({ page: 2, pageSize: 2, total: 4, totalPages: 2 });
     expect(nouvelles.body.items.map((i: { prospectName: string }) => i.prospectName)).toEqual(["Demande 2", "Demande 1"]);
+    const premierePage = await request(app).get("/api/listings/leads?status=NEW&pageSize=2").set(h);
+    expect(premierePage.body.items.map((i: { prospectName: string }) => i.prospectName)).toEqual(["Demande 4", "Demande 3"]);
     expect(toutes.body.total).toBe(5);
     expect(toutes.body.items[0]).toMatchObject({ prospectName: "Contactée", listingTitle: "Villa Ngor" });
   });
