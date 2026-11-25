@@ -588,6 +588,44 @@ describe("documents exportés", () => {
   });
 });
 
+describe("arrondis au centime (compte-rendu mensuel)", () => {
+  it("le net d'une ligne est arrondi au centime (100,10 − 20,20 − 10,01 = 69,89)", async () => {
+    const { owner, property, contract } = await agence({ managementFeeRate: 10 });
+    await encaisser(contract.id, 100.1, d(2026, 9, 5));
+    await depenser(property.id, 20.2, d(2026, 9, 6));
+
+    const [ligne] = (await computeCrg(owner, 9, 2026)).properties;
+
+    expect(ligne).toMatchObject({ loyersEncaisses: 100.1, chargesDeduites: 20.2, commission: 10.01 });
+    expect(ligne.netAReverser).toBe(69.89);
+  });
+
+  it("totaux, reste à reverser et devise des reversements : 0,1 + 0,2 − 0,1 = 0,2", async () => {
+    const manager = await createManager();
+    const owner = await createOwner(manager.id, { managementFeeRate: 0 });
+    const tenant = await createTenant(manager.id);
+    for (const [titre, loyer] of [
+      ["Bien 1", 0.1],
+      ["Bien 2", 0.2],
+    ] as const) {
+      const bien = await createProperty(manager.id, { title: titre, ownerId: owner.id });
+      await encaisser((await createContract(bien.id, tenant.id)).id, loyer, d(2026, 9, 5));
+    }
+    await reverser(owner.id, 9, 2026, 0.1, { paidAt: d(2026, 9, 10) });
+    await reverser(owner.id, 9, 2026, 7, { paidAt: d(2026, 9, 11), currency: "USD" });
+
+    const crg = await computeCrg(owner, 9, 2026);
+
+    expect(crg.totalLoyersByCurrency).toEqual({ EUR: 0.3 });
+    expect(crg.totalNetByCurrency).toEqual({ EUR: 0.3 });
+    expect(crg.resteAReverserByCurrency).toEqual({ EUR: 0.2, USD: -7 });
+    expect(crg.reversements.map((r) => [r.currency, r.amount])).toEqual([
+      ["EUR", 0.1],
+      ["USD", 7],
+    ]);
+  });
+});
+
 describe("relevé annuel", () => {
   it("compte du 1er janvier 00:00:00.000 au 31 décembre 23:59:59.999, et pas une milliseconde de plus (loyers et charges)", async () => {
     const { owner, property, contract, h } = await agence();
@@ -734,6 +772,69 @@ describe("relevé annuel", () => {
     expect(res.body.resteAReverserByCurrency).toEqual({ EUR: 899.7, XOF: 0, USD: -50 });
   });
 
+  it("ne montre ni ne compte rien d'un autre propriétaire de la même agence", async () => {
+    const { manager, owner, contract, h } = await agence();
+    const autre = await createOwner(manager.id);
+    const bienAutre = await createProperty(manager.id, { title: "Bien de l'autre", ownerId: autre.id });
+    const contratAutre = await createContract(bienAutre.id, (await createTenant(manager.id)).id);
+    await encaisser(contract.id, 100, d(2026, 3, 5));
+    await encaisser(contratAutre.id, 9000, d(2026, 3, 5));
+    await depenser(bienAutre.id, 900, d(2026, 3, 6));
+    await reverser(autre.id, 3, 2026, 90);
+
+    const res = await request(app).get(`/api/crg/${owner.id}/annual?year=2026`).set(h);
+
+    expect(res.body.properties.map((p: { propertyTitle: string }) => p.propertyTitle)).toEqual(["Villa Ngor"]);
+    expect(res.body.totalLoyersByCurrency).toEqual({ EUR: 100 });
+    expect(res.body.totalChargesByCurrency).toEqual({ EUR: 0 });
+    expect(res.body.reversements).toEqual([]);
+  });
+
+  it("compte un règlement partiel à la date et pour le montant de chaque paiement, et ignore une facture impayée", async () => {
+    const { owner, contract, h } = await agence();
+    const partielle = await createInvoice(contract.id, { periodMonth: 1, periodYear: 1992, amount: 500, status: "PENDING", amountPaid: 300, dueDate: d(2026, 3, 5) });
+    await testDb.insert(invoicePayments).values([
+      { invoiceId: partielle.id, amount: 100, paidAt: d(2026, 3, 10), paymentMethod: "CASH" },
+      { invoiceId: partielle.id, amount: 200, paidAt: d(2026, 4, 10), paymentMethod: "CASH" },
+    ]);
+    await createInvoice(contract.id, { periodMonth: 2, periodYear: 1992, amount: 900, status: "PENDING", dueDate: d(2026, 6, 5) });
+
+    const res = await request(app).get(`/api/crg/${owner.id}/annual?year=2026`).set(h);
+
+    expect(res.body.months[2].totalLoyersByCurrency).toEqual({ EUR: 100 });
+    expect(res.body.months[3].totalLoyersByCurrency).toEqual({ EUR: 200 });
+    expect(res.body.months[5].totalLoyersByCurrency).toEqual({ EUR: 0 });
+    expect(res.body.totalLoyersByCurrency).toEqual({ EUR: 300 });
+  });
+
+  it("arrondit au centime le net cumulé du bien et le reste à reverser (0,1 + 0,2 − 0,1 = 0,2)", async () => {
+    const { owner, contract, h } = await agence({ managementFeeRate: 0 });
+    await encaisser(contract.id, 0.1, d(2026, 3, 5));
+    await encaisser(contract.id, 0.2, d(2026, 4, 5));
+    await reverser(owner.id, 3, 2026, 0.1, { currency: "EUR" });
+    await reverser(owner.id, 4, 2026, 9, { currency: "XOF" });
+
+    const res = await request(app).get(`/api/crg/${owner.id}/annual?year=2026`).set(h);
+
+    expect(res.body.properties[0]).toMatchObject({ loyersEncaisses: 0.3, commission: 0 });
+    expect(res.body.properties[0].netAReverser).toBe(0.3);
+    expect(res.body.resteAReverserByCurrency).toEqual({ EUR: 0.2, XOF: -9 });
+    expect(res.body.reversements.map((r: { currency: string }) => r.currency)).toEqual(["EUR", "XOF"]);
+  });
+
+  it("trie les lignes même quand une devise n'apparaît qu'en cours d'année (CAD avant EUR pour un même bien)", async () => {
+    const { owner, contract, property, h } = await agence();
+    await encaisser(contract.id, 100, d(2026, 3, 5));
+    await encaisser(contract.id, 50, d(2026, 6, 5), { currency: "CAD" });
+
+    const res = await request(app).get(`/api/crg/${owner.id}/annual?year=2026`).set(h);
+
+    expect(res.body.properties.map((p: { propertyId: string; currency: string }) => [p.propertyId, p.currency])).toEqual([
+      [property.id, "CAD"],
+      [property.id, "EUR"],
+    ]);
+  });
+
   it("identité du propriétaire et année dans le relevé", async () => {
     const { owner, h } = await agence({ civility: "MME", companyName: "SCI Soleil" });
 
@@ -750,23 +851,27 @@ describe("relevé annuel", () => {
       return base;
     }
 
-    it("liste les taux des seuls mois qui ont une activité (loyers, charges ou reversements), sans répétition, dans l'ordre", async () => {
+    it("liste les taux des seuls mois qui ont une activité (loyers, charges même négatives, ou reversements), sans répétition, dans l'ordre", async () => {
       const { owner, property, contract, h } = await proprietaireAvecHistorique([
         [1970, 1, 10],
         [2026, 4, 12],
-        [2026, 6, 20],
+        [2026, 5, 14],
+        [2026, 7, 20],
         [2026, 10, 15],
+        [2026, 12, 18],
       ]);
       await encaisser(contract.id, 1000, d(2026, 3, 5)); // mars : loyers, taux 10
       await depenser(property.id, 50, d(2026, 4, 5)); // avril : charges seules, taux 12
-      await encaisser(contract.id, 1000, d(2026, 5, 5)); // mai : loyers, taux 12 (déjà noté)
+      await encaisser(contract.id, 1000, d(2026, 5, 5)); // mai : loyers, taux 14
+      await encaisser(contract.id, 1000, d(2026, 6, 5)); // juin : loyers, taux 14 (déjà noté)
       await reverser(owner.id, 9, 2026, 100); // septembre : reversement seul, taux 20
       // novembre (taux 15) : aucune activité
+      await depenser(property.id, -50, d(2026, 12, 5)); // décembre : un remboursement de charge (montant négatif), taux 18
 
       const res = await request(app).get(`/api/crg/${owner.id}/annual?year=2026`).set(h);
 
-      expect(res.body.managementFeeRates).toEqual([10, 12, 20]);
-      expect(res.body.managementFeeRate).toBe(20);
+      expect(res.body.managementFeeRates).toEqual([10, 12, 14, 20, 18]);
+      expect(res.body.managementFeeRate).toBe(18);
     });
 
     it("sans aucune activité, le taux du dernier mois de l'année", async () => {
@@ -786,6 +891,22 @@ describe("relevé annuel", () => {
 
       const avant = await request(app).get(`/api/crg/${owner.id}/annual?year=2025`).set(h);
       expect(avant.body.managementFeeRates).toEqual([10]);
+    });
+
+    it("un seul mois actif, au taux d'avant un changement : ce taux-là, pas celui de la fin d'année", async () => {
+      const { owner, contract, h } = await proprietaireAvecHistorique(
+        [
+          [1970, 1, 10],
+          [2026, 10, 12],
+        ],
+        12
+      );
+      await encaisser(contract.id, 1000, d(2026, 3, 5));
+
+      const res = await request(app).get(`/api/crg/${owner.id}/annual?year=2026`).set(h);
+
+      expect(res.body.managementFeeRates).toEqual([10]);
+      expect(res.body.managementFeeRate).toBe(10);
     });
 
     it("un seul taux sur l'année : une seule valeur", async () => {
