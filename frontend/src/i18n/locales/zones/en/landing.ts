@@ -162,7 +162,7 @@ const zone: ZoneLanding = {
         },
         {
           q: "What payment methods can my tenants use?",
-          a: "A bank transfer to your agency's account: the tenant declares it in the app, then you mark the invoice as paid once the money arrives. Paying rent by card or Mobile Money is not offered for now.",
+          a: "Your tenants pay their rent online (Mobile Money or card) directly into your agency's own PayDunya account, which you connect in your settings: the money never goes through the platform. Rent received another way (cash, cheque, Mobile Money) is recorded by hand, in one click.",
         },
         {
           q: "Can I cancel my subscription at any time?",

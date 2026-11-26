@@ -16,7 +16,6 @@ import { Skeleton, TableRowSkeleton } from "../../components/Skeleton";
 import type { Owner, PaginatedResponse } from "../../types";
 import Bulle from "../../components/Bulle";
 import { formatByCurrency } from "../../utils/currencyFormat";
-import { bicValide, ibanValide } from "../../utils/iban";
 import { correspond } from "../../utils/recherche";
 import { csvProprietaires, trierProprietaires, type CritereTriProprietaire } from "../../utils/syntheseParc";
 import { dateDuJourPourFichier, telechargerCsv } from "../../utils/telechargement";
@@ -28,13 +27,13 @@ const LIBELLE = "mb-1 block font-mono text-[10px] font-semibold uppercase tracki
 const BOUTON_PLEIN = "cursor-pointer bg-ink-900 px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-orange-700 disabled:opacity-60";
 const BOUTON_TRAIT = "inline-flex cursor-pointer items-center gap-1.5 border border-slate-400 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-800 transition-colors hover:border-ink-900";
 const LIEN_ACTION = "cursor-pointer border-b border-ink-900/40 text-xs font-semibold text-ink-900 transition-colors hover:border-orange-700 hover:text-orange-700";
-type Filtre = "all" | "noPortal" | "pending" | "noIban";
+type Filtre = "all" | "noPortal" | "pending";
 
 /** Synthèse des reversements d'un mois (GET /crg/payouts/summary). */
 interface SyntheseReversements {
   month: number;
   year: number;
-  owners: Array<{ ownerId: string; ownerName: string; hasIban: boolean; resteByCurrency: Record<string, number> }>;
+  owners: Array<{ ownerId: string; ownerName: string; resteByCurrency: Record<string, number> }>;
 }
 
 /** Les reversements se font au début du mois suivant : on rappelle donc le mois écoulé. */
@@ -54,8 +53,6 @@ const emptyForm = {
   phone: "",
   email: "",
   address: "",
-  iban: "",
-  bic: "",
   managementFeeRate: "8",
   notes: "",
   language: "fr",
@@ -132,8 +129,6 @@ export default function OwnersPage() {
       civility: owner.civility ?? "",
       email: owner.email,
       address: owner.address ?? "",
-      iban: owner.iban ?? "",
-      bic: owner.bic ?? "",
       managementFeeRate: String(owner.managementFeeRate),
       notes: owner.notes ?? "",
       language: owner.language ?? "fr",
@@ -156,8 +151,6 @@ export default function OwnersPage() {
         phone: form.phone,
         email: form.email,
         address: form.address || undefined,
-        iban: form.iban || undefined,
-        bic: form.bic || undefined,
         managementFeeRate: form.managementFeeRate,
         notes: form.notes || undefined,
         language: form.language,
@@ -246,14 +239,12 @@ export default function OwnersPage() {
   const actifs = owners.filter((o) => !o.anonymizedAt);
   const sansPortail = actifs.filter((o) => o.portalStatus === "NONE");
   const invites = actifs.filter((o) => o.portalStatus === "PENDING");
-  const sansIban = actifs.filter((o) => !o.iban?.trim());
   const commissionMoyenne = actifs.length > 0 ? actifs.reduce((somme, o) => somme + o.managementFeeRate, 0) / actifs.length : 0;
   const afficherOutils = owners.length >= SEUIL_OUTILS;
   const visibles = trierProprietaires(
     owners.filter((o) => {
       if (filtre === "noPortal" && (o.portalStatus !== "NONE" || o.anonymizedAt)) return false;
       if (filtre === "pending" && o.portalStatus !== "PENDING") return false;
-      if (filtre === "noIban" && (o.iban?.trim() || o.anonymizedAt)) return false;
       return correspond(recherche, o.firstName, o.lastName, o.companyName, o.email, o.phone);
     }),
     tri
@@ -336,7 +327,6 @@ export default function OwnersPage() {
               <li key={o.ownerId} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
                 <span className="text-slate-800">
                   <span className="font-medium">{o.ownerName}</span>
-                  {!o.hasIban && <span className="ml-2 border border-orange-300 bg-orange-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-orange-900">{t("manager.owners.payoutsDue.noIban")}</span>}
                 </span>
                 <span className="flex items-center gap-4">
                   <span className="font-semibold tabular-nums text-ink-900">
@@ -391,21 +381,6 @@ export default function OwnersPage() {
               <input id="owner-address" maxLength={300} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className={CHAMP} />
             </div>
             <div>
-              <label htmlFor="owner-iban" className={LIBELLE}>{t("manager.owners.fields.iban")}</label>
-              <input id="owner-iban" value={form.iban} onChange={(e) => setForm({ ...form, iban: e.target.value })} aria-describedby="owner-iban-aide" className={`${CHAMP} font-mono`} />
-              {/* Indication seulement : la clé de contrôle détecte une faute de frappe, l'enregistrement reste libre. */}
-              <p id="owner-iban-aide" aria-live="polite" className={`mt-1 min-h-4 font-mono text-[11px] ${form.iban.trim() === "" ? "" : ibanValide(form.iban) ? "text-ink-900" : "text-orange-700"}`}>
-                {form.iban.trim() === "" ? "" : ibanValide(form.iban) ? t("manager.owners.ibanCheck.valid") : t("manager.owners.ibanCheck.invalid")}
-              </p>
-            </div>
-            <div>
-              <label htmlFor="owner-bic" className={LIBELLE}>{t("manager.owners.fields.bic")}</label>
-              <input id="owner-bic" value={form.bic} onChange={(e) => setForm({ ...form, bic: e.target.value })} aria-describedby="owner-bic-aide" className={`${CHAMP} font-mono`} />
-              <p id="owner-bic-aide" aria-live="polite" className="mt-1 min-h-4 font-mono text-[11px] text-orange-700">
-                {form.bic.trim() !== "" && !bicValide(form.bic) ? t("manager.owners.ibanCheck.bicInvalid") : ""}
-              </p>
-            </div>
-            <div>
               <label htmlFor="owner-managementFeeRate" className={LIBELLE}>{t("manager.owners.fields.managementFeeRate")}</label>
               <input id="owner-managementFeeRate" required type="number" step="0.1" min="0" max="100" value={form.managementFeeRate} onChange={(e) => setForm({ ...form, managementFeeRate: e.target.value })} className={CHAMP} />
               {editing && <p className="mt-1 text-xs text-slate-500">{t("manager.owners.fields.managementFeeRateHint")}</p>}
@@ -448,12 +423,6 @@ export default function OwnersPage() {
               aide: t("manager.owners.summary.portalHint", { count: invites.length, none: sansPortail.length }),
             },
             { libelle: t("manager.owners.summary.feeAverage"), valeur: `${(Math.round(commissionMoyenne * 10) / 10).toLocaleString(i18n.language)} %`, aide: t("manager.owners.summary.feeAverageHint") },
-            {
-              libelle: t("manager.owners.summary.missingIban"),
-              valeur: sansIban.length,
-              aide: t("manager.owners.summary.missingIbanHint"),
-              ton: sansIban.length > 0 ? "alerte" : "normal",
-            },
           ]}
         />
       )}
@@ -470,7 +439,6 @@ export default function OwnersPage() {
               { cle: "all", libelle: t("manager.liste.all"), compte: owners.length },
               { cle: "noPortal", libelle: t("manager.owners.filters.noPortal"), compte: sansPortail.length },
               { cle: "pending", libelle: t("manager.owners.filters.pending"), compte: invites.length },
-              { cle: "noIban", libelle: t("manager.owners.filters.noIban"), compte: sansIban.length },
             ]}
             filtreActif={filtre}
             onFiltre={(cle) => setFiltre(cle as Filtre)}

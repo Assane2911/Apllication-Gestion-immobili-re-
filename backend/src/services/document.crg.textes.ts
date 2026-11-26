@@ -26,10 +26,6 @@ export interface TextesCrg {
   resteAReverser: (devise: string) => string;
   verseEnTrop: (devise: string) => string;
   moyens: Record<"BANK_TRANSFER" | "CASH" | "CHEQUE" | "MOBILE_MONEY" | "OTHER", string>;
-  sectionBanque: string;
-  iban: string;
-  bic: string;
-  aucuneBanque: string;
   pied: (date: string) => string;
 }
 
@@ -52,10 +48,6 @@ const fr: TextesCrg = {
   resteAReverser: (devise) => `Reste à reverser (${devise})`,
   verseEnTrop: (devise) => `Versé en trop (${devise})`,
   moyens: { BANK_TRANSFER: "Virement", CASH: "Espèces", CHEQUE: "Chèque", MOBILE_MONEY: "Mobile money", OTHER: "Autre" },
-  sectionBanque: "Coordonnées bancaires du propriétaire",
-  iban: "IBAN :",
-  bic: "BIC :",
-  aucuneBanque: "Aucune coordonnée bancaire renseignée pour ce propriétaire.",
   pied: (date) => `Document généré le ${date} — Compte-rendu de gestion à valeur informative, établi pour le compte du propriétaire.`,
 };
 
@@ -78,10 +70,6 @@ const en: TextesCrg = {
   resteAReverser: (devise) => `Remaining to be paid (${devise})`,
   verseEnTrop: (devise) => `Overpaid (${devise})`,
   moyens: { BANK_TRANSFER: "Bank transfer", CASH: "Cash", CHEQUE: "Cheque", MOBILE_MONEY: "Mobile money", OTHER: "Other" },
-  sectionBanque: "Owner's bank details",
-  iban: "IBAN:",
-  bic: "BIC:",
-  aucuneBanque: "No bank details provided for this owner.",
   pied: (date) => `Document generated on ${date} — Management report for information purposes, prepared on behalf of the owner.`,
 };
 
@@ -104,10 +92,6 @@ const es: TextesCrg = {
   resteAReverser: (devise) => `Pendiente de liquidar (${devise})`,
   verseEnTrop: (devise) => `Liquidado en exceso (${devise})`,
   moyens: { BANK_TRANSFER: "Transferencia", CASH: "Efectivo", CHEQUE: "Cheque", MOBILE_MONEY: "Mobile money", OTHER: "Otro" },
-  sectionBanque: "Datos bancarios del propietario",
-  iban: "IBAN:",
-  bic: "BIC:",
-  aucuneBanque: "No se han indicado datos bancarios para este propietario.",
   pied: (date) => `Documento generado el ${date} — Informe de gestión con valor informativo, elaborado por cuenta del propietario.`,
 };
 
@@ -130,10 +114,6 @@ const pt: TextesCrg = {
   resteAReverser: (devise) => `Restante a entregar (${devise})`,
   verseEnTrop: (devise) => `Entregue a mais (${devise})`,
   moyens: { BANK_TRANSFER: "Transferência", CASH: "Dinheiro", CHEQUE: "Cheque", MOBILE_MONEY: "Mobile money", OTHER: "Outro" },
-  sectionBanque: "Dados bancários do proprietário",
-  iban: "IBAN:",
-  bic: "BIC:",
-  aucuneBanque: "Nenhum dado bancário indicado para este proprietário.",
   pied: (date) => `Documento gerado em ${date} — Relatório de gestão com valor informativo, elaborado por conta do proprietário.`,
 };
 

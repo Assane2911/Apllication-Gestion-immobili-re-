@@ -67,7 +67,7 @@ export const ADMIN_AUDIT_ACTION_LABELS: Record<AdminAuditAction, string> = {
 };
 
 /**
- * Entrées du journal d'audit qui sont des PIÈCES FINANCIÈRES : virements confirmés ou rejetés, changements de formule, jours ou accès
+ * Entrées du journal d'audit qui sont des PIÈCES FINANCIÈRES : changements de formule, jours ou accès
  * accordés ou retirés, coordonnées bancaires de la plateforme. Elles se conservent pendant la durée comptable, comme les paiements
  * d'abonnement qu'elles justifient : la purge d'un an (voir conservation.service.ts) ne les touche jamais. Toutes les autres actions
  * (maintenance, suspension, annonces, exports…) sont effacées au-delà d'un an.

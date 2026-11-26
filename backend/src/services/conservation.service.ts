@@ -15,7 +15,7 @@ export const DUREES = {
   /** Journaux d'activité — traçabilité, au-delà d'un an sans utilité. */
   journauxJours: 365,
   /**
-   * Journal d'audit de l'administration : un an, SAUF les entrées financières (virements, formules, accès accordés, coordonnées
+   * Journal d'audit de l'administration : un an, SAUF les entrées financières (formules, accès accordés, coordonnées
    * bancaires), conservées pendant la durée comptable. Voir PREFIXES_ACTIONS_FINANCIERES.
    */
   journalAdminJours: 365,

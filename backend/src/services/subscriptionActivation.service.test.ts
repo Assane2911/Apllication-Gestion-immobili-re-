@@ -52,12 +52,12 @@ describe("activateSubscriptionRecord", () => {
     // laissait un client qui a payé, dont l'historique le confirme, mais dont
     // l'accès reste fermé — et qui ne peut pas repayer, l'enregistrement étant
     // déjà PAID. Les trois appelants (webhooks Stripe et PayDunya, validation
-    // d'un virement) n'en ouvraient aucune.
+    // d'un paiement différé) n'en ouvraient aucune.
     const manager = await createManager({ subscriptionStatus: "TRIAL" });
     const record = await createPlatformSubscription(manager.id, {
       status: "PENDING",
       plan: "PRO",
-      paymentMethod: "BANK_TRANSFER",
+      paymentMethod: "PAYDUNYA",
       endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     });
 
@@ -86,7 +86,7 @@ describe("activateSubscriptionRecord", () => {
     const record = await createPlatformSubscription(manager.id, {
       status: "PENDING",
       plan: "STARTER",
-      paymentMethod: "BANK_TRANSFER",
+      paymentMethod: "PAYDUNYA",
       endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     });
 
@@ -109,7 +109,7 @@ describe("activateSubscriptionRecord", () => {
     const record = await createPlatformSubscription(manager.id, {
       status: "PENDING",
       plan: "PRO",
-      paymentMethod: "BANK_TRANSFER",
+      paymentMethod: "PAYDUNYA",
       endDate,
     });
 
@@ -120,7 +120,7 @@ describe("activateSubscriptionRecord", () => {
     const [updatedUser] = await testDb.select().from(users).where(eq(users.id, manager.id));
     expect(updatedUser.subscriptionStatus).toBe("ACTIVE");
     expect(updatedUser.subscriptionPlan).toBe("PRO");
-    expect(updatedUser.subscriptionPaymentMethod).toBe("BANK_TRANSFER");
+    expect(updatedUser.subscriptionPaymentMethod).toBe("PAYDUNYA");
 
     // La fin des droits vient du RECALCUL fait ici, pas de la date figée à la
     // demande : un mois plein à partir de l'ouverture de l'accès, et non les
@@ -130,19 +130,19 @@ describe("activateSubscriptionRecord", () => {
   });
 
   // Régression. La période était figée au moment de la DEMANDE, alors que
-  // l'accès ne s'ouvre qu'à la validation du virement par un administrateur.
+  // l'accès ne s'ouvre qu'à la confirmation du paiement par le prestataire.
   // Entre les deux il s'écoule souvent plusieurs jours : le client payait un
   // mois et en recevait trois semaines.
-  it("ne fait pas courir l'abonnement pendant l'attente de validation du virement", async () => {
+  it("ne fait pas courir l'abonnement pendant l'attente de confirmation du paiement", async () => {
     const manager = await createManager({ subscriptionStatus: "TRIAL" });
 
-    // Virement déclaré il y a 12 jours, validé seulement aujourd'hui.
+    // Paiement initié il y a 12 jours, confirmé seulement aujourd'hui.
     const demande = new Date(Date.now() - 12 * JOUR);
     const finAnnoncee = new Date(demande.getTime() + 30 * JOUR);
     const record = await createPlatformSubscription(manager.id, {
       status: "PENDING",
       plan: "PRO",
-      paymentMethod: "BANK_TRANSFER",
+      paymentMethod: "PAYDUNYA",
       startDate: demande,
       endDate: finAnnoncee,
     });
@@ -162,7 +162,7 @@ describe("activateSubscriptionRecord", () => {
     expect(updated!.endDate.getTime()).toBe(compte.subscriptionEndsAt!.getTime());
   });
 
-  it("reporte les droits déjà payés quand le virement anticipe l'échéance", async () => {
+  it("reporte les droits déjà payés quand le paiement anticipe l'échéance", async () => {
     // Le gestionnaire a réglé d'avance : il lui reste 20 jours au moment où
     // l'administrateur valide. Ils doivent s'ajouter, pas disparaître.
     const finEnCours = new Date(Date.now() + 20 * JOUR);
@@ -174,7 +174,7 @@ describe("activateSubscriptionRecord", () => {
     const record = await createPlatformSubscription(manager.id, {
       status: "PENDING",
       plan: "PRO",
-      paymentMethod: "BANK_TRANSFER",
+      paymentMethod: "PAYDUNYA",
     });
 
     await activateSubscriptionRecord(record.id, testDb);
@@ -212,7 +212,7 @@ describe("activateSubscriptionRecord", () => {
   // paiement réglé, se contentant de reporter le temps restant à sa valeur
   // NOMINALE PLEINE sur le nouveau plan. Cette fonction étant le SEUL chemin
   // réellement emprunté pour tout paiement confirmé de façon asynchrone
-  // (virement bancaire, PayDunya, Stripe), un changement de plan payé par
+  // (PayDunya, Stripe), un changement de plan payé par
   // l'un de ces moyens recevait donc le défaut que la proratisation était
   // censée corriger.
   it("reconvertit la valeur restante de l'ancien plan lors d'un changement de plan confirmé en différé", async () => {
@@ -232,13 +232,13 @@ describe("activateSubscriptionRecord", () => {
       startDate: new Date(finEnCours.getTime() - 30 * JOUR),
       endDate: finEnCours,
     });
-    // Upgrade vers PRO (29 €), payé par virement — confirmation différée.
+    // Upgrade vers PRO (29 €), payé par PayDunya — confirmation différée.
     const record = await createPlatformSubscription(manager.id, {
       status: "PENDING",
       plan: "PRO",
       amount: 29,
       billingCycle: "MONTHLY",
-      paymentMethod: "BANK_TRANSFER",
+      paymentMethod: "PAYDUNYA",
     });
 
     const updated = await activateSubscriptionRecord(record.id, testDb);
@@ -256,7 +256,7 @@ describe("activateSubscriptionRecord", () => {
   // état courant (UPDATE ... WHERE id = ?, sans clause sur le statut). Deux
   // appels concurrents à cette fonction — rejeu de webhook PayDunya/Stripe
   // (les deux prestataires documentent eux-mêmes rejouer leurs événements),
-  // ou un double clic administrateur sur "confirmer le virement" — pouvaient
+  // ou un double clic administrateur sur « confirmer » — pouvaient
   // tous deux dépasser le contrôle "déjà PAID ?" avant que l'un des deux
   // n'ait committé, puis exécuter chacun sa propre écriture : le second,
   // relisant alors un compte DÉJÀ activé par le premier, calculait sa propre

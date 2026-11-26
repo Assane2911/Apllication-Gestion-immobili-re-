@@ -6,7 +6,7 @@ import { useCurrency } from "../context/currency";
 import type { CrgSynthesis, PayoutMethod } from "../types";
 import ChampDate from "./ChampDate";
 
-const MOYENS: PayoutMethod[] = ["BANK_TRANSFER", "MOBILE_MONEY", "CASH", "CHEQUE", "OTHER"];
+const MOYENS: PayoutMethod[] = ["MOBILE_MONEY", "CASH", "CHEQUE", "OTHER"];
 
 /** Date du jour au format AAAA-MM-JJ, dans le fuseau du navigateur. */
 function aujourdhui(): string {
@@ -37,7 +37,7 @@ export default function ReversementsSection({ crg, edition }: ReversementsSectio
   const currency = devises.includes(choix) ? choix : (devises[0] ?? "");
   const [amount, setAmount] = useState("");
   const [paidAt, setPaidAt] = useState(aujourdhui());
-  const [method, setMethod] = useState<PayoutMethod>("BANK_TRANSFER");
+  const [method, setMethod] = useState<PayoutMethod>("MOBILE_MONEY");
   const [reference, setReference] = useState("");
   const [notifyOwner, setNotifyOwner] = useState(true);
   const [saving, setSaving] = useState(false);

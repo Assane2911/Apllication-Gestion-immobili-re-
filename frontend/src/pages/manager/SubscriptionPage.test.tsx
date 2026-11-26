@@ -80,13 +80,7 @@ function renderPage() {
  * ne concerne que les AUTRES requêtes. Les mocks deviennent ainsi
  * indépendants du nombre d'appels que fait la page.
  */
-const MOYENS_PAR_DEFAUT = ["PAYDUNYA", "BANK_TRANSFER"];
-// Coordonnées bancaires de LA PLATEFORME (voir /subscription/bank-details),
-// distinctes de celles de l'agence renvoyées par /agency/mine côté locataire.
-const COORDONNEES_BANCAIRES_PLATEFORME_PAR_DEFAUT = {
-  iban: "FR7630001007941234567890185",
-  bic: "BDFEFRPPXXX",
-};
+const MOYENS_PAR_DEFAUT = ["PAYDUNYA", "STRIPE"];
 const fileGet: { ok: boolean; valeur: unknown }[] = [];
 
 function queueGet(reponse: unknown) {
@@ -97,18 +91,10 @@ function queueGetError(erreur: unknown) {
   fileGet.push({ ok: false, valeur: erreur });
 }
 
-function installerGet(moyens: string[] = MOYENS_PAR_DEFAUT, bankInfo: unknown = COORDONNEES_BANCAIRES_PLATEFORME_PAR_DEFAUT) {
+function installerGet(moyens: string[] = MOYENS_PAR_DEFAUT) {
   mockedApi.get.mockImplementation((url: string) => {
     if (String(url).startsWith("/payments/methods")) {
       return Promise.resolve({ data: { currency: "EUR", methods: moyens } }) as never;
-    }
-    // Coordonnées bancaires de la plateforme (voir /subscription/bank-details) :
-    // requête indépendante du chargement des plans/de l'historique, jouée en
-    // parallèle. Sans ce cas particulier, elle consommerait la file `fileGet`
-    // prévue pour les DEUX autres appels et décalerait toutes les réponses
-    // mockées d'un cran.
-    if (String(url).startsWith("/subscription/bank-details")) {
-      return Promise.resolve({ data: bankInfo }) as never;
     }
     const suivant = fileGet.shift();
     if (!suivant) {
@@ -226,15 +212,35 @@ describe("SubscriptionPage", () => {
     seedUser(authUser());
     queueGet({ data: [plan({ id: "STARTER" })] });
     queueGet({ data: { history: [] } });
-    // Le serveur n'annonce que le virement : aucune clé PayDunya configurée.
-    installerGet(["BANK_TRANSFER"]);
+    // Le serveur n'annonce que la carte : aucune clé PayDunya configurée.
+    installerGet(["STRIPE"]);
 
     renderPage();
     await waitFor(() => expect(screen.getByRole("button", { name: "Choisir Starter" })).toBeInTheDocument());
     await user.click(screen.getByRole("button", { name: "Choisir Starter" }));
 
-    await waitFor(() => expect(screen.getByRole("radio", { name: /Virement bancaire/ })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("radio", { name: /Carte bancaire/ })).toBeInTheDocument());
     expect(screen.queryByRole("radio", { name: /PayDunya/ })).not.toBeInTheDocument();
+  });
+
+  // Plus de virement : sans Stripe dans la devise d'affichage (euro et franc CFA seulement), aucun moyen n'est proposé. L'écran le dit
+  // et bloque la confirmation, au lieu d'ouvrir une fenêtre muette.
+  it("aucun moyen de règlement dans la devise d'affichage : message clair, confirmation bloquée, aucune coordonnée bancaire", async () => {
+    const user = userEvent.setup();
+    seedUser(authUser());
+    queueGet({ data: [plan({ id: "STARTER" })] });
+    queueGet({ data: { history: [] } });
+    installerGet([]);
+
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Choisir Starter" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Choisir Starter" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Aucun moyen de règlement n'est disponible dans votre devise d'affichage (EUR)");
+    expect(screen.getByRole("button", { name: "Confirmer et Activer l'Abonnement" })).toBeDisabled();
+    expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+    expect(screen.queryByText(/IBAN|virement/i)).not.toBeInTheDocument();
+    expect(mockedApi.get.mock.calls.some((appel) => String(appel[0]).includes("bank-details"))).toBe(false);
   });
 
   // Tant que le compte marchand PayDunya n'est pas approuvé, le serveur ne le propose pas : une agence de la zone franc CFA doit le
@@ -250,11 +256,11 @@ describe("SubscriptionPage", () => {
       renderPage();
       await waitFor(() => expect(screen.getByRole("button", { name: "Choisir Starter" })).toBeInTheDocument());
       await user.click(screen.getByRole("button", { name: "Choisir Starter" }));
-      await waitFor(() => expect(screen.getByRole("radio", { name: /Virement bancaire/ })).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByRole("radio", { name: /Carte bancaire/ })).toBeInTheDocument());
     }
 
     it("une agence en FCFA voit l'annonce, qui n'est pas un choix possible", async () => {
-      await ouvrirLePaiement("XOF", ["BANK_TRANSFER"]);
+      await ouvrirLePaiement("XOF", ["STRIPE"]);
 
       const annonce = screen.getByTestId("mobile-money-bientot");
       expect(annonce).toHaveTextContent("Mobile money (Wave, Orange Money, MTN…)");
@@ -264,19 +270,19 @@ describe("SubscriptionPage", () => {
     });
 
     it("une agence d'un pays de la zone franc CFA l'a aussi, même avec un affichage en euros", async () => {
-      await ouvrirLePaiement("EUR", ["BANK_TRANSFER"], "SN");
+      await ouvrirLePaiement("EUR", ["STRIPE"], "SN");
 
       expect(screen.getByTestId("mobile-money-bientot")).toBeInTheDocument();
     });
 
     it("une agence en euros (France) ne la voit pas", async () => {
-      await ouvrirLePaiement("EUR", ["BANK_TRANSFER"], "FR");
+      await ouvrirLePaiement("EUR", ["STRIPE"], "FR");
 
       expect(screen.queryByTestId("mobile-money-bientot")).not.toBeInTheDocument();
     });
 
     it("dès que PayDunya est actif côté serveur, il devient un vrai choix et l'annonce disparaît", async () => {
-      await ouvrirLePaiement("XOF", ["PAYDUNYA", "BANK_TRANSFER"]);
+      await ouvrirLePaiement("XOF", ["PAYDUNYA", "STRIPE"]);
 
       expect(screen.getByRole("radio", { name: /PayDunya/ })).toBeInTheDocument();
       expect(screen.queryByTestId("mobile-money-bientot")).not.toBeInTheDocument();
@@ -396,7 +402,7 @@ describe("SubscriptionPage", () => {
     seedUser(authUser({ currency: "XOF" }));
     mockedApi.get.mockImplementation((url: string) => {
       if (String(url).startsWith("/payments/methods")) {
-        return Promise.resolve({ data: { currency: "XOF", methods: ["BANK_TRANSFER"] } }) as never;
+        return Promise.resolve({ data: { currency: "XOF", methods: ["STRIPE"] } }) as never;
       }
       return Promise.resolve(
         String(url).startsWith("/subscription/plans")
@@ -564,7 +570,8 @@ describe("SubscriptionPage", () => {
     expect(screen.queryByRole("radio", { name: /Mode démo/ })).not.toBeInTheDocument();
     // Les moyens légitimes restent proposés.
     expect(screen.getByRole("radio", { name: /PayDunya/ })).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: /Virement bancaire/ })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Carte bancaire/ })).toBeInTheDocument();
+    expect(screen.queryByRole("radio", { name: /Virement/ })).not.toBeInTheDocument();
   });
 
   it("souscription : envoie la requête, affiche la confirmation et recharge", async () => {
@@ -588,7 +595,6 @@ describe("SubscriptionPage", () => {
         plan: "STARTER",
         billingCycle: "MONTHLY",
         paymentMethod: "PAYDUNYA",
-        bankReference: undefined,
       })
     );
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Votre abonnement à la formule Starter a été activé avec succès !"));
@@ -615,31 +621,6 @@ describe("SubscriptionPage", () => {
     );
     // Le bouton doit rester disponible pour une nouvelle tentative.
     expect(screen.getByRole("button", { name: "Confirmer et Activer l'Abonnement" })).not.toBeDisabled();
-  });
-
-  it("virement bancaire : transmet la référence saisie", async () => {
-    const user = userEvent.setup();
-    seedUser(authUser());
-    queueGet({ data: [plan({ id: "STARTER" })] });
-    queueGet({ data: { history: [] } });
-    mockedApi.post.mockResolvedValueOnce({ data: { message: "Virement déclaré, en attente de validation." } });
-
-    renderPage();
-    await waitFor(() => expect(screen.getByRole("button", { name: "Choisir Starter" })).toBeInTheDocument());
-    await user.click(screen.getByRole("button", { name: "Choisir Starter" }));
-
-    await user.click(screen.getByRole("radio", { name: /Virement bancaire/ }));
-    await user.type(screen.getByPlaceholderText("Ex: VIR-2026-08-01"), "VIR-2026-09-01");
-    await user.click(screen.getByRole("button", { name: "Confirmer et Activer l'Abonnement" }));
-
-    await waitFor(() =>
-      expect(mockedApi.post).toHaveBeenCalledWith("/subscription/subscribe", {
-        plan: "STARTER",
-        billingCycle: "MONTHLY",
-        paymentMethod: "BANK_TRANSFER",
-        bankReference: "VIR-2026-09-01",
-      })
-    );
   });
 
   it("redirige vers l'URL PayDunya quand le paiement nécessite une action", async () => {
@@ -791,54 +772,6 @@ describe("SubscriptionPage", () => {
   });
 
   /**
-   * Régression : un gestionnaire choisissant de régler son abonnement par
-   * virement ne voyait aucun IBAN — seulement un champ pour déclarer une
-   * référence de virement déjà envoyé, vers un compte jamais indiqué nulle
-   * part dans l'application (voir GET /subscription/bank-details).
-   */
-  it("virement bancaire : affiche l'IBAN et le BIC de la plateforme, copiables", async () => {
-    const user = userEvent.setup();
-    const ecrirePressePapiers = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, "clipboard", {
-      value: { writeText: ecrirePressePapiers },
-      configurable: true,
-    });
-    seedUser(authUser());
-    queueGet({ data: [plan({ id: "STARTER" })] });
-    queueGet({ data: { history: [] } });
-
-    renderPage();
-    await waitFor(() => expect(screen.getByRole("button", { name: "Choisir Starter" })).toBeInTheDocument());
-    await user.click(screen.getByRole("button", { name: "Choisir Starter" }));
-    await user.click(screen.getByRole("radio", { name: /Virement bancaire/ }));
-
-    const bankCard = screen.getByText("Coordonnées bancaires de la plateforme").closest("div")!;
-    expect(within(bankCard).getByText("FR7630001007941234567890185")).toBeInTheDocument();
-    expect(within(bankCard).getByText("BDFEFRPPXXX")).toBeInTheDocument();
-
-    await user.click(within(bankCard).getAllByRole("button", { name: /Copier/ })[0]);
-    expect(ecrirePressePapiers).toHaveBeenCalledWith("FR7630001007941234567890185");
-    expect(within(bankCard).getByText("Copié !")).toBeInTheDocument();
-  });
-
-  it("virement bancaire : prévient le gestionnaire quand la plateforme n'a pas encore renseigné son IBAN", async () => {
-    const user = userEvent.setup();
-    seedUser(authUser());
-    installerGet(MOYENS_PAR_DEFAUT, { iban: null, bic: null });
-    queueGet({ data: [plan({ id: "STARTER" })] });
-    queueGet({ data: { history: [] } });
-
-    renderPage();
-    await waitFor(() => expect(screen.getByRole("button", { name: "Choisir Starter" })).toBeInTheDocument());
-    await user.click(screen.getByRole("button", { name: "Choisir Starter" }));
-    await user.click(screen.getByRole("radio", { name: /Virement bancaire/ }));
-
-    expect(
-      screen.getByText(/La plateforme n'a pas encore renseigné ses coordonnées bancaires/)
-    ).toBeInTheDocument();
-  });
-
-  /**
    * Renouvellement automatique réel (Stripe Subscriptions) : réservé au
    * paiement par carte via Stripe (CGU §4) — la case à cocher ne doit donc
    * apparaître que pour ce moyen de paiement, et sa valeur doit voyager dans
@@ -847,7 +780,7 @@ describe("SubscriptionPage", () => {
   it("propose le renouvellement automatique uniquement pour le paiement par carte (Stripe)", async () => {
     const user = userEvent.setup();
     seedUser(authUser());
-    installerGet(["STRIPE", "BANK_TRANSFER"]);
+    installerGet(["STRIPE", "DEMO"]);
     queueGet({ data: [plan({ id: "STARTER" })] });
     queueGet({ data: { history: [] } });
 
@@ -859,7 +792,7 @@ describe("SubscriptionPage", () => {
     // la case est déjà visible sans clic supplémentaire.
     await waitFor(() => expect(screen.getByLabelText(/Activer le renouvellement automatique/)).toBeInTheDocument());
 
-    await user.click(screen.getByRole("radio", { name: /Virement bancaire/ }));
+    await user.click(screen.getByRole("radio", { name: /Mode démo/ }));
     expect(screen.queryByLabelText(/renouvellement automatique/i)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("radio", { name: /Carte bancaire/ }));
@@ -889,7 +822,6 @@ describe("SubscriptionPage", () => {
         plan: "STARTER",
         billingCycle: "MONTHLY",
         paymentMethod: "STRIPE",
-        bankReference: undefined,
         autoRenew: true,
       })
     );

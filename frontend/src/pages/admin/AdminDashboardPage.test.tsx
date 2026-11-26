@@ -143,18 +143,16 @@ describe("AdminDashboardPage", () => {
 
   it("range en tête ce qui attend l'administrateur, avec un raccourci vers chaque sujet", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: stats({ managers: { total: 12, trialActive: 4, subscriptionActive: 6, expired: 2, suspended: 1 } }) });
-    mockedApi.get.mockResolvedValueOnce({ data: [{ id: "v1" }, { id: "v2" }] });
 
     renderPage();
 
-    const virements = await screen.findByRole("link", { name: /2 virements à confirmer/ });
-    expect(virements).toHaveAttribute("href", "/admin/virements");
-    expect(screen.getByRole("link", { name: /1 essai à relancer/ })).toHaveAttribute("href", "/admin/gestionnaires");
+    expect(await screen.findByRole("link", { name: /1 essai à relancer/ })).toHaveAttribute("href", "/admin/gestionnaires");
+    expect(screen.queryByRole("link", { name: /virement/i })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /2 comptes sans accès/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /1 compte suspendu/ })).toBeInTheDocument();
   });
 
-  it("annonce que tout est à jour quand rien n'attend, et se passe des virements si leur liste est indisponible", async () => {
+  it("annonce que tout est à jour quand rien n'attend, et se passe des suggestions si leur compte est indisponible", async () => {
     mockedApi.get.mockResolvedValueOnce({
       data: stats({ managers: { total: 3, trialActive: 1, subscriptionActive: 2, expired: 0 }, trialsEndingSoon: [] }),
     });
@@ -199,7 +197,6 @@ describe("AdminDashboardPage — suggestions non lues", () => {
   it("ajoute à la zone « À traiter » un raccourci vers les suggestions restées nouvelles", async () => {
     mockedApi.get.mockImplementation((url: string) => {
       if (url === "/admin/dashboard/stats") return Promise.resolve({ data: stats() }) as never;
-      if (url === "/admin/subscriptions/pending-bank-transfers") return Promise.resolve({ data: [] }) as never;
       if (url === "/admin/suggestions") return Promise.resolve({ data: { items: [], counts: { NEW: 4, total: 9 } } }) as never;
       return Promise.resolve({ data: {} }) as never;
     });
@@ -212,7 +209,6 @@ describe("AdminDashboardPage — suggestions non lues", () => {
   it("n'ajoute rien quand toutes les suggestions ont été lues, ou quand leur compte est inconnu", async () => {
     mockedApi.get.mockImplementation((url: string) => {
       if (url === "/admin/dashboard/stats") return Promise.resolve({ data: stats() }) as never;
-      if (url === "/admin/subscriptions/pending-bank-transfers") return Promise.resolve({ data: [] }) as never;
       if (url === "/admin/suggestions") return Promise.resolve({ data: { items: [], counts: { NEW: 0, total: 9 } } }) as never;
       return Promise.resolve({ data: {} }) as never;
     });

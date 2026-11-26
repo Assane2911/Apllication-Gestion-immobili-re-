@@ -22,7 +22,7 @@ const ETATS_MODIFIABLES = ["PENDING", "LATE"];
  */
 export async function solderEnLigne(
   factureId: string,
-  paiement: { methode: "STRIPE" | "PAYDUNYA" | "DEMO" | "BANK_TRANSFER"; reference?: string | null }
+  paiement: { methode: "STRIPE" | "PAYDUNYA" | "DEMO"; reference?: string | null }
 ) {
   return db.transaction(async (tx) => {
     const [courante] = await tx.select().from(invoices).where(eq(invoices.id, factureId)).for("update");

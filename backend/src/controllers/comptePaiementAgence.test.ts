@@ -167,12 +167,12 @@ describe("compte de paiement PayDunya de l'agence", () => {
       const enEuros = await request(app).get("/api/payments/methods?currency=EUR&usage=loyer").set(authHeader(a.tenantToken));
 
       expect(chezAvec.body.methods).toContain("PAYDUNYA");
-      expect(chezSans.body.methods).toEqual(["BANK_TRANSFER"]);
+      expect(chezSans.body.methods).toEqual([]);
       expect(enEuros.body.methods).not.toContain("PAYDUNYA");
 
       await request(app).patch("/api/agency/payment-account").set(authHeader(tokenFor(avec))).send({ enabled: false });
       const suspendu = await request(app).get("/api/payments/methods?currency=XOF&usage=loyer").set(authHeader(a.tenantToken));
-      expect(suspendu.body.methods).toEqual(["BANK_TRANSFER"]);
+      expect(suspendu.body.methods).toEqual([]);
     });
   });
 

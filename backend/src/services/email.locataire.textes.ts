@@ -70,7 +70,7 @@ const fr: TextesLocataire = {
     delai: (date) => `⏰ Date limite de règlement : au plus tard le ${date}`,
     conformite: "Conformément à votre bail de location, nous vous remercions de procéder au paiement de votre loyer dans les délais impartis.",
     bouton: "Régler mon loyer →",
-    moyens: "Moyens acceptés : Carte bancaire, PayDunya (Orange Money, Wave, MTN...), virement bancaire.",
+    moyens: "Moyens acceptés : Carte bancaire, PayDunya (Orange Money, Wave, MTN...).",
     pied: "Cet email vous a été envoyé automatiquement par votre agence de gestion immobilière.",
   },
   rappelAvantEcheance: {
@@ -129,7 +129,7 @@ const en: TextesLocataire = {
     delai: (date) => `⏰ Payment deadline: no later than ${date}`,
     conformite: "In accordance with your lease, please pay your rent within the agreed time.",
     bouton: "Pay my rent →",
-    moyens: "Accepted methods: bank card, PayDunya (Orange Money, Wave, MTN...), bank transfer.",
+    moyens: "Accepted methods: bank card, PayDunya (Orange Money, Wave, MTN...).",
     pied: "This email was sent to you automatically by your property management agency.",
   },
   rappelAvantEcheance: {
@@ -188,7 +188,7 @@ const es: TextesLocataire = {
     delai: (date) => `⏰ Fecha límite de pago: a más tardar el ${date}`,
     conformite: "De conformidad con su contrato de alquiler, le agradecemos que pague su alquiler dentro del plazo establecido.",
     bouton: "Pagar mi alquiler →",
-    moyens: "Medios aceptados: tarjeta bancaria, PayDunya (Orange Money, Wave, MTN...), transferencia bancaria.",
+    moyens: "Medios aceptados: tarjeta bancaria, PayDunya (Orange Money, Wave, MTN...).",
     pied: "Este correo se le ha enviado automáticamente desde su agencia de gestión inmobiliaria.",
   },
   rappelAvantEcheance: {
@@ -247,7 +247,7 @@ const pt: TextesLocataire = {
     delai: (date) => `⏰ Prazo de pagamento: até ${date}`,
     conformite: "Em conformidade com o seu contrato de arrendamento, pedimos que efetue o pagamento da renda dentro do prazo.",
     bouton: "Pagar a minha renda →",
-    moyens: "Meios aceites: cartão bancário, PayDunya (Orange Money, Wave, MTN...), transferência bancária.",
+    moyens: "Meios aceites: cartão bancário, PayDunya (Orange Money, Wave, MTN...).",
     pied: "Este e-mail foi enviado automaticamente pela sua imobiliária.",
   },
   rappelAvantEcheance: {

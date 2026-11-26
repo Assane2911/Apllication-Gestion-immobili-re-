@@ -71,8 +71,6 @@ export type CrgSynthesis = {
   ownerId: string;
   ownerName: string;
   ownerCompanyName: string | null;
-  iban: string | null;
-  bic: string | null;
   managementFeeRate: number;
   month: number;
   year: number;
@@ -329,8 +327,6 @@ function assemblerCrg(owner: OwnerRow, month: number, year: number, donnees: Don
     ownerId: owner.id,
     ownerName: nomAvecCivilite(owner),
     ownerCompanyName: owner.companyName,
-    iban: owner.iban,
-    bic: owner.bic,
     managementFeeRate: tauxCommission,
     month,
     year,

@@ -350,8 +350,6 @@ const crgMinimal: CrgExportData = {
 const crgComplet: CrgExportData = {
   ...crgMinimal,
   ownerCompanyName: "Diallo Immo SARL",
-  iban: "SN08 SN01 0152 0000 0000 0000 0001",
-  bic: "CBAOSNDA",
   managementFeeRate: 10,
   properties: [
     { propertyId: "p1", propertyTitle: "Villa Ngor", currency: "XOF", loyersEncaisses: 250000, chargesDeduites: 30000, commission: 25000, netAReverser: 195000 },
@@ -374,14 +372,14 @@ describe("compte-rendu de gestion HTML : chaque champ à sa place", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(2026, 6, 15, 12));
 
-    expect(visible(generateCrgHtml(crgMinimal))).toMatchInlineSnapshot(`"Compte-Rendu de Gestion - Mars 2026 - Mamadou Diallo COMPTE-RENDU DE GESTION Période : Mars 2026 Propriétaire Agence / Mandataire : Agence Teranga Propriétaire : Mamadou Diallo Taux de commission : 8 % Détail par bien Bien Loyers encaissés Charges déduites Commission Net à reverser Aucun bien rattaché à ce propriétaire Coordonnées bancaires du propriétaire Aucune coordonnée bancaire renseignée pour ce propriétaire. Document généré le 15 juillet 2026 — Compte-rendu de gestion à valeur informative, établi pour le compte du propriétaire."`);
+    expect(visible(generateCrgHtml(crgMinimal))).toMatchInlineSnapshot(`"Compte-Rendu de Gestion - Mars 2026 - Mamadou Diallo COMPTE-RENDU DE GESTION Période : Mars 2026 Propriétaire Agence / Mandataire : Agence Teranga Propriétaire : Mamadou Diallo Taux de commission : 8 % Détail par bien Bien Loyers encaissés Charges déduites Commission Net à reverser Aucun bien rattaché à ce propriétaire Document généré le 15 juillet 2026 — Compte-rendu de gestion à valeur informative, établi pour le compte du propriétaire."`);
   });
 
   it("complet en français : propriétaire et société, biens, totaux par devise, reversements, reste à reverser, banque", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(2026, 6, 15, 12));
 
-    expect(visible(generateCrgHtml(crgComplet))).toMatchInlineSnapshot(`"Compte-Rendu de Gestion - Mars 2026 - Mamadou Diallo COMPTE-RENDU DE GESTION Période : Mars 2026 Propriétaire Agence / Mandataire : Agence Teranga Propriétaire : Mamadou Diallo (Diallo Immo SARL) Taux de commission : 10 % Détail par bien Bien Loyers encaissés Charges déduites Commission Net à reverser Villa Ngor 250 000 FCFA 30 000 FCFA 25 000 FCFA 195 000 FCFA Studio Plateau 900 € 100 € 90 € 710 € Total € 900 € 100 € 90 € 710 € Total FCFA 250 000 FCFA 30 000 FCFA 25 000 FCFA 195 000 FCFA Reversements au propriétaire Date Moyen Montant 05/04/2026 Virement — VIR-001 100 000 FCFA 09/04/2026 Espèces 50 000 FCFA 10/04/2026 INCONNU — REF-9 300 € Reste à reverser (XOF) 45 000 FCFA Coordonnées bancaires du propriétaire IBAN : SN08 SN01 0152 0000 0000 0000 0001 BIC : CBAOSNDA Document généré le 15 juillet 2026 — Compte-rendu de gestion à valeur informative, établi pour le compte du propriétaire."`);
+    expect(visible(generateCrgHtml(crgComplet))).toMatchInlineSnapshot(`"Compte-Rendu de Gestion - Mars 2026 - Mamadou Diallo COMPTE-RENDU DE GESTION Période : Mars 2026 Propriétaire Agence / Mandataire : Agence Teranga Propriétaire : Mamadou Diallo (Diallo Immo SARL) Taux de commission : 10 % Détail par bien Bien Loyers encaissés Charges déduites Commission Net à reverser Villa Ngor 250 000 FCFA 30 000 FCFA 25 000 FCFA 195 000 FCFA Studio Plateau 900 € 100 € 90 € 710 € Total € 900 € 100 € 90 € 710 € Total FCFA 250 000 FCFA 30 000 FCFA 25 000 FCFA 195 000 FCFA Reversements au propriétaire Date Moyen Montant 05/04/2026 Virement — VIR-001 100 000 FCFA 09/04/2026 Espèces 50 000 FCFA 10/04/2026 INCONNU — REF-9 300 € Reste à reverser (XOF) 45 000 FCFA Document généré le 15 juillet 2026 — Compte-rendu de gestion à valeur informative, établi pour le compte du propriétaire."`);
   });
 
   it("complet en anglais : tous les libellés fixes sont traduits, la langue du document est déclarée", () => {
@@ -390,7 +388,7 @@ describe("compte-rendu de gestion HTML : chaque champ à sa place", () => {
     const html = generateCrgHtml({ ...crgComplet, langue: "en" });
 
     expect(html).toContain('<html lang="en">');
-    expect(visible(html)).toMatchInlineSnapshot(`"Management Report - March 2026 - Mamadou Diallo MANAGEMENT REPORT Period: March 2026 Owner Agency / Agent: Agence Teranga Owner: Mamadou Diallo (Diallo Immo SARL) Commission rate: 10% Breakdown by property Property Rent collected Charges deducted Commission Net to be paid Villa Ngor 250,000 FCFA 30,000 FCFA 25,000 FCFA 195,000 FCFA Studio Plateau 900 € 100 € 90 € 710 € Total € 900 € 100 € 90 € 710 € Total FCFA 250,000 FCFA 30,000 FCFA 25,000 FCFA 195,000 FCFA Payments to the owner Date Method Amount 4/5/2026 Bank transfer — VIR-001 100,000 FCFA 4/9/2026 Cash 50,000 FCFA 4/10/2026 INCONNU — REF-9 300 € Remaining to be paid (XOF) 45,000 FCFA Owner's bank details IBAN: SN08 SN01 0152 0000 0000 0000 0001 BIC: CBAOSNDA Document generated on July 15, 2026 — Management report for information purposes, prepared on behalf of the owner."`);
+    expect(visible(html)).toMatchInlineSnapshot(`"Management Report - March 2026 - Mamadou Diallo MANAGEMENT REPORT Period: March 2026 Owner Agency / Agent: Agence Teranga Owner: Mamadou Diallo (Diallo Immo SARL) Commission rate: 10% Breakdown by property Property Rent collected Charges deducted Commission Net to be paid Villa Ngor 250,000 FCFA 30,000 FCFA 25,000 FCFA 195,000 FCFA Studio Plateau 900 € 100 € 90 € 710 € Total € 900 € 100 € 90 € 710 € Total FCFA 250,000 FCFA 30,000 FCFA 25,000 FCFA 195,000 FCFA Payments to the owner Date Method Amount 4/5/2026 Bank transfer — VIR-001 100,000 FCFA 4/9/2026 Cash 50,000 FCFA 4/10/2026 INCONNU — REF-9 300 € Remaining to be paid (XOF) 45,000 FCFA Document generated on July 15, 2026 — Management report for information purposes, prepared on behalf of the owner."`);
   });
 
   it("la langue par défaut est le français, et la balise de langue la déclare", () => {
@@ -404,8 +402,8 @@ describe("compte-rendu de gestion HTML : chaque champ à sa place", () => {
     const sansReste = visible(generateCrgHtml({ ...crgMinimal, reversements: [{ currency: "XOF", amount: 1000, paidAt: new Date(2026, 3, 5, 12), method: "CHEQUE", reference: null }] }));
     const resteSeul = visible(generateCrgHtml({ ...crgMinimal, resteAReverserByCurrency: { XOF: -500 } }));
 
-    expect(sansReste).toMatchInlineSnapshot(`"Compte-Rendu de Gestion - Mars 2026 - Mamadou Diallo COMPTE-RENDU DE GESTION Période : Mars 2026 Propriétaire Agence / Mandataire : Agence Teranga Propriétaire : Mamadou Diallo Taux de commission : 8 % Détail par bien Bien Loyers encaissés Charges déduites Commission Net à reverser Aucun bien rattaché à ce propriétaire Reversements au propriétaire Date Moyen Montant 05/04/2026 Chèque 1 000 FCFA Coordonnées bancaires du propriétaire Aucune coordonnée bancaire renseignée pour ce propriétaire. Document généré le 15 juillet 2026 — Compte-rendu de gestion à valeur informative, établi pour le compte du propriétaire."`);
-    expect(resteSeul).toMatchInlineSnapshot(`"Compte-Rendu de Gestion - Mars 2026 - Mamadou Diallo COMPTE-RENDU DE GESTION Période : Mars 2026 Propriétaire Agence / Mandataire : Agence Teranga Propriétaire : Mamadou Diallo Taux de commission : 8 % Détail par bien Bien Loyers encaissés Charges déduites Commission Net à reverser Aucun bien rattaché à ce propriétaire Reversements au propriétaire Date Moyen Montant Aucun reversement enregistré pour ce mois Versé en trop (XOF) 500 FCFA Coordonnées bancaires du propriétaire Aucune coordonnée bancaire renseignée pour ce propriétaire. Document généré le 15 juillet 2026 — Compte-rendu de gestion à valeur informative, établi pour le compte du propriétaire."`);
+    expect(sansReste).toMatchInlineSnapshot(`"Compte-Rendu de Gestion - Mars 2026 - Mamadou Diallo COMPTE-RENDU DE GESTION Période : Mars 2026 Propriétaire Agence / Mandataire : Agence Teranga Propriétaire : Mamadou Diallo Taux de commission : 8 % Détail par bien Bien Loyers encaissés Charges déduites Commission Net à reverser Aucun bien rattaché à ce propriétaire Reversements au propriétaire Date Moyen Montant 05/04/2026 Chèque 1 000 FCFA Document généré le 15 juillet 2026 — Compte-rendu de gestion à valeur informative, établi pour le compte du propriétaire."`);
+    expect(resteSeul).toMatchInlineSnapshot(`"Compte-Rendu de Gestion - Mars 2026 - Mamadou Diallo COMPTE-RENDU DE GESTION Période : Mars 2026 Propriétaire Agence / Mandataire : Agence Teranga Propriétaire : Mamadou Diallo Taux de commission : 8 % Détail par bien Bien Loyers encaissés Charges déduites Commission Net à reverser Aucun bien rattaché à ce propriétaire Reversements au propriétaire Date Moyen Montant Aucun reversement enregistré pour ce mois Versé en trop (XOF) 500 FCFA Document généré le 15 juillet 2026 — Compte-rendu de gestion à valeur informative, établi pour le compte du propriétaire."`);
   });
 });
 

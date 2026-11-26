@@ -72,17 +72,14 @@ export default function CGUPage() {
       <LegalSection title="4. Paiement et facturation">
         <p>
           Les abonnements sont facturés mensuellement ou annuellement, selon le choix du Gestionnaire, via
-          l'un des moyens de paiement proposés dans le Service au moment du paiement : virement bancaire et,
-          lorsqu'il est proposé dans l'interface, paiement par carte bancaire via Stripe. Le renouvellement
-          de l'abonnement n'est pas automatique pour les paiements par virement bancaire ; il est reconduit
-          automatiquement à l'échéance pour les paiements par carte lorsque ce mode de reconduction est
-          explicitement proposé dans l'interface.
+          l'un des moyens de paiement proposés dans le Service au moment du paiement, à savoir le paiement par
+          carte bancaire via Stripe. L'abonnement est reconduit automatiquement à l'échéance lorsque ce mode
+          de reconduction est explicitement proposé dans l'interface.
         </p>
         <p>
           Les loyers ne transitent pas par le Service : le Locataire les règle directement à son Gestionnaire,
-          par virement bancaire sur le compte de l'agence (qu'il peut déclarer dans le Service) ou, lorsque le
-          Gestionnaire a activé cette option avec son propre compte PayDunya, par mobile money ou carte
-          bancaire. Dans ce dernier cas, les sommes sont versées par PayDunya directement sur le compte du
+          qui enregistre le paiement dans le Service, ou, lorsque le Gestionnaire a activé cette option avec son
+          propre compte PayDunya, par mobile money ou carte bancaire. Dans ce dernier cas, les sommes sont versées par PayDunya directement sur le compte du
           Gestionnaire, qui reste seul responsable de l'encaissement, de la quittance et de ses relations avec
           PayDunya (frais, remboursements, contestations). L'éditeur n'encaisse, ne détient ni ne reverse aucun
           loyer et ne perçoit aucune commission sur ces paiements. Le compte Stripe de l'éditeur ne sert qu'à
@@ -92,13 +89,6 @@ export default function CGUPage() {
           jamais enregistrées par le Service. Les identifiants PayDunya que le
           Gestionnaire enregistre pour son agence sont conservés chiffrés et ne servent qu'à encaisser ses
           loyers.
-        </p>
-        <p>
-          Le Service enregistre en revanche les coordonnées bancaires (IBAN et BIC) que le Gestionnaire y
-          saisit lui-même pour permettre le règlement par virement : celles de son agence, affichées au
-          Locataire qui choisit ce mode de paiement, et celles des propriétaires auxquels il reverse les
-          loyers encaissés. Le Gestionnaire est responsable de l'exactitude de ces coordonnées et de sa
-          qualité à les communiquer.
         </p>
       </LegalSection>
 

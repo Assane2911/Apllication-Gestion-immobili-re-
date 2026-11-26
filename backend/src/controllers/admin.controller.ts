@@ -16,136 +16,9 @@ import {
 } from "../db/schema";
 import { ADMIN_AUDIT_ACTIONS, logAdminAction } from "../services/adminAudit.service";
 import { setStripeCollectionPaused } from "../services/payment.service";
-import { activateSubscriptionRecord } from "../services/subscriptionActivation.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
 import { computeSubscriptionInfo } from "./auth.controller";
-
-/** Email d'un gestionnaire, pour l'instantané `targetLabel` du journal d'audit. */
-async function emailDuGestionnaire(userId: string | null): Promise<string | null> {
-  // NULL : le compte a été supprimé, l'abonnement n'est plus conservé qu'anonymisé (voir suppressionCompte.service.ts).
-  if (!userId) return null;
-  const [user] = await db.select({ email: users.email }).from(users).where(eq(users.id, userId));
-  return user?.email ?? null;
-}
-
-/**
- * Liste les abonnements SaaS réglés par virement bancaire et toujours en
- * attente de confirmation. C'est le seul moyen de paiement qui ne dispose
- * d'aucune confirmation automatique (contrairement à PayDunya, confirmé par
- * webhook) — un administrateur doit vérifier manuellement que le virement
- * est bien arrivé sur le compte bancaire de la plateforme avant de valider.
- */
-export const listPendingBankTransfers = asyncHandler(async (_req: Request, res: Response) => {
-  const rows = await db
-    .select({
-      id: platformSubscriptions.id,
-      userId: platformSubscriptions.userId,
-      managerEmail: users.email,
-      plan: platformSubscriptions.plan,
-      amount: platformSubscriptions.amount,
-      currency: platformSubscriptions.currency,
-      billingCycle: platformSubscriptions.billingCycle,
-      paymentRef: platformSubscriptions.paymentRef,
-      startDate: platformSubscriptions.startDate,
-      endDate: platformSubscriptions.endDate,
-      createdAt: platformSubscriptions.createdAt,
-    })
-    .from(platformSubscriptions)
-    .innerJoin(users, eq(users.id, platformSubscriptions.userId))
-    .where(and(eq(platformSubscriptions.status, "PENDING"), eq(platformSubscriptions.paymentMethod, "BANK_TRANSFER")))
-    .orderBy(desc(platformSubscriptions.createdAt));
-
-  res.json(rows);
-});
-
-/**
- * Confirme manuellement la réception d'un virement bancaire : active
- * réellement l'abonnement du gestionnaire concerné (accès débloqué,
- * historique de paiement marqué PAID). Action à n'utiliser qu'après
- * vérification que le virement est bien arrivé sur le compte bancaire de la
- * plateforme — elle donne un accès payant sans autre garde-fou côté serveur.
- */
-export const confirmBankTransfer = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
-
-  const [record] = await db.select().from(platformSubscriptions).where(eq(platformSubscriptions.id, id));
-  if (!record) throw new ApiError(404, "Abonnement introuvable", "SUBSCRIPTION_NOT_FOUND");
-  if (record.paymentMethod !== "BANK_TRANSFER") {
-    throw new ApiError(400, "Cette action n'est disponible que pour les paiements par virement bancaire", "TRANSFER_ONLY");
-  }
-
-  // Déjà confirmé (double clic, deux administrateurs) : l'activation est idempotente et ne rouvre rien,
-  // mais une seconde entrée « confirmé » ferait croire à deux encaissements dans le journal d'audit.
-  const dejaConfirme = record.status === "PAID";
-  const updated = await activateSubscriptionRecord(id);
-  if (dejaConfirme) {
-    res.json({ success: true, record: updated });
-    return;
-  }
-
-  await logAdminAction({
-    req,
-    action: "subscription.bank_transfer.confirm",
-    targetUserId: record.userId,
-    targetLabel: await emailDuGestionnaire(record.userId),
-    details: `Virement ${record.plan} de ${record.amount} ${record.currency} confirmé (réf. ${record.paymentRef ?? "—"})`,
-  });
-
-  res.json({ success: true, record: updated });
-});
-
-/**
- * Rejette une demande de virement bancaire encore en attente : ne donne
- * jamais accès (contrairement à confirmBankTransfer, aucun appel à
- * activateSubscriptionRecord), marque simplement l'enregistrement REJECTED
- * pour qu'il disparaisse de la liste des virements en attente. Sert par
- * exemple à nettoyer une demande de test ou un virement annoncé mais jamais
- * reçu — sans quoi la seule option de l'administrateur était de laisser la
- * ligne PENDING indéfiniment ou de confirmer à tort un paiement fictif.
- */
-export const rejectBankTransfer = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
-
-  const [record] = await db.select().from(platformSubscriptions).where(eq(platformSubscriptions.id, id));
-  if (!record) throw new ApiError(404, "Abonnement introuvable", "SUBSCRIPTION_NOT_FOUND");
-  if (record.paymentMethod !== "BANK_TRANSFER") {
-    throw new ApiError(400, "Cette action n'est disponible que pour les paiements par virement bancaire", "TRANSFER_ONLY");
-  }
-  if (record.status === "PAID") {
-    throw new ApiError(400, "Ce virement a déjà été confirmé : impossible de le rejeter", "TRANSFER_ALREADY_CONFIRMED");
-  }
-
-  // Réclamation atomique : la lecture ci-dessus et cette écriture ne sont pas
-  // la même opération. Sans la condition sur le statut courant, un
-  // administrateur qui confirme le virement (confirmBankTransfer, dans une
-  // autre requête) entre notre lecture et notre écriture voyait son
-  // activation — déjà committée, accès débloqué — silencieusement écrasée en
-  // "REJECTED" par ce rejet arrivé une fraction de seconde plus tard : le
-  // client gardait l'accès payant, mais son historique de facturation
-  // affichait ce paiement comme rejeté, sans plus aucun moyen de le corriger
-  // (activateSubscriptionRecord refuse explicitement de réactiver un
-  // enregistrement REJECTED).
-  const [updated] = await db
-    .update(platformSubscriptions)
-    .set({ status: "REJECTED" })
-    .where(and(eq(platformSubscriptions.id, id), eq(platformSubscriptions.status, "PENDING")))
-    .returning();
-
-  if (!updated) {
-    throw new ApiError(409, "Ce virement vient d'être traité par une autre requête. Veuillez rafraîchir la page.", "TRANSFER_PROCESSED_CONCURRENTLY");
-  }
-
-  await logAdminAction({
-    req,
-    action: "subscription.bank_transfer.reject",
-    targetUserId: record.userId,
-    targetLabel: await emailDuGestionnaire(record.userId),
-    details: `Virement ${record.plan} de ${record.amount} ${record.currency} rejeté (réf. ${record.paymentRef ?? "—"})`,
-  });
-
-  res.json({ success: true, record: updated });
-});
 
 /**
  * Tableau de bord de pilotage de la plateforme (vue d'ensemble pour
@@ -613,7 +486,7 @@ export async function trouverGestionnaire(id: string) {
  * agence à qui l'on a coupé l'accès. L'appel Stripe est fait AVANT d'écrire
  * en base, et son échec annule la suspension (502) — l'invariant « suspendu
  * ⇒ plus facturé » ne souffre aucune exception silencieuse. Les paiements
- * ponctuels (virement, PayDunya, Stripe sans reconduction) n'ont aucune
+ * ponctuels (PayDunya, Stripe sans reconduction) n'ont aucune
  * facturation récurrente à interrompre.
  *
  * Réclamation atomique : deux administrateurs qui suspendent en même temps ne

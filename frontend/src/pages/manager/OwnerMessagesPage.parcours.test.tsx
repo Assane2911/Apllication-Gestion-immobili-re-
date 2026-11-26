@@ -15,7 +15,7 @@ vi.mock("../../api/client", async () => {
 const mockedApi = vi.mocked(api, { deep: true });
 
 /**
- * La messagerie du gestionnaire avec les propriétaires : les réponses rapides (un message de virement ou de compte-rendu envoyé
+ * La messagerie du gestionnaire avec les propriétaires : les réponses rapides (un message de reversement ou de compte-rendu envoyé
  * tel quel à un propriétaire doit être exact), la reprise après une erreur de chargement, l'effacement de la recherche et le
  * retour à la liste des fils sur téléphone.
  */
@@ -30,7 +30,7 @@ function erreurServeur(message: string) {
   });
 }
 
-const message = (o: Partial<Message> = {}): Message => ({ id: "m1", senderId: "u1", senderRole: "OWNER", content: "Où en est mon virement ?", isRead: false, createdAt: "2026-06-15T10:00:00.000Z", ...o });
+const message = (o: Partial<Message> = {}): Message => ({ id: "m1", senderId: "u1", senderRole: "OWNER", content: "Où en est mon reversement ?", isRead: false, createdAt: "2026-06-15T10:00:00.000Z", ...o });
 const fil = (id: string, prenom: string, nom: string): ConversationProprietaire => ({
   id,
   owner: { id, firstName: prenom, lastName: nom, displayName: `${prenom} ${nom}`, hasPortalAccess: true },
@@ -57,7 +57,7 @@ const afficher = () =>
   );
 const zoneSaisie = () => screen.findByLabelText("Écrivez votre message...") as Promise<HTMLTextAreaElement>;
 
-const TEXTE_VIREMENT = "Bonjour, le virement de vos loyers du mois a été effectué.";
+const TEXTE_VIREMENT = "Bonjour, le reversement de vos loyers du mois a été effectué.";
 const TEXTE_MERCI = "Bonjour, merci pour votre message.";
 
 describe("OwnerMessagesPage : réponses rapides, reprise et navigation", () => {
@@ -74,7 +74,7 @@ describe("OwnerMessagesPage : réponses rapides, reprise et navigation", () => {
       afficher();
       const zone = await zoneSaisie();
 
-      await user.click(screen.getByRole("button", { name: "Virement effectué" }));
+      await user.click(screen.getByRole("button", { name: "Reversement effectué" }));
 
       expect(zone).toHaveValue(TEXTE_VIREMENT);
       expect(mockedApi.post).not.toHaveBeenCalled();
@@ -125,7 +125,7 @@ describe("OwnerMessagesPage : réponses rapides, reprise et navigation", () => {
       afficher();
       await zoneSaisie();
 
-      await user.click(screen.getByRole("button", { name: "Virement effectué" }));
+      await user.click(screen.getByRole("button", { name: "Reversement effectué" }));
       await user.click(screen.getByRole("button", { name: "Envoyer" }));
 
       await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith("/owner-messages/o1", { content: TEXTE_VIREMENT }));

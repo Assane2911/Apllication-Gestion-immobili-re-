@@ -28,7 +28,7 @@ async function invitationDejaAncienne(email: string) {
 }
 
 describe("POST /api/owners", () => {
-  it("crée une fiche propriétaire pour le gestionnaire connecté, avec les champs enrichis (IBAN, commission...)", async () => {
+  it("crée une fiche propriétaire pour le gestionnaire connecté, avec les champs enrichis (commission...)", async () => {
     const manager = await createManager();
 
     const res = await request(app)
@@ -41,10 +41,8 @@ describe("POST /api/owners", () => {
         phone: "+33 6 12 34 56 78",
         email: "fatou@test.local",
         address: "12 avenue des Palmiers",
-        iban: "FR7630006000011234567890189",
-        bic: "AGRIFRPP",
         managementFeeRate: 10,
-        notes: "Préfère les virements trimestriels",
+        notes: "Préfère un message le lundi",
       });
 
     expect(res.status).toBe(201);
@@ -92,81 +90,33 @@ describe("POST /api/owners", () => {
   });
 });
 
-/**
- * Régression : ces coordonnées bancaires servent à un VRAI virement de
- * reversement au propriétaire (voir CRG), pas à un simple affichage — la
- * même validation existait déjà côté agence (agency.controller.ts) mais pas
- * ici. Une faute de frappe (chiffre inversé, BIC tronqué) ne serait détectée
- * qu'au premier virement resté sans suite.
- */
-describe("POST/PUT /api/owners — IBAN / BIC", () => {
-  it("enregistre un IBAN/BIC valides, normalisés (espaces retirés, majuscules)", async () => {
+describe("POST/PUT /api/owners — plus de coordonnées bancaires", () => {
+  it("ignore un IBAN ou un BIC envoyé par un ancien client : rien n'est enregistré", async () => {
     const manager = await createManager();
 
     const res = await request(app)
       .post("/api/owners")
       .set(authHeader(tokenFor(manager)))
-      .send({
-        firstName: "Fatou",
-        lastName: "Diop",
-        phone: "+221778422993",
-        email: "fatou-iban@test.local",
-        iban: "fr76 3000 6000 0112 3456 7890 189",
-        bic: "agrifrpp",
-      });
+      .send({ firstName: "Fatou", lastName: "Diop", phone: "+33 6 12 34 56 78", email: "fatou-iban@test.local", iban: "FR7630006000011234567890189", bic: "AGRIFRPP" });
 
     expect(res.status).toBe(201);
-    expect(res.body.iban).toBe("FR7630006000011234567890189");
-    expect(res.body.bic).toBe("AGRIFRPP");
+    expect(res.body.iban ?? null).toBeNull();
+    expect(res.body.bic ?? null).toBeNull();
+    const [ligne] = await testDb.select().from(owners).where(eq(owners.email, "fatou-iban@test.local"));
+    expect(ligne.iban).toBeNull();
+    expect(ligne.bic).toBeNull();
   });
 
-  it("rejette (400) un IBAN dont la clé de contrôle est fausse", async () => {
-    const manager = await createManager();
-
-    const res = await request(app)
-      .post("/api/owners")
-      .set(authHeader(tokenFor(manager)))
-      .send({
-        firstName: "Fatou",
-        lastName: "Diop",
-        phone: "+221778422993",
-        email: "fatou-badiban@test.local",
-        // Deux chiffres inversés au milieu par rapport à un IBAN réel.
-        iban: "FR76 3000 6000 0112 3456 7809 189",
-      });
-
-    expect(res.status).toBe(400);
-    const rows = await testDb.select().from(owners).where(eq(owners.email, "fatou-badiban@test.local"));
-    expect(rows).toHaveLength(0);
-  });
-
-  it("rejette (400) un BIC de mauvaise longueur", async () => {
-    const manager = await createManager();
-
-    const res = await request(app)
-      .post("/api/owners")
-      .set(authHeader(tokenFor(manager)))
-      .send({
-        firstName: "Fatou",
-        lastName: "Diop",
-        phone: "+221778422993",
-        email: "fatou-badbic@test.local",
-        bic: "AGRIFR",
-      });
-
-    expect(res.status).toBe(400);
-  });
-
-  it("rejette (400) un IBAN invalide lors d'une mise à jour", async () => {
+  it("une mise à jour ne touche jamais aux colonnes bancaires, même si un ancien client en envoie", async () => {
     const manager = await createManager();
     const owner = await createOwner(manager.id, { iban: "FR7630006000011234567890189" });
 
     const res = await request(app)
       .put(`/api/owners/${owner.id}`)
       .set(authHeader(tokenFor(manager)))
-      .send({ iban: "FR76 3000 6000 0112 3456 7809 189" });
+      .send({ firstName: "Fatou", iban: "DE89370400440532013000" });
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(200);
     const [intact] = await testDb.select().from(owners).where(eq(owners.id, owner.id));
     expect(intact.iban).toBe("FR7630006000011234567890189");
   });

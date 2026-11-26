@@ -175,10 +175,10 @@ describe("POST /api/invoices/:id/pay (portail locataire) : cas limites", () => {
     const inv = await createInvoice(contract.id, { status: "PENDING", amount: 500 });
     vi.spyOn(paymentService, "initiatePayment").mockImplementation(async () => {
       await testDb.update(invoices).set({ status: "PAID", paidAt: new Date(), paymentMethod: "STRIPE", paymentRef: "cs_reellement_encaisse" }).where(eq(invoices.id, inv.id));
-      return { method: "BANK_TRANSFER", status: "PENDING_VALIDATION", reference: "virement-declare", message: "ok" };
+      return { method: "PAYDUNYA", status: "REQUIRES_ACTION", reference: "tok_pd_en_cours", redirectUrl: "https://paydunya.example/checkout", message: "ok" };
     });
 
-    const res = await request(app).post(`/api/invoices/${inv.id}/pay`).set(authHeader(await tokenLocataire(tenant.id))).send({ method: "BANK_TRANSFER", bankReference: "virement-declare" });
+    const res = await request(app).post(`/api/invoices/${inv.id}/pay`).set(authHeader(await tokenLocataire(tenant.id))).send({ method: "PAYDUNYA" });
 
     expect(res.status).toBe(409);
     expect(res.body.code).toBe("INVOICE_JUST_PAID");
@@ -190,7 +190,7 @@ describe("POST /api/invoices/:id/pay (portail locataire) : cas limites", () => {
     const inv = await createInvoice(contract.id, { status: "PENDING", amount: 500 });
     vi.spyOn(paymentService, "initiatePayment").mockRejectedValue(new Error("prestataire indisponible"));
 
-    const res = await request(app).post(`/api/invoices/${inv.id}/pay`).set(authHeader(await tokenLocataire(tenant.id))).send({ method: "BANK_TRANSFER", bankReference: "x" });
+    const res = await request(app).post(`/api/invoices/${inv.id}/pay`).set(authHeader(await tokenLocataire(tenant.id))).send({ method: "PAYDUNYA" });
 
     expect(res.status).toBe(500);
     expect((await facture(inv.id)).paymentAttemptStartedAt).toBeNull();

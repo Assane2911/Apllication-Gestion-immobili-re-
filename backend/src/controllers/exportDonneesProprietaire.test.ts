@@ -24,7 +24,7 @@ describe("Export des données d'un propriétaire", () => {
   async function dossier() {
     const manager = await createManager();
     await testDb.insert(agencySettings).values({ userId: manager.id, agencyName: "Agence du Port", phone: "+221770000000" });
-    const owner = await createOwner(manager.id, { firstName: "Fatou", lastName: "Diop", iban: "SN08SN0100152000048500003035", notes: "Préfère être jointe le matin" });
+    const owner = await createOwner(manager.id, { firstName: "Fatou", lastName: "Diop", notes: "Préfère être jointe le matin" });
     const bien = await createProperty(manager.id, { title: "Villa Baobab", ownerId: owner.id });
     const tenant = await createTenant(manager.id, { firstName: "Locataire", lastName: "Confidentiel", email: "tiers@test.local" });
     await createContract(bien.id, tenant.id);
@@ -50,7 +50,7 @@ describe("Export des données d'un propriétaire", () => {
     expect(res.headers["content-type"]).toContain("application/json");
     expect(res.headers["content-disposition"]).toMatch(/^attachment; filename="donnees-fatou-diop-\d{4}-\d{2}-\d{2}\.json"$/);
     const d = JSON.parse(res.text);
-    expect(d.proprietaire).toMatchObject({ id: owner.id, firstName: "Fatou", lastName: "Diop", iban: "SN08SN0100152000048500003035", notes: "Préfère être jointe le matin", compteDePortail: true });
+    expect(d.proprietaire).toMatchObject({ id: owner.id, firstName: "Fatou", lastName: "Diop", notes: "Préfère être jointe le matin", compteDePortail: true });
     expect(d.responsableDuTraitement).toMatchObject({ agencyName: "Agence du Port", telephone: "+221770000000" });
     expect(d.biens.map((b: { title: string }) => b.title)).toEqual(["Villa Baobab"]);
     expect(d.versements).toHaveLength(1);

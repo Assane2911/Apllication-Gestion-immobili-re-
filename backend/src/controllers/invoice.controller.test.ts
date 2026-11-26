@@ -52,7 +52,7 @@ describe("états terminaux d'une facture", () => {
     const res = await request(app)
       .post(`/api/invoices/${invoice.id}/mark-paid`)
       .set(authHeader(tokenFor(manager)))
-      .send({ paymentMethod: "BANK_TRANSFER" });
+      .send({ paymentMethod: "CASH" });
 
     expect(res.status).toBe(409);
 
@@ -146,7 +146,7 @@ describe("POST /api/invoices/:id/mark-paid", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe("PAID");
-    expect(res.body.paymentMethod).toBe("BANK_TRANSFER");
+    expect(res.body.paymentMethod).toBe("CASH");
     expect(res.body.paymentRef).toMatch(/^manuel_/);
     expect(res.body.paidAt).not.toBeNull();
 
@@ -275,28 +275,30 @@ describe("POST /api/invoices/:id/pay (portail locataire)", () => {
   });
 });
 
-describe("référence de virement déclarée par le locataire", () => {
-  it("refuse une référence démesurée, sans toucher à la facture", async () => {
+describe("le virement n'est plus un moyen de paiement d'un loyer", () => {
+  it("refuse (400) un locataire qui déclare un virement, sans toucher à la facture", async () => {
     const { tenant, invoice } = await setupManagerWithInvoice();
 
     const res = await request(app)
       .post(`/api/invoices/${invoice.id}/pay`)
       .set(authHeader(await tokenLocataire(tenant.id)))
-      .send({ method: "BANK_TRANSFER", bankReference: "R".repeat(201) });
+      .send({ method: "BANK_TRANSFER", bankReference: "VIR-2026-10-0042" });
 
     expect(res.status).toBe(400);
+    const [apres] = await testDb.select().from(invoices).where(eq(invoices.id, invoice.id));
+    expect(apres.status).toBe("PENDING");
+    expect(apres.paymentRef).toBeNull();
   });
 
-  it("garde la référence sans les espaces autour", async () => {
-    const { tenant, invoice } = await setupManagerWithInvoice();
+  it("refuse (400) un marquage manuel « virement » : le gestionnaire choisit espèces, chèque ou Mobile Money", async () => {
+    const { manager, invoice } = await setupManagerWithInvoice();
 
     const res = await request(app)
-      .post(`/api/invoices/${invoice.id}/pay`)
-      .set(authHeader(await tokenLocataire(tenant.id)))
-      .send({ method: "BANK_TRANSFER", bankReference: "  VIR-2026-10-0042  " });
+      .post(`/api/invoices/${invoice.id}/mark-paid`)
+      .set(authHeader(tokenFor(manager)))
+      .send({ paymentMethod: "BANK_TRANSFER" });
 
-    expect(res.status).toBe(200);
-    expect(res.body.invoice.paymentRef).toBe("VIR-2026-10-0042");
+    expect(res.status).toBe(400);
   });
 });
 

@@ -1062,8 +1062,6 @@ export interface CrgExportData {
   agencyName: string;
   ownerName: string;
   ownerCompanyName?: string | null;
-  iban?: string | null;
-  bic?: string | null;
   managementFeeRate: number;
   month: number;
   year: number;
@@ -1193,16 +1191,6 @@ export function generateCrgHtml(data: CrgExportData): string {
 
   ${sectionReversements(data)}
 
-  <div class="section">
-    <div class="section-title">${t.sectionBanque}</div>
-    <div class="box">
-      ${
-        data.iban
-          ? `<strong>${t.iban}</strong> ${escapeHtml(data.iban)}<br>${data.bic ? `<strong>${t.bic}</strong> ${escapeHtml(data.bic)}` : ""}`
-          : `<span style="color:#94a3b8;">${t.aucuneBanque}</span>`
-      }
-    </div>
-  </div>
 
   <div class="footer-legal">${escapeHtml(t.pied(generatedDate))}</div>
 </body>

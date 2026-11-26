@@ -128,7 +128,7 @@ describe("au propriétaire — reversement", () => {
     return { owner, h: authHeader(tokenFor(manager)) };
   }
   const reverser = (h: Record<string, string>, ownerId: string) =>
-    request(app).post(`/api/crg/${ownerId}/payouts`).set(h).send({ month: 9, year: 2026, currency: "EUR", method: "BANK_TRANSFER", paidAt: "2026-10-05", amount: 800, notifyOwner: true });
+    request(app).post(`/api/crg/${ownerId}/payouts`).set(h).send({ month: 9, year: 2026, currency: "EUR", method: "MOBILE_MONEY", paidAt: "2026-10-05", amount: 800, notifyOwner: true });
 
   it("l'annonce du reversement part dans la langue du propriétaire, moyen de paiement compris", async () => {
     const { owner, h } = await agence("en");
@@ -136,7 +136,7 @@ describe("au propriétaire — reversement", () => {
     expect(res.status).toBe(201);
     const [message] = messagesVers("proprio@test.local");
     expect(message.sujet).toBe("Payment of your rents — September 2026");
-    expect(message.html).toContain("(bank transfer)");
+    expect(message.html).toContain("(mobile money)");
   });
 
   it("sans langue sur la fiche (d'avant), en français comme avant", async () => {
@@ -144,7 +144,7 @@ describe("au propriétaire — reversement", () => {
     await reverser(h, owner.id);
     const [message] = messagesVers("proprio@test.local");
     expect(message.sujet).toBe("Reversement de vos loyers — septembre 2026");
-    expect(message.html).toContain("(virement)");
+    expect(message.html).toContain("(mobile money)");
   });
 });
 

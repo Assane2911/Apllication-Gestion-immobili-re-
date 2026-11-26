@@ -102,7 +102,7 @@ const zone: ZoneTenant = {
       inspectionDocTitle: "Vistoria - {{property}}",
     },
     invoices: {
-      transferDeclared: "Transferência declarada, a aguardar validação pelo gestor.",
+      noOnlineMethod: "A sua agência não ativou o pagamento online. Contacte-a: ela registará o seu pagamento.",
       summary: {
         label: "Situação das suas rendas",
         due: "Total em dívida",
@@ -147,21 +147,11 @@ const zone: ZoneTenant = {
       pay: "Pagar",
       chooseMethod: "Escolher este método",
       paying: "A processar...",
-      bankRefPlaceholder: "Referência da transferência",
       noInvoices: "Nenhuma fatura por enquanto",
       receiptTitle: "Recibo de renda - {{period}}",
-      bankDetails: {
-        title: "Dados bancários da agência",
-        iban: "IBAN",
-        bic: "BIC / SWIFT",
-        missing: "A sua agência ainda não configurou os dados bancários. Contacte-a antes de fazer a transferência.",
-        copy: "Copiar",
-        copied: "Copiado!",
-      },
       methods: {
         STRIPE: { label: "Cartão bancário", hint: "Pagamento seguro via Stripe" },
         PAYDUNYA: { label: "PayDunya", hint: "Orange Money, Wave, Free Money, MTN, cartão bancário..." },
-        BANK_TRANSFER: { label: "Transferência bancária", hint: "Declare a sua transferência, validação pelo gestor" },
         DEMO: { label: "Modo demonstração", hint: "Pagamento simulado, confirmação imediata" },
       },
     },

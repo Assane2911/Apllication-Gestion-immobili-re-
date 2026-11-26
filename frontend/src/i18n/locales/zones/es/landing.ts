@@ -162,7 +162,7 @@ const zone: ZoneLanding = {
         },
         {
           q: "¿Qué métodos de pago pueden usar mis inquilinos?",
-          a: "La transferencia bancaria a la cuenta de su agencia: el inquilino la declara en la aplicación y usted marca la factura como pagada al recibirla. Por ahora no se ofrece el pago del alquiler con tarjeta ni Mobile Money.",
+          a: "Sus inquilinos pagan el alquiler en línea (Mobile Money o tarjeta) directamente en la cuenta PayDunya de su agencia, que usted conecta en sus ajustes: el dinero no pasa por la plataforma. Un alquiler recibido de otra forma (efectivo, cheque, Mobile Money) se registra a mano, en un clic.",
         },
         {
           q: "¿Puedo cancelar mi suscripción en cualquier momento?",

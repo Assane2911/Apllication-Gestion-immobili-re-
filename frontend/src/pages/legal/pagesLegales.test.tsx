@@ -82,8 +82,9 @@ describe("Pages légales", () => {
     );
 
     const texte = (container.textContent ?? "").replace(/\s+/g, " ");
-    // L'abonnement se paie par virement et, lorsqu'elle est proposée, par carte via Stripe.
-    expect(texte).toContain("virement bancaire et, lorsqu'il est proposé dans l'interface, paiement par carte bancaire via Stripe");
+    // L'abonnement se paie par carte via Stripe ; le virement bancaire n'est plus proposé.
+    expect(texte).toContain("le paiement par carte bancaire via Stripe");
+    expect(texte).not.toMatch(/virement/i);
     expect(texte).not.toMatch(/mobile money et carte bancaire par PayDunya/);
     expect(texte).toContain("Le compte Stripe de l'éditeur ne sert qu'à régler l'abonnement");
     expect(texte).not.toMatch(/comptes Stripe et PayDunya de l'éditeur/);

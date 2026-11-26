@@ -5,11 +5,11 @@ import { fetchAvecDelai } from "../utils/fetchAvecDelai";
 import { DEVISES_SANS_DECIMALE } from "../utils/montants";
 import type { CompteAgenceEncaissant } from "./comptePaiementAgence.service";
 
-export type PaymentMethodKey = "STRIPE" | "PAYDUNYA" | "BANK_TRANSFER" | "DEMO";
+export type PaymentMethodKey = "STRIPE" | "PAYDUNYA" | "DEMO";
 
 export interface PaymentIntentResult {
   method: PaymentMethodKey;
-  status: "REQUIRES_ACTION" | "PENDING_VALIDATION" | "PAID";
+  status: "REQUIRES_ACTION" | "PAID";
   reference: string;
   redirectUrl?: string;
   message: string;
@@ -45,14 +45,12 @@ export async function initiatePayment(params: {
   /** Obligatoire : un nouvel appelant doit dire s'il encaisse un abonnement ou un loyer. */
   usage: UsagePaiement;
   payerEmail: string;
-  bankReference?: string;
   /** Chemin du frontend vers lequel rediriger une fois le paiement terminé (ex: "/portail/paiements"). */
   returnPath?: string;
   /**
    * Renouvellement automatique réel (Stripe Subscriptions), réservé au
    * paiement par carte — voir subscription.controller.ts::subscribe. Ignoré
-   * pour tout autre moyen de paiement : PayDunya et le virement bancaire
-   * restent des paiements ponctuels, par choix (CGU §4).
+   * pour tout autre moyen de paiement : PayDunya reste un paiement ponctuel, par choix (CGU §4).
    */
   autoRenew?: boolean;
   /** Périodicité de l'abonnement — nécessaire à `autoRenew` pour fixer l'intervalle de reconduction Stripe (mois/an). */
@@ -64,7 +62,7 @@ export async function initiatePayment(params: {
    */
   compteAgence?: CompteAgenceEncaissant | null;
 }): Promise<PaymentIntentResult> {
-  const { method, amount, currency, invoiceId: reference, usage, payerEmail, bankReference, returnPath, autoRenew, billingCycle } =
+  const { method, amount, currency, invoiceId: reference, usage, payerEmail, returnPath, autoRenew, billingCycle } =
     params;
   const compteAgence = usage === "LOYER" ? (params.compteAgence ?? null) : null;
 
@@ -89,8 +87,6 @@ export async function initiatePayment(params: {
       );
     case "PAYDUNYA":
       return initiatePaydunyaPayment(amount, currency, reference, payerEmail, returnPath, compteAgence);
-    case "BANK_TRANSFER":
-      return initiateBankTransferDeclaration(amount, currency, reference, bankReference);
     case "DEMO":
     default:
       return initiateDemoPayment(amount, currency, reference);
@@ -182,11 +178,6 @@ export interface Indisponibilite {
  * transforme un silence en alerte.
  */
 export function indisponibilite(method: PaymentMethodKey, currency: string): Indisponibilite | null {
-  // Le virement bancaire est une DÉCLARATION, pas un encaissement : il ne
-  // dépend d'aucun prestataire et reste toujours proposable. C'est d'ailleurs
-  // le seul recours quand tout le reste est indisponible.
-  if (method === "BANK_TRANSFER") return null;
-
   if (method === "DEMO") {
     if (env.payments.demoMode) return null;
     // "DEMO" confirme un paiement instantanément, sans contrepartie. Le masquer
@@ -284,7 +275,7 @@ export function indisponibiliteSelonUsage(
     if (!compteAgence) {
       return {
         status: 400,
-        message: "Le paiement du loyer par Mobile Money ou carte n'est pas activé par votre agence. Réglez par virement sur son compte, puis déclarez-le ici.",
+        message: "Le paiement du loyer par Mobile Money ou carte n'est pas activé par votre agence. Contactez-la : elle pourra enregistrer votre règlement.",
         cause: "l'agence n'a pas de compte PayDunya actif",
         code: "RENT_ONLINE_PAYMENT_DISABLED",
       };
@@ -303,7 +294,7 @@ export function indisponibiliteSelonUsage(
   if (usage === "LOYER" && method === "STRIPE" && !env.payments.rentOnline) {
     return {
       status: 400,
-      message: "Le paiement du loyer par carte n'est pas disponible. Réglez par virement sur le compte de votre agence, puis déclarez-le ici.",
+      message: "Le paiement du loyer par carte n'est pas disponible. Contactez votre agence : elle pourra enregistrer votre règlement.",
       cause: "paiement du loyer par Stripe désactivé (RENT_ONLINE_PAYMENTS)",
       code: "RENT_ONLINE_PAYMENT_DISABLED",
     };
@@ -312,7 +303,7 @@ export function indisponibiliteSelonUsage(
 }
 
 /** Tous les moyens connus, dans l'ordre où l'interface les présente. */
-export const MOYENS_DE_PAIEMENT: PaymentMethodKey[] = ["PAYDUNYA", "STRIPE", "BANK_TRANSFER", "DEMO"];
+export const MOYENS_DE_PAIEMENT: PaymentMethodKey[] = ["PAYDUNYA", "STRIPE", "DEMO"];
 
 /**
  * Les moyens réellement utilisables pour un montant dans cette devise.
@@ -696,20 +687,6 @@ async function initiatePaydunyaPayment(
     reference: data.token,
     redirectUrl: data.response_text,
     message: "Redirection vers PayDunya pour finaliser le paiement.",
-  };
-}
-
-async function initiateBankTransferDeclaration(
-  amount: number,
-  currency: string,
-  reference: string,
-  bankReference?: string
-): Promise<PaymentIntentResult> {
-  return {
-    method: "BANK_TRANSFER",
-    status: "PENDING_VALIDATION",
-    reference: bankReference || `virement_${reference}`,
-    message: `Virement de ${amount} ${currency} déclaré, en attente de validation par le gestionnaire.`,
   };
 }
 

@@ -113,10 +113,10 @@ export const listInvoices = asyncHandler(async (req: Request, res: Response) => 
  * saisir à la main ferait passer un encaissement non vérifié pour un paiement
  * en ligne.
  */
-export const MOYENS_SAISIS_A_LA_MAIN = ["BANK_TRANSFER", "CASH", "CHEQUE", "MOBILE_MONEY"] as const;
+export const MOYENS_SAISIS_A_LA_MAIN = ["CASH", "CHEQUE", "MOBILE_MONEY"] as const;
 
 const markPaidSchema = z.object({
-  paymentMethod: z.enum(MOYENS_SAISIS_A_LA_MAIN).default("BANK_TRANSFER"),
+  paymentMethod: z.enum(MOYENS_SAISIS_A_LA_MAIN).default("CASH"),
   paymentRef: z.string().trim().max(200).optional(),
   // Montant encaissé. Absent : le reste dû (règle la facture). Inférieur au
   // reste dû : paiement PARTIEL, la facture reste en attente.
@@ -388,8 +388,7 @@ export const myInvoices = asyncHandler(async (req: Request, res: Response) => {
 });
 
 const paySchema = z.object({
-  method: z.enum(["STRIPE", "PAYDUNYA", "BANK_TRANSFER", "DEMO"]),
-  bankReference: z.string().trim().max(200, "La référence ne peut pas dépasser 200 caractères").optional(),
+  method: z.enum(["STRIPE", "PAYDUNYA", "DEMO"]),
 });
 
 /** Le locataire connecté initie le paiement d'une de ses factures. */
@@ -450,7 +449,6 @@ export const payInvoice = asyncHandler(async (req: Request, res: Response) => {
       invoiceId: row.invoice.id,
       usage: "LOYER",
       payerEmail: payeur.email,
-      bankReference: body.bankReference,
       returnPath: "/portail/paiements",
     });
   } finally {

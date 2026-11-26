@@ -37,7 +37,7 @@ afterEach(() => {
 /** Septembre 2026 : 1 000 € encaissés, 100 € de charges, 10 % de commission → 800 € à reverser. */
 async function agence() {
   const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
-  const owner = await createOwner(manager.id, { managementFeeRate: 10, iban: "FR7630006000011234567890189" });
+  const owner = await createOwner(manager.id, { managementFeeRate: 10 });
   const property = await createProperty(manager.id, { title: "Villa Ngor", ownerId: owner.id });
   const tenant = await createTenant(manager.id);
   const contract = await createContract(property.id, tenant.id);
@@ -50,7 +50,7 @@ const reverser = (h: Record<string, string>, ownerId: string, corps: Record<stri
   request(app)
     .post(`/api/crg/${ownerId}/payouts`)
     .set(h)
-    .send({ month: 9, year: 2026, currency: "EUR", method: "BANK_TRANSFER", paidAt: "2026-10-05", ...corps });
+    .send({ month: 9, year: 2026, currency: "EUR", method: "MOBILE_MONEY", paidAt: "2026-10-05", ...corps });
 const crg = (h: Record<string, string>, ownerId: string) => request(app).get(`/api/crg/${ownerId}?month=9&year=2026`).set(h);
 
 describe("enregistrer un reversement", () => {
@@ -61,7 +61,7 @@ describe("enregistrer un reversement", () => {
 
     const res = await reverser(h, owner.id, { amount: 500, reference: "VIR-0925" });
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ amount: 500, currency: "EUR", periodMonth: 9, periodYear: 2026, method: "BANK_TRANSFER", reference: "VIR-0925", emailEnvoye: false });
+    expect(res.body).toMatchObject({ amount: 500, currency: "EUR", periodMonth: 9, periodYear: 2026, method: "MOBILE_MONEY", reference: "VIR-0925", emailEnvoye: false });
 
     const apres = await crg(h, owner.id);
     expect(apres.body.totalReverseByCurrency).toEqual({ EUR: 500 });
@@ -161,7 +161,8 @@ describe("synthèse et accès", () => {
     expect(res.status).toBe(200);
     expect(res.body.owners).toHaveLength(2);
     const ligne = res.body.owners.find((o: { ownerId: string }) => o.ownerId === owner.id);
-    expect(ligne).toMatchObject({ hasIban: true, netByCurrency: { EUR: 800 }, reverseByCurrency: { EUR: 300 }, resteByCurrency: { EUR: 500 } });
+    expect(ligne).toMatchObject({ netByCurrency: { EUR: 800 }, reverseByCurrency: { EUR: 300 }, resteByCurrency: { EUR: 500 } });
+    expect(ligne).not.toHaveProperty("hasIban");
     expect((await request(app).get("/api/crg/payouts/summary").set(h)).status).toBe(400);
   });
 

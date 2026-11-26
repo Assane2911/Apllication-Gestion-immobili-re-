@@ -27,10 +27,9 @@ import { computeCrg, computeCrgPourProprietaires, loadAgencyName, loadOwnerForMa
  * propriétaire sont sérialisés (verrou transactionnel) : deux saisies
  * simultanées ne peuvent pas, chacune, consommer le même reste.
  */
-export const MOYENS_REVERSEMENT = ["BANK_TRANSFER", "CASH", "CHEQUE", "MOBILE_MONEY", "OTHER"] as const;
+export const MOYENS_REVERSEMENT = ["CASH", "CHEQUE", "MOBILE_MONEY", "OTHER"] as const;
 
 const LIBELLES_MOYENS: Record<(typeof MOYENS_REVERSEMENT)[number], string> = {
-  BANK_TRANSFER: "virement",
   CASH: "espèces",
   CHEQUE: "chèque",
   MOBILE_MONEY: "mobile money",
@@ -195,7 +194,6 @@ export const listPayoutSummary = asyncHandler(async (req: Request, res: Response
   const lignes = proprietaires.map((owner: typeof owners.$inferSelect, i: number) => ({
     ownerId: owner.id,
     ownerName: synthese[i].ownerName,
-    hasIban: Boolean(owner.iban),
     netByCurrency: synthese[i].totalNetByCurrency,
     reverseByCurrency: synthese[i].totalReverseByCurrency,
     resteByCurrency: synthese[i].resteAReverserByCurrency,

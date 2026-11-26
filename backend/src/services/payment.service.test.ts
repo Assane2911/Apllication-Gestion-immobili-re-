@@ -96,32 +96,10 @@ describe("initiatePayment", () => {
     expect(result.status).toBe("REQUIRES_ACTION");
   });
 
-  it("BANK_TRANSFER : renvoie toujours PENDING_VALIDATION, jamais un accès immédiat", async () => {
-    const result = await initiatePayment({
-      method: "BANK_TRANSFER",
-      currency: "XOF",
-      amount: 29,
-      invoiceId: "inv-1",
-      usage: "ABONNEMENT",
-      payerEmail: "test@test.local",
-      bankReference: "VIR-2026-042",
-    });
-
-    expect(result.status).toBe("PENDING_VALIDATION");
-    expect(result.reference).toBe("VIR-2026-042");
-  });
-
-  it("BANK_TRANSFER : génère une référence par défaut si aucune n'est fournie", async () => {
-    const result = await initiatePayment({
-      method: "BANK_TRANSFER",
-      currency: "XOF",
-      amount: 29,
-      invoiceId: "inv-1",
-      usage: "ABONNEMENT",
-      payerEmail: "test@test.local",
-    });
-
-    expect(result.reference).toBe("virement_inv-1");
+  it("le virement bancaire n'est plus un moyen de paiement : ni proposé, ni exécutable", async () => {
+    expect(MOYENS_DE_PAIEMENT).not.toContain("BANK_TRANSFER");
+    expect(moyensDePaiementDisponibles("EUR", "ABONNEMENT")).not.toContain("BANK_TRANSFER");
+    expect(moyensDePaiementDisponibles("XOF", "LOYER")).not.toContain("BANK_TRANSFER");
   });
 
   it("STRIPE : retombe sur une simulation confirmée en mode démo (comportement par défaut)", async () => {
@@ -650,14 +628,14 @@ describe("moyensDePaiementDisponibles", () => {
     expect(disponibles).toEqual(MOYENS_DE_PAIEMENT);
   });
 
-  it("hors mode démo sans aucune clé : seul le virement reste, et il est le seul à aboutir", async () => {
+  it("hors mode démo sans aucune clé : plus aucun moyen n'est proposé", async () => {
     env.payments.demoMode = false;
     env.payments.stripeSecretKey = "";
     env.payments.paydunya = { ...original.paydunya, masterKey: "", privateKey: "", token: "", currency: "XOF" };
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     const disponibles = await verifierCoherence("XOF");
-    expect(disponibles).toEqual(["BANK_TRANSFER"]);
+    expect(disponibles).toEqual([]);
   });
 
   it("hors mode démo, clés posées et devise compatible : PayDunya redevient proposable", async () => {
@@ -674,7 +652,7 @@ describe("moyensDePaiementDisponibles", () => {
     );
 
     const disponibles = await verifierCoherence("XOF");
-    expect(disponibles).toEqual(["PAYDUNYA", "BANK_TRANSFER"]);
+    expect(disponibles).toEqual(["PAYDUNYA"]);
   });
 
   it("clés posées mais facture dans une autre devise : PayDunya disparaît de la liste", async () => {
@@ -687,7 +665,7 @@ describe("moyensDePaiementDisponibles", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     const disponibles = await verifierCoherence("EUR");
-    expect(disponibles).toEqual(["BANK_TRANSFER"]);
+    expect(disponibles).toEqual([]);
   });
 });
 

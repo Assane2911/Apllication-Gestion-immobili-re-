@@ -1,13 +1,10 @@
 import { Router } from "express";
 import {
-  confirmBankTransfer,
   getManagerDetail,
   getPlatformDashboardStats,
   listAdminAuditLogs,
   listManagers,
-  listPendingBankTransfers,
   reactivateManager,
-  rejectBankTransfer,
   suspendManager,
 } from "../controllers/admin.controller";
 import { exportAuditCsv, exportManagersCsv } from "../controllers/adminExport.controller";
@@ -17,7 +14,6 @@ import { deleteManager } from "../controllers/adminSuppression.controller";
 import { hideListing, listAdminListings, restoreListing, setListingFeatured } from "../controllers/adminListing.controller";
 import { changeManagerPlan, grantSubscriptionDays, grantUnlimitedAccess, revokeUnlimitedAccess, sendTrialReminder } from "../controllers/adminSubscription.controller";
 import { annulerMaintenance, etatMaintenance, programmerMaintenance } from "../controllers/maintenance.controller";
-import { getPlatformSettings, updatePlatformSettings } from "../controllers/platformSettings.controller";
 import { listSuggestions, updateSuggestion } from "../controllers/suggestion.controller";
 import { authenticate, exigerDeuxFacteursAdmin, requireRole } from "../middleware/auth";
 import { adminMessageLimiter } from "../middleware/rateLimit";
@@ -29,9 +25,6 @@ const router = Router();
 router.use(authenticate, requireRole("ADMIN"), exigerDeuxFacteursAdmin);
 
 router.get("/dashboard/stats", getPlatformDashboardStats);
-router.get("/subscriptions/pending-bank-transfers", listPendingBankTransfers);
-router.post("/subscriptions/:id/confirm-bank-transfer", confirmBankTransfer);
-router.post("/subscriptions/:id/reject-bank-transfer", rejectBankTransfer);
 router.get("/managers", listManagers);
 router.get("/whatsapp-usage", getPlatformWhatsappUsage);
 router.get("/managers/:id", getManagerDetail);
@@ -55,8 +48,6 @@ router.post("/listings/:id/featured", setListingFeatured);
 router.get("/maintenance", etatMaintenance);
 router.put("/maintenance", programmerMaintenance);
 router.delete("/maintenance", annulerMaintenance);
-router.get("/settings", getPlatformSettings);
-router.put("/settings", updatePlatformSettings);
 router.get("/suggestions", listSuggestions);
 router.patch("/suggestions/:id", updateSuggestion);
 

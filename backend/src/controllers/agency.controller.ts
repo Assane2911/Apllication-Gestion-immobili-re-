@@ -2,11 +2,10 @@ import { eq } from "drizzle-orm";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "../db/client";
-import { agencySettings, tenants } from "../db/schema";
+import { agencySettings } from "../db/schema";
 import { logActivity } from "../services/activity.service";
 import { ApiError, asyncHandler } from "../utils/asyncHandler";
-import { bicSchema, ibanSchema } from "../utils/iban";
-import { chargerCompteCourant, chargerLocataireDuCompte } from "../utils/authorization";
+import { chargerCompteCourant } from "../utils/authorization";
 import { assertPlanAtLeast } from "../middleware/auth";
 import { assertFileContentMatchesDeclaredType } from "../middleware/upload";
 import { deleteStorageObjectBestEffort, uploadPublicFile } from "../services/storage.service";
@@ -46,8 +45,6 @@ const updateAgencySettingsSchema = z.object({
   email: z.string().max(254).optional().nullable(),
   legalNotice: z.string().max(5000).optional().nullable(),
   stampOrSignatureUrl: z.string().max(2000).optional().nullable(),
-  iban: ibanSchema,
-  bic: bicSchema,
   // Relances graduées des impayés (voir services/relances.service.ts) ; absents : inchangés.
   overdueRemindersEnabled: z.boolean().optional(),
   overdueGraceDays: z.coerce.number().int().min(0, "Délai de grâce : 0 à 30 jours").max(30, "Délai de grâce : 0 à 30 jours").optional(),
@@ -67,8 +64,6 @@ const REGLAGES_TRACES = [
   ["phone", "téléphone"],
   ["email", "email"],
   ["legalNotice", "mentions légales"],
-  ["iban", "IBAN"],
-  ["bic", "BIC"],
   ["overdueRemindersEnabled", "relances des impayés"],
   ["overdueGraceDays", "délai de grâce des relances"],
   ["overdueIntervalDays", "intervalle des relances"],
@@ -82,7 +77,7 @@ function reglagesModifies(existant: Record<string, unknown> | undefined, body: R
     if (nouveau === undefined) continue;
     const avant = existant?.[champ] ?? null;
     if ((nouveau ?? null) === avant) continue;
-    modifies.push(champ === "iban" && typeof nouveau === "string" ? `${libelle} (…${nouveau.slice(-4)})` : libelle);
+    modifies.push(libelle);
   }
   return modifies;
 }
@@ -149,33 +144,6 @@ async function tracerReglages(req: Request, reglages: { id: string; agencyName: 
     details: `Réglages de l'agence modifiés : ${modifies.join(", ")}.`,
   });
 }
-
-/**
- * Coordonnées bancaires de SON agence, pour le locataire qui choisit
- * "Virement bancaire" (voir TenantInvoicesPage.tsx). Volontairement un
- * sous-ensemble minimal des paramètres d'agence — pas de logo, de mentions
- * légales ni de tampon — puisqu'un locataire n'a besoin que de savoir où
- * envoyer son virement, pas d'accéder aux réglages de l'agence.
- */
-export const getAgencyBankInfoForTenant = asyncHandler(async (req: Request, res: Response) => {
-
-  const [tenant] = await db
-    .select({ managerId: tenants.managerId })
-    .from(tenants)
-    .where(eq(tenants.id, (await chargerLocataireDuCompte(req)).id));
-  if (!tenant) throw new ApiError(404, "Locataire introuvable", "TENANT_NOT_FOUND");
-
-  const [settings] = await db
-    .select({ agencyName: agencySettings.agencyName, iban: agencySettings.iban, bic: agencySettings.bic })
-    .from(agencySettings)
-    .where(eq(agencySettings.userId, tenant.managerId));
-
-  res.json({
-    agencyName: settings?.agencyName ?? null,
-    iban: settings?.iban ?? null,
-    bic: settings?.bic ?? null,
-  });
-});
 
 type ImageAgence = "logoUrl" | "stampOrSignatureUrl";
 

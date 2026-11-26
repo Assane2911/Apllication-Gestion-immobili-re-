@@ -66,7 +66,6 @@ const GestionnaireOwnerMessagesPage = lazyAvecZones(() => import("./pages/manage
 const OwnerCrgPage = lazyAvecZones(() => import("./pages/owner/OwnerCrgPage"), ["partage"]);
 const OwnerAgendaPage = lazyAvecZones(() => import("./pages/owner/OwnerAgendaPage"), ["partage"]);
 const AdminDashboardPage = lazyAvecZones(() => import("./pages/admin/AdminDashboardPage"), ["admin", "partage"]);
-const AdminSubscriptionsPage = lazyAvecZones(() => import("./pages/admin/AdminSubscriptionsPage"), ["admin", "partage"]);
 const AdminSettingsPage = lazyAvecZones(() => import("./pages/admin/AdminSettingsPage"), ["admin", "partage"]);
 const AdminSuggestionsPage = lazyAvecZones(() => import("./pages/admin/AdminSuggestionsPage"), ["admin", "partage"]);
 const AdminListingsPage = lazyAvecZones(() => import("./pages/admin/AdminListingsPage"), ["admin", "partage"]);
@@ -193,7 +192,6 @@ function AppRoutes() {
           <Route path="/admin/gestionnaires" element={<AdminManagersPage />} />
           <Route path="/admin/gestionnaires/:id" element={<AdminManagerDetailPage />} />
           <Route path="/admin/journal" element={<AdminAuditPage />} />
-          <Route path="/admin/virements" element={<AdminSubscriptionsPage />} />
           <Route path="/admin/parametres" element={<AdminSettingsPage />} />
           <Route path="/admin/suggestions" element={<AdminSuggestionsPage />} />
           <Route path="/admin/annonces" element={<AdminListingsPage />} />
