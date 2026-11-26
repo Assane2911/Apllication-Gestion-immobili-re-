@@ -206,6 +206,28 @@ describe("initDb : idempotence sans verrou inutile", () => {
     expect(lignes[0].subscription_status).toBe("TRIAL");
   });
 
+  it.each(["ACTIVE", "CANCELLED", "EXPIRED"] as const)(
+    "ne touche jamais un gestionnaire %s sans date d'essai : ni son statut, ni de nouvel essai, aucune écriture",
+    async (statut) => {
+      await initDb();
+      const manager = await createManager({ subscriptionStatus: statut, subscriptionPlan: "PRO", trialEndsAt: null, subscriptionEndsAt: new Date(Date.now() + 20 * 86_400_000) });
+      const emises = enregistrerInstructions();
+
+      await initDb();
+
+      const resultat = await testDb.execute(sql`SELECT trial_ends_at, subscription_status, subscription_plan FROM users WHERE id = ${manager.id}`);
+      const lignes = (Array.isArray(resultat) ? resultat : ((resultat as { rows: unknown[] }).rows ?? [])) as Array<{
+        trial_ends_at: Date | null;
+        subscription_status: string;
+        subscription_plan: string;
+      }>;
+      expect(lignes[0].subscription_status).toBe(statut);
+      expect(lignes[0].subscription_plan).toBe("PRO");
+      expect(lignes[0].trial_ends_at).toBeNull();
+      expect(emises.filter((q) => /\bUPDATE\b/i.test(q))).toEqual([]);
+    }
+  );
+
   it("ne pose pas d'essai fictif aux collaborateurs invités, et n'écrit rien pour eux", async () => {
     await initDb();
     const proprietaire = await createManager();
