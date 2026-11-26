@@ -525,8 +525,13 @@ html [data-surface="app"] input[type="file"]::file-selector-button:hover {
  * fichiers. Sont arrondis :
  *  - les boutons et liens « pleins » ou « cernés » : un fond ou un trait de couleur, un gras, un espacement vertical ;
  *  - les boutons-icônes carrés (cloche, fermer, remonter) : un cadre ou un fond, centrés, de taille fixe.
- * Restent droits : les liens soulignés ou à filet, les onglets et bascules en police mono (ils forment un groupe collé, dont
- * les arrondis ne tomberaient qu'aux extrémités), les éléments à bord partiel (border-b, border-l…) et les pastilles rondes.
+ *  - les pastilles numérotées et autres boutons en police mono, quand ils sont seuls ;
+ *  - les groupes de bascules ou d'onglets collés (mensuel / annuel…) : c'est le CADRE qui s'arrondit et rogne ses segments, pour
+ *    que l'arrondi tombe aux extrémités du groupe et non entre deux segments ;
+ *  - les cartes d'option (choix d'un moyen de paiement, case à cocher encadrée) ;
+ *  - les liens soulignés ou à filet : un petit rayon, pour que le survol et le repère de focus aient des coins doux.
+ * Restent droits : les barres d'onglets pleine largeur (menu de la page d'accueil), les éléments à bord partiel (border-b,
+ * border-l…) sur lesquels l'arrondi n'aurait pas de sens, et les pastilles rondes (déjà rondes).
  */
 html
   :is(button, a, [role="button"]):is([class*="py-"]):is([class*="font-semibold"], [class*="font-bold"]):is(
@@ -544,17 +549,49 @@ html
     [class*="border-red-"],
     [class*="border-slate-"],
     [class*="border-brand-"]
-  ):not([class*="rounded-full"], [class*="font-mono"], [class*="border-b"], [class*="border-t"], [class*="border-l"], [class*="border-r"], [class*="divide"], [class*="underline"]),
+  ):not([class*="rounded-full"], [class*="border-b"], [class*="border-t"], [class*="border-l"], [class*="border-r"], [class*="divide"], [class*="underline"]),
 html
   :is(button, a, [role="button"]):is([class*="justify-center"]):is([class*="h-"], [class*="size-"]):is([class*="border"], [class*="bg-"]):not(
     [class*="rounded-full"],
-    [class*="font-mono"],
     [class*="border-b"],
     [class*="border-t"],
     [class*="border-l"],
     [class*="border-r"]
   ) {
   border-radius: var(--rayon-bouton);
+}
+
+/* Groupes de bascules ou d'onglets collés : le cadre porte l'arrondi, les segments sont rognés. */
+html
+  :is(div, nav, ul, [role="group"], [role="tablist"], [role="radiogroup"]):has(
+    > :is(button, a)[class*="font-mono"]:is([class*="border-r"], [class*="border-l"])
+  ):not(:has(> [class*="lien-plan"]), :has(> [class*="rounded-"])) {
+  border-radius: var(--rayon-bouton);
+  overflow: hidden;
+}
+
+/* Boutons en police mono seuls (pastilles numérotées, puces) : rayon des boutons. */
+html
+  :is(button, a):is([class*="font-mono"]):is([class*="border"], [class*="bg-"]):not(
+    [class*="rounded-full"],
+    [class*="border-b"],
+    [class*="border-t"],
+    [class*="border-l"],
+    [class*="border-r"],
+    [class*="justify-center"],
+    [class*="lien-plan"]
+  ):not([role="group"] > *, [role="tablist"] > *, [role="radiogroup"] > *) {
+  border-radius: var(--rayon-bouton);
+}
+
+/* Cartes d'option : une case ou un bouton radio dans un cadre. */
+html label:has(> input:is([type="radio"], [type="checkbox"])):is([class*="border"], [class*="bg-"]) {
+  border-radius: var(--rayon-bouton);
+}
+
+/* Liens et boutons soulignés ou à filet : petit rayon, pour le survol et le repère de focus. */
+html :is(a, button):is([class*="underline"], [class*="border-ink-900/40"]):not([class*="rounded-full"]) {
+  border-radius: 4px;
 }
 
 /* Pastilles d'état (statuts, étiquettes) : angles droits, comme les cartouches d'un plan. */
