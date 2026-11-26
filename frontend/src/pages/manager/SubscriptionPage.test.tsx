@@ -237,6 +237,52 @@ describe("SubscriptionPage", () => {
     expect(screen.queryByRole("radio", { name: /PayDunya/ })).not.toBeInTheDocument();
   });
 
+  // Tant que le compte marchand PayDunya n'est pas approuvé, le serveur ne le propose pas : une agence de la zone franc CFA doit le
+  // voir annoncé « bientôt disponible » — sans pouvoir le choisir.
+  describe("mobile money bientôt disponible", () => {
+    async function ouvrirLePaiement(devise: string, moyens: string[], pays?: string) {
+      const user = userEvent.setup();
+      localStorage.removeItem("app_currency");
+      seedUser(authUser({ currency: devise, ...(pays ? { country: pays } : {}) }));
+      queueGet({ data: [plan({ id: "STARTER" })] });
+      queueGet({ data: { history: [] } });
+      installerGet(moyens);
+      renderPage();
+      await waitFor(() => expect(screen.getByRole("button", { name: "Choisir Starter" })).toBeInTheDocument());
+      await user.click(screen.getByRole("button", { name: "Choisir Starter" }));
+      await waitFor(() => expect(screen.getByRole("radio", { name: /Virement bancaire/ })).toBeInTheDocument());
+    }
+
+    it("une agence en FCFA voit l'annonce, qui n'est pas un choix possible", async () => {
+      await ouvrirLePaiement("XOF", ["BANK_TRANSFER"]);
+
+      const annonce = screen.getByTestId("mobile-money-bientot");
+      expect(annonce).toHaveTextContent("Mobile money (Wave, Orange Money, MTN…)");
+      expect(annonce).toHaveTextContent("Bientôt disponible");
+      expect(annonce).toHaveTextContent("est en cours d'approbation");
+      expect(screen.queryByRole("radio", { name: /Mobile money/ })).not.toBeInTheDocument();
+    });
+
+    it("une agence d'un pays de la zone franc CFA l'a aussi, même avec un affichage en euros", async () => {
+      await ouvrirLePaiement("EUR", ["BANK_TRANSFER"], "SN");
+
+      expect(screen.getByTestId("mobile-money-bientot")).toBeInTheDocument();
+    });
+
+    it("une agence en euros (France) ne la voit pas", async () => {
+      await ouvrirLePaiement("EUR", ["BANK_TRANSFER"], "FR");
+
+      expect(screen.queryByTestId("mobile-money-bientot")).not.toBeInTheDocument();
+    });
+
+    it("dès que PayDunya est actif côté serveur, il devient un vrai choix et l'annonce disparaît", async () => {
+      await ouvrirLePaiement("XOF", ["PAYDUNYA", "BANK_TRANSFER"]);
+
+      expect(screen.getByRole("radio", { name: /PayDunya/ })).toBeInTheDocument();
+      expect(screen.queryByTestId("mobile-money-bientot")).not.toBeInTheDocument();
+    });
+  });
+
   // L'abonnement est la seule chose que Stripe et PayDunya encaissent : l'écran le dit au serveur.
   it("demande les moyens de paiement d'un ABONNEMENT", async () => {
     const user = userEvent.setup();

@@ -514,6 +514,7 @@ const zone = {
       paymentMethods: {
         STRIPE: { label: "Carte bancaire", hint: "Paiement sécurisé par carte via Stripe" },
         PAYDUNYA: { label: "PayDunya", hint: "Orange Money, Wave, Free Money, MTN, carte bancaire..." },
+        PAYDUNYA_BIENTOT: { label: "Mobile money (Wave, Orange Money, MTN…)", hint: "Notre compte de paiement mobile est en cours d'approbation. En attendant, payez par carte bancaire ou par virement.", badge: "Bientôt disponible" },
         BANK_TRANSFER: { label: "Virement bancaire", hint: "Validation sous 24h par virement" },
         DEMO: { label: "Mode démo", hint: "Activation immédiate pour tests et validation" },
       },

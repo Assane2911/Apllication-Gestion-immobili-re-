@@ -516,6 +516,7 @@ const zone: ZonePartage = {
       paymentMethods: {
         STRIPE: { label: "Credit/debit card", hint: "Secure card payment via Stripe" },
         PAYDUNYA: { label: "PayDunya", hint: "Orange Money, Wave, Free Money, MTN, card..." },
+        PAYDUNYA_BIENTOT: { label: "Mobile payment (Wave, Orange Money, MTN…)", hint: "Our mobile payment account is awaiting approval. Meanwhile, pay by card or bank transfer.", badge: "Coming soon" },
         BANK_TRANSFER: { label: "Bank transfer", hint: "Validated within 24h by bank transfer" },
         DEMO: { label: "Demo mode", hint: "Immediate activation for testing and validation" },
       },

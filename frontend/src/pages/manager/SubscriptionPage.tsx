@@ -12,6 +12,7 @@ import type { PaymentMethod, PlatformBankInfo, SubscriptionPlanDetail } from "..
 import Bulle from "../../components/Bulle";
 import Dialogue from "../../components/Dialogue";
 import { FORMULE_REPRISE } from "../../data/lignesFormules";
+import { paysParCode } from "../../data/pays";
 import { formaterDateHeureLongue } from "../../utils/dateHeure";
 import { csvHistoriqueAbonnement, economieAnnuelle, formuleSuperieure, syntheseHistorique } from "../../utils/syntheseCompte";
 import { dateDuJourPourFichier, telechargerCsv } from "../../utils/telechargement";
@@ -83,6 +84,14 @@ export default function SubscriptionPage() {
     label: t(`manager.subscription.paymentMethods.${key}.label`),
     hint: t(`manager.subscription.paymentMethods.${key}.hint`),
   }));
+
+  // Mobile money (Wave, Orange Money, MTN…) via PayDunya : tant que le compte marchand n'est pas approuvé, le serveur ne propose pas
+  // ce moyen. Une agence de la zone franc CFA le voit alors annoncé « bientôt disponible », au lieu de croire qu'il n'existe pas.
+  // Dès que PayDunya est actif, le moyen apparaît dans la liste ci-dessus et cette annonce disparaît d'elle-même.
+  const mobileMoneyBientot =
+    Array.isArray(moyensDisponibles) &&
+    !moyensDisponibles.includes("PAYDUNYA") &&
+    (currency === "XOF" || paysParCode(user?.country ?? "")?.devise === "XOF");
 
   // Le moyen présélectionné doit exister dans la liste : sinon le premier clic
   // sur « Payer » partirait sur un moyen que le serveur refuse.
@@ -580,6 +589,19 @@ export default function SubscriptionPage() {
                       </div>
                     </label>
                   ))}
+                  {mobileMoneyBientot && (
+                    <div className="flex items-start gap-3 rounded-[var(--rayon-bouton)] border border-dashed border-slate-300 bg-slate-50 p-3" data-testid="mobile-money-bientot">
+                      <div>
+                        <p className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-700">
+                          {t("manager.subscription.paymentMethods.PAYDUNYA_BIENTOT.label")}
+                          <span className="bg-orange-100 px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-orange-800">
+                            {t("manager.subscription.paymentMethods.PAYDUNYA_BIENTOT.badge")}
+                          </span>
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-slate-600">{t("manager.subscription.paymentMethods.PAYDUNYA_BIENTOT.hint")}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Renouvellement automatique réel (Stripe Subscriptions) :
