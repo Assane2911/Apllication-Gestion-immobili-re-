@@ -76,6 +76,7 @@ const zone: ZoneBase = {
       PLAN_REQUIRED: "This feature is reserved for the {{plan}} plan or higher. Upgrade your plan to access it.",
       AUTORENEW_CARD_ONLY: "Automatic renewal is only available for card payments (Stripe).",
       UNLIMITED_NO_SUBSCRIBE: "Your account has unlimited access: there is no subscription to take out.",
+      PLAN_TOO_SMALL_FOR_PROPERTIES: "You manage {{count}} properties, and the {{plan}} plan allows {{max}}. Choose a higher plan, or reduce your number of properties before subscribing.",
       PLAN_INVALID: "Invalid plan",
       SUBSCRIPTION_IN_PROGRESS: "A subscription request is already in progress for this account. Please wait a moment and try again.",
       UNLIMITED_NO_CANCEL: "Your account has unlimited access: there is nothing to cancel.",

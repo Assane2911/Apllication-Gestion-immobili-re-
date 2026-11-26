@@ -74,6 +74,7 @@ const zone = {
       PLAN_REQUIRED: "Cette fonctionnalité est réservée à la formule {{plan}} ou supérieure. Passez à une formule supérieure pour y accéder.",
       AUTORENEW_CARD_ONLY: "Le renouvellement automatique n'est disponible que pour le paiement par carte (Stripe).",
       UNLIMITED_NO_SUBSCRIBE: "Votre compte a un accès illimité : il n'y a aucun abonnement à souscrire.",
+      PLAN_TOO_SMALL_FOR_PROPERTIES: "Vous gérez {{count}} biens, et la formule {{plan}} en autorise {{max}}. Choisissez une formule supérieure, ou réduisez votre nombre de biens avant de souscrire.",
       PLAN_INVALID: "Plan invalide",
       SUBSCRIPTION_IN_PROGRESS: "Une demande d'abonnement est déjà en cours pour ce compte. Patientez un instant puis réessayez.",
       UNLIMITED_NO_CANCEL: "Votre compte a un accès illimité : il n'y a rien à résilier.",

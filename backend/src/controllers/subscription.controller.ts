@@ -296,6 +296,31 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
   const tarif = tarifPourDevise(body.plan, currency);
   if (!tarif) throw new ApiError(400, "Plan invalide", "PLAN_INVALID");
 
+  // Plafond de biens de la formule choisie. Le plafond n'est vérifié qu'à la CRÉATION d'un bien : sans ce contrôle, un gestionnaire
+  // qui a ajouté 12 biens pendant l'essai (formule effective Pro, 25 biens) souscrivait à Starter (5 biens) pour 9 € et gardait ses
+  // 12 biens — un tarif que la formule n'annonce pas. On refuse donc la souscription AVANT tout paiement, en proposant une formule
+  // supérieure : rien n'est retiré au gestionnaire, qui choisit en connaissance de cause.
+  //
+  // Exception : renouveler la formule qu'on a DÉJÀ payée. Un abonné d'avant ce contrôle qui dépasse son plafond ne doit pas se voir
+  // refuser le paiement de ce qu'il utilise déjà ; la page Abonnement lui signale le dépassement (voir getSubscriptionStatus).
+  const plafondDeLaFormule = maxPropertiesForPlan(body.plan);
+  const abonnePayant = user.subscriptionStatus === "ACTIVE" || user.subscriptionStatus === "CANCELLED";
+  const renouvelleSaFormule = abonnePayant && user.subscriptionPlan === body.plan;
+  if (plafondDeLaFormule !== null && !renouvelleSaFormule) {
+    const [{ count: nombreDeBiens }] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(properties)
+      .where(eq(properties.managerId, user.id));
+    if (nombreDeBiens > plafondDeLaFormule) {
+      throw new ApiError(
+        409,
+        `Vous gérez ${nombreDeBiens} biens, et la formule ${planDef.name} en autorise ${plafondDeLaFormule}. Choisissez une formule supérieure, ou réduisez votre nombre de biens avant de souscrire.`,
+        "PLAN_TOO_SMALL_FOR_PROPERTIES",
+        { count: nombreDeBiens, max: plafondDeLaFormule, plan: planDef.name }
+      );
+    }
+  }
+
   const amount = body.billingCycle === "ANNUAL" ? tarif.annual : tarif.monthly;
   const paymentReferenceId = `sub_${user.id}_${Date.now()}`;
 
