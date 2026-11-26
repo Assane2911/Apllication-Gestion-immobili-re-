@@ -463,8 +463,6 @@ export async function initDb() {
         email TEXT NOT NULL,
         phone TEXT NOT NULL,
         address TEXT,
-        iban TEXT,
-        bic TEXT,
         management_fee_rate DOUBLE PRECISION NOT NULL DEFAULT 8.0,
         notes TEXT,
         user_id TEXT REFERENCES users(id),
@@ -522,8 +520,6 @@ export async function initDb() {
     await creerTable("platform_settings", sql`
       CREATE TABLE IF NOT EXISTS platform_settings (
         id TEXT PRIMARY KEY,
-        iban TEXT,
-        bic TEXT,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
@@ -1166,8 +1162,6 @@ export async function initDb() {
     await ajouterColonne("users", "subscription_payment_attempt_started_at", sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_payment_attempt_started_at TIMESTAMP`);
     await ajouterColonne("invoices", "payment_attempt_started_at", sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payment_attempt_started_at TIMESTAMP`);
     await ajouterColonne("properties", "owner_id", sql`ALTER TABLE properties ADD COLUMN IF NOT EXISTS owner_id TEXT REFERENCES owners(id) ON DELETE SET NULL`);
-    await ajouterColonne("agency_settings", "iban", sql`ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS iban TEXT`);
-    await ajouterColonne("agency_settings", "bic", sql`ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS bic TEXT`);
     await ajouterColonne("agency_settings", "overdue_reminders_enabled", sql`ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS overdue_reminders_enabled BOOLEAN NOT NULL DEFAULT false`);
     await ajouterColonne("agency_settings", "overdue_grace_days", sql`ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS overdue_grace_days INTEGER NOT NULL DEFAULT 5`);
     await ajouterColonne("agency_settings", "overdue_interval_days", sql`ALTER TABLE agency_settings ADD COLUMN IF NOT EXISTS overdue_interval_days INTEGER NOT NULL DEFAULT 10`);

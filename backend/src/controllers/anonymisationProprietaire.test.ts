@@ -31,8 +31,6 @@ describe("Anonymisation d'un propriétaire", () => {
     const owner = await createOwner(manager.id, {
       companyName: "SCI Les Palmiers",
       address: "12 rue de la Paix, Dakar",
-      iban: "FR7630006000011234567890189",
-      bic: "AGRIFRPP",
       notes: "Préfère être contacté par email",
     });
     const property = await createProperty(manager.id, { ownerId: owner.id });
@@ -73,8 +71,6 @@ describe("Anonymisation d'un propriétaire", () => {
     expect(apres.companyName).toBeNull();
     expect(apres.phone).toBe("");
     expect(apres.address).toBeNull();
-    expect(apres.iban).toBeNull();
-    expect(apres.bic).toBeNull();
     expect(apres.notes).toBeNull();
     expect(apres.anonymizedAt).not.toBeNull();
     // Même domaine réservé (RFC 2606) que anonymiserTenant, garanti sans

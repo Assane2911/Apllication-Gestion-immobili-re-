@@ -46,7 +46,7 @@ describe("État public de la maintenance (GET /api/maintenance)", () => {
   });
 
   it("n'expose que les dates, le message et l'indicateur : rien d'autre des réglages de la plateforme", async () => {
-    await testDb.insert(platformSettings).values({ id: "platform", iban: "FR7630006000011234567890189", bic: "BNPAFRPP" }).onConflictDoNothing();
+    await testDb.insert(platformSettings).values({ id: "platform" }).onConflictDoNothing();
     await poserFenetre(-HEURE, HEURE);
     const res = await request(app).get("/api/maintenance");
     expect(Object.keys(res.body.maintenance).sort()).toEqual(["debut", "enCours", "fin", "message"]);

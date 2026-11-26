@@ -100,16 +100,16 @@ describe("POST/PUT /api/owners — plus de coordonnées bancaires", () => {
       .send({ firstName: "Fatou", lastName: "Diop", phone: "+33 6 12 34 56 78", email: "fatou-iban@test.local", iban: "FR7630006000011234567890189", bic: "AGRIFRPP" });
 
     expect(res.status).toBe(201);
-    expect(res.body.iban ?? null).toBeNull();
-    expect(res.body.bic ?? null).toBeNull();
+    expect(res.body).not.toHaveProperty("iban");
+    expect(res.body).not.toHaveProperty("bic");
     const [ligne] = await testDb.select().from(owners).where(eq(owners.email, "fatou-iban@test.local"));
-    expect(ligne.iban).toBeNull();
-    expect(ligne.bic).toBeNull();
+    expect(ligne).not.toHaveProperty("iban");
+    expect(ligne).not.toHaveProperty("bic");
   });
 
-  it("une mise à jour ne touche jamais aux colonnes bancaires, même si un ancien client en envoie", async () => {
+  it("une mise à jour ignore l'IBAN d'un ancien client : le reste de la fiche est modifié, rien de bancaire n'est renvoyé", async () => {
     const manager = await createManager();
-    const owner = await createOwner(manager.id, { iban: "FR7630006000011234567890189" });
+    const owner = await createOwner(manager.id);
 
     const res = await request(app)
       .put(`/api/owners/${owner.id}`)
@@ -117,8 +117,10 @@ describe("POST/PUT /api/owners — plus de coordonnées bancaires", () => {
       .send({ firstName: "Fatou", iban: "DE89370400440532013000" });
 
     expect(res.status).toBe(200);
-    const [intact] = await testDb.select().from(owners).where(eq(owners.id, owner.id));
-    expect(intact.iban).toBe("FR7630006000011234567890189");
+    expect(res.body.firstName).toBe("Fatou");
+    expect(res.body).not.toHaveProperty("iban");
+    const [apres] = await testDb.select().from(owners).where(eq(owners.id, owner.id));
+    expect(apres.firstName).toBe("Fatou");
   });
 });
 

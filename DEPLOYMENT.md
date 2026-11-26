@@ -337,6 +337,17 @@ Elle efface le secret et les codes de secours du compte, **révoque ses sessions
 
 Si le mot de passe est lui aussi perdu, `npm run create-admin -- <email> "<nouveau mot de passe>"` le remplace, puis `reset-admin-2fa` remet la double authentification à zéro.
 
+## Migrations destructives (retrait d'une colonne)
+
+Le schéma de production évolue par ajouts, au démarrage (`initDb`). Retirer une colonne ne se fait **jamais** automatiquement : le script SQL correspondant est rangé dans `backend/migrations/` et se joue à la main, dans cet ordre :
+
+1. déployer d'abord le code qui ne nomme plus la colonne (Drizzle nomme chaque colonne déclarée : une colonne retirée trop tôt fait échouer toutes les requêtes de l'ancien code) ;
+2. vérifier le déploiement (`/api/health`, aucune erreur d'exécution) ;
+3. vérifier la fraîcheur de la dernière sauvegarde (voir ci-dessous) : la suppression est irréversible ;
+4. jouer le script (il est idempotent et transactionnel).
+
+Premier cas : `migrations/2026-11-26-supprimer-iban-bic.sql` (colonnes `iban` et `bic` des tables `owners`, `agency_settings` et `platform_settings`, inutilisées depuis le retrait du virement bancaire).
+
 ## Sauvegarde et restauration
 
 Le plan gratuit de Supabase **ne fait aucune sauvegarde automatique** : après une fausse manipulation (un `DROP`, un `UPDATE` sans `WHERE`) ou une panne, il n'y aurait aucun moyen de revenir en arrière. Le workflow `.github/workflows/sauvegarde.yml` y supplée : chaque jour (programmé à 02 h 43 UTC, mais GitHub le lance en pratique entre 09 h et 11 h UTC : relevé du 14 au 21 novembre 2026, l'heure exacte varie avec la charge de GitHub), il copie la base (schéma `public`, celui de l'application), **chiffre** la copie, **prouve qu'elle se restaure** (dans un PostgreSQL jetable, avec le nombre de lignes de chaque table dans le résumé du run), puis la dépose comme artefact du run, conservé 30 jours. Un échec ouvre un ticket.
