@@ -71,6 +71,8 @@
   --radius-2xl: 0.1875rem;
   --radius-3xl: 0.25rem;
   --radius-4xl: 0.25rem;
+  /* Boutons d'action : voir la règle « Boutons d'action » plus bas. */
+  --rayon-bouton: 10px;
 
   --shadow-2xs: 0 0 #0000;
   --shadow-xs: 0 0 #0000;
@@ -512,6 +514,47 @@ html [data-surface="app"] input[type="file"]::file-selector-button {
 }
 html [data-surface="app"] input[type="file"]::file-selector-button:hover {
   background: var(--color-slate-100);
+}
+
+/*
+ * Boutons d'action : coins arrondis, partout (gestionnaire, locataire, propriétaire, administration, pages publiques).
+ * Le reste de l'interface garde ses angles droits de « plan » ; les boutons, eux, sont les seuls éléments sur lesquels on agit, et un
+ * coin rond les distingue d'un coup d'œil d'un cartouche ou d'un titre de tableau.
+ *
+ * Une règle sur les classes plutôt qu'un composant : les boutons sont écrits à la main, avec les mêmes classes, dans plus de cent
+ * fichiers. Sont arrondis :
+ *  - les boutons et liens « pleins » ou « cernés » : un fond ou un trait de couleur, un gras, un espacement vertical ;
+ *  - les boutons-icônes carrés (cloche, fermer, remonter) : un cadre ou un fond, centrés, de taille fixe.
+ * Restent droits : les liens soulignés ou à filet, les onglets et bascules en police mono (ils forment un groupe collé, dont
+ * les arrondis ne tomberaient qu'aux extrémités), les éléments à bord partiel (border-b, border-l…) et les pastilles rondes.
+ */
+html
+  :is(button, a, [role="button"]):is([class*="py-"]):is([class*="font-semibold"], [class*="font-bold"]):is(
+    [class*="bg-ink-"],
+    [class*="bg-orange-"],
+    [class*="bg-brand-"],
+    [class*="bg-red-"],
+    [class*="bg-rose-"],
+    [class*="bg-emerald-"],
+    [class*="bg-green-"],
+    [class*="bg-white"],
+    [class*="border-ink-"],
+    [class*="border-orange-"],
+    [class*="border-rose-"],
+    [class*="border-red-"],
+    [class*="border-slate-"],
+    [class*="border-brand-"]
+  ):not([class*="rounded-full"], [class*="font-mono"], [class*="border-b"], [class*="border-t"], [class*="border-l"], [class*="border-r"], [class*="divide"], [class*="underline"]),
+html
+  :is(button, a, [role="button"]):is([class*="justify-center"]):is([class*="h-"], [class*="size-"]):is([class*="border"], [class*="bg-"]):not(
+    [class*="rounded-full"],
+    [class*="font-mono"],
+    [class*="border-b"],
+    [class*="border-t"],
+    [class*="border-l"],
+    [class*="border-r"]
+  ) {
+  border-radius: var(--rayon-bouton);
 }
 
 /* Pastilles d'état (statuts, étiquettes) : angles droits, comme les cartouches d'un plan. */

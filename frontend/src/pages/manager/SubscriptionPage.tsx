@@ -452,13 +452,18 @@ export default function SubscriptionPage() {
       </div>
 
       {/* Tableau des formules */}
-      <div className="grid grid-cols-1 divide-y divide-slate-300 border border-slate-300 bg-white md:grid-cols-3 md:divide-x md:divide-y-0">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3 lg:gap-8">
         {plans.map((plan, rang) => {
           const isCurrentPlan = sub?.plan === plan.id && sub?.status === "ACTIVE";
           const price = billingCycle === "ANNUAL" ? Math.round(plan.annualPrice / 12) : plan.monthlyPrice;
 
           return (
-            <div key={plan.id} className="relative flex flex-col">
+            <div
+              key={plan.id}
+              className={`relative flex flex-col overflow-hidden rounded-[16px] border bg-white ${
+                plan.popular ? "border-orange-700 shadow-md" : "border-slate-300"
+              }`}
+            >
               <div
                 className={`border-b px-6 py-2 font-mono text-[10px] font-semibold uppercase tracking-wider ${
                   plan.popular ? "border-orange-700 bg-orange-700 text-white" : "border-slate-300 bg-slate-50 text-slate-600"
@@ -506,7 +511,7 @@ export default function SubscriptionPage() {
                     setAutoRenew(false);
                   }}
                   disabled={isCurrentPlan}
-                  className={`w-full border px-4 py-2.5 text-xs font-bold transition-colors ${
+                  className={`w-full rounded-[10px] border px-4 py-2.5 text-xs font-bold transition-colors ${
                     isCurrentPlan
                       ? "cursor-not-allowed border-slate-300 bg-slate-100 text-slate-600"
                       : plan.popular
