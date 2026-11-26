@@ -195,12 +195,12 @@ async function traiterIpnPaydunya(req: Request, res: Response, portee: PorteeIpn
 
     if (!subscriptionRow) {
       console.warn(`[paydunya] Abonnement introuvable pour le token ${paydunyaToken}`);
-      signalerAbonnementNonRapproche({ prestataire: "PAYDUNYA", referencePrestataire: paydunyaToken, montant: paidAmount, raison: "abonnement introuvable pour ce jeton" });
+      await signalerAbonnementNonRapproche({ prestataire: "PAYDUNYA", referencePrestataire: paydunyaToken, montant: paidAmount, raison: "abonnement introuvable pour ce jeton" });
     } else if (!amountMatches(paidAmount, subscriptionRow.amount)) {
       console.warn(
         `[paydunya] IPN rejetée pour l'abonnement ${subscriptionRow.id} : montant confirmé (${paidAmount}) ≠ montant attendu (${subscriptionRow.amount}).`
       );
-      signalerAbonnementNonRapproche({ prestataire: "PAYDUNYA", referencePrestataire: paydunyaToken, montant: paidAmount, raison: "montant différent de l'abonnement attendu" });
+      await signalerAbonnementNonRapproche({ prestataire: "PAYDUNYA", referencePrestataire: paydunyaToken, montant: paidAmount, raison: "montant différent de l'abonnement attendu" });
     } else {
       // Marque l'historique de paiement PAID ET active réellement l'accès du
       // compte (subscriptionStatus/plan/endsAt) — voir subscriptionActivation.service.ts.

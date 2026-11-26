@@ -183,10 +183,12 @@ describe("signalerRemboursementOuLitige : à qui, et quoi", () => {
     });
     stripeRetrouve("cs_abo");
     const signalement = vi.spyOn(Sentry, "captureMessage").mockReturnValue("id");
+    const attente = vi.spyOn(Sentry, "flush").mockResolvedValue(true);
 
     await signalerRemboursementOuLitige(remboursement({ montantBrut: 2900 }));
 
     expect(signalement).toHaveBeenCalledTimes(1);
+    expect(attente).toHaveBeenCalledTimes(1); // l'envoi est attendu : sur Vercel, la fonction peut être gelée juste après la réponse
     const [message, contexte] = signalement.mock.calls[0] as unknown as [string, { level: string; tags: Record<string, string>; extra: Record<string, unknown> }];
     expect(message).toContain("remboursement");
     expect(contexte.level).toBe("error");

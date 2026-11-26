@@ -44,7 +44,7 @@ let signalerLoyer: ReturnType<typeof vi.spyOn>;
 let signalerAbonnement: ReturnType<typeof vi.spyOn>;
 beforeEach(() => {
   signalerLoyer = vi.spyOn(nonRapproche, "signalerPaiementNonRapproche").mockResolvedValue(undefined as never);
-  signalerAbonnement = vi.spyOn(nonRapproche, "signalerAbonnementNonRapproche").mockImplementation(() => undefined as never);
+  signalerAbonnement = vi.spyOn(nonRapproche, "signalerAbonnementNonRapproche").mockResolvedValue(undefined);
   vi.spyOn(emailService, "sendEmail").mockResolvedValue({ simulated: true } as never);
   vi.spyOn(console, "warn").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});

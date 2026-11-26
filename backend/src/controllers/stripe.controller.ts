@@ -199,12 +199,12 @@ export const handleStripeWebhook = asyncHandler(async (req: Request, res: Respon
 
     if (!abonnement) {
       console.warn(`[stripe] Abonnement introuvable pour la session ${sessionId}`);
-      signalerAbonnementNonRapproche({ prestataire: "STRIPE", referencePrestataire: sessionId, montant: montantPaye, raison: "abonnement introuvable pour cette session" });
+      await signalerAbonnementNonRapproche({ prestataire: "STRIPE", referencePrestataire: sessionId, montant: montantPaye, raison: "abonnement introuvable pour cette session" });
     } else if (!montantCorrespond(montantPaye, abonnement.amount)) {
       console.warn(
         `[stripe] Webhook rejeté pour l'abonnement ${abonnement.id} : montant confirmé (${montantPaye}) ≠ montant attendu (${abonnement.amount}).`
       );
-      signalerAbonnementNonRapproche({ prestataire: "STRIPE", referencePrestataire: sessionId, montant: montantPaye, raison: "montant différent de l'abonnement attendu" });
+      await signalerAbonnementNonRapproche({ prestataire: "STRIPE", referencePrestataire: sessionId, montant: montantPaye, raison: "montant différent de l'abonnement attendu" });
     } else {
       // Idempotent : un abonnement déjà PAID est renvoyé tel quel. Stripe
       // rejoue ses webhooks en cas de doute, et un double clic ne doit pas
@@ -326,7 +326,7 @@ async function traiterFactureRenouvellement(facture: StripeInvoice): Promise<voi
   });
   if (!resultat) {
     console.warn(`[stripe] Renouvellement non appliqué pour la facture ${facture.id} (abonnement introuvable ou montant/devise incohérents).`);
-    signalerAbonnementNonRapproche({ prestataire: "STRIPE", referencePrestataire: facture.id, montant: montantPaye, raison: "renouvellement non appliqué (abonnement introuvable ou montant/devise incohérents)" });
+    await signalerAbonnementNonRapproche({ prestataire: "STRIPE", referencePrestataire: facture.id, montant: montantPaye, raison: "renouvellement non appliqué (abonnement introuvable ou montant/devise incohérents)" });
   }
 }
 
