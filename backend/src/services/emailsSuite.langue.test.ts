@@ -118,7 +118,7 @@ describe("au garant — dans la langue du locataire qu'il garantit", () => {
 describe("au propriétaire — reversement", () => {
   async function agence(langue: string | null) {
     const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
-    const owner = await createOwner(manager.id, { managementFeeRate: 10, iban: "FR7630006000011234567890189", email: "proprio@test.local" });
+    const owner = await createOwner(manager.id, { managementFeeRate: 10, email: "proprio@test.local" });
     await testDb.update((await import("../db/schema")).owners).set({ language: langue }).where(eq((await import("../db/schema")).owners.id, owner.id));
     const property = await createProperty(manager.id, { title: "Villa Ngor", ownerId: owner.id });
     const tenant = await createTenant(manager.id);

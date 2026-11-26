@@ -173,8 +173,6 @@ describe("GET /api/admin/managers/:id", () => {
       userId: manager.id,
       agencyName: "Agence Fiche",
       phone: "+221770000000",
-      iban: "FR7630006000011234567890189",
-      bic: "AGRIFRPP",
     });
     const property = await createProperty(manager.id);
     const tenant = await createTenant(manager.id);
@@ -207,24 +205,20 @@ describe("GET /api/admin/managers/:id", () => {
     expect(res.body.billingHistory[0]).toMatchObject({ plan: "PRO", amount: 29, paymentRef: "REF-42" });
   });
 
-  it("n'expose ni secret, ni hash, ni IBAN/BIC de l'agence", async () => {
+  it("n'expose ni secret ni hash", async () => {
     const token = await adminToken();
     const manager = await createManager({ totpSecret: "SECRET-TOTP", stripeCustomerId: "cus_999" });
     await testDb.insert(agencySettings).values({
       userId: manager.id,
       agencyName: "Agence",
-      iban: "FR7630006000011234567890189",
-      bic: "AGRIFRPP",
     });
 
     const res = await request(app).get(`/api/admin/managers/${manager.id}`).set(authHeader(token));
 
     const brut = JSON.stringify(res.body);
-    for (const interdit of ["passwordHash", "SECRET-TOTP", "cus_999", "FR7630006000011234567890189", "AGRIFRPP", "$2"]) {
+    for (const interdit of ["passwordHash", "SECRET-TOTP", "cus_999", "$2"]) {
       expect(brut).not.toContain(interdit);
     }
-    expect(res.body.agency).not.toHaveProperty("iban");
-    expect(res.body.agency).not.toHaveProperty("bic");
   });
 
   it("renvoie le statut calculé (EXPIRED) et non la colonne obsolète", async () => {

@@ -304,11 +304,6 @@ export const owners = pgTable(
     email: text("email").notNull(),
     phone: text("phone").notNull(),
     address: text("address"),
-    // Coordonnées bancaires du propriétaire, pour lui reverser les loyers
-    // encaissés (moins la commission — voir managementFeeRate) — même
-    // logique que agencySettings.iban/bic.
-    iban: text("iban"),
-    bic: text("bic"),
     // Taux de commission de l'agence sur les loyers de ce propriétaire (en %).
     managementFeeRate: doublePrecision("management_fee_rate").notNull().default(8.0),
     notes: text("notes"),
@@ -1381,13 +1376,6 @@ export const agencySettings = pgTable("agency_settings", {
   email: text("email"),
   legalNotice: text("legal_notice"),
   stampOrSignatureUrl: text("stamp_or_signature_url"),
-  // Coordonnées bancaires affichées au locataire qui choisit "Virement
-  // bancaire" (voir agency.controller.ts pour la validation IBAN/BIC et
-  // TenantInvoicesPage.tsx pour l'affichage). Sans elles, un locataire qui
-  // déclare un virement n'a aucun moyen de savoir où l'envoyer — la
-  // déclaration ne fait alors que masquer l'absence réelle de paiement.
-  iban: text("iban"),
-  bic: text("bic"),
   // Relances graduées des impayés (voir services/relances.service.ts). Désactivées par défaut :
   // l'agence choisit de les envoyer. Délai de grâce : jours après l'échéance avant la 1re relance ;
   // intervalle : jours entre deux relances (3 au plus).
@@ -1399,17 +1387,10 @@ export const agencySettings = pgTable("agency_settings", {
   ...timestamps,
 });
 
-// --- Platform Settings (coordonnées bancaires de LA PLATEFORME elle-même) ---
-// Table volontairement à une seule ligne (id fixe "platform", voir
-// platformSettings.controller.ts) : contrairement à agencySettings — un
-// compte par agence, pour encaisser SES loyers — il n'existe qu'un seul
-// compte destinataire des abonnements SaaS, celui de l'exploitant de la
-// plateforme, montré à tout gestionnaire qui règle son abonnement par
-// virement (voir subscription.routes.ts /bank-details).
+// --- Platform Settings (réglages de LA PLATEFORME elle-même) ---
+// Table volontairement à une seule ligne (id fixe "platform") : la fenêtre de maintenance planifiée.
 export const platformSettings = pgTable("platform_settings", {
   id: text("id").primaryKey(),
-  iban: text("iban"),
-  bic: text("bic"),
   // Maintenance planifiée : une fenêtre [début, fin[ pendant laquelle l'API répond « 503 maintenance » (voir
   // middleware/maintenance.ts). Les trois champs sont nuls ou posés ensemble (le message est facultatif). La fenêtre a toujours
   // une fin : une maintenance oubliée se termine d'elle-même.

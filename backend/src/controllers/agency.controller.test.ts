@@ -360,8 +360,8 @@ describe("PUT /api/agency — plus de coordonnées bancaires", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.agencyName).toBe("Horizon Immobilier");
-    expect(res.body.iban ?? null).toBeNull();
-    expect(res.body.bic ?? null).toBeNull();
+    expect(res.body).not.toHaveProperty("iban");
+    expect(res.body).not.toHaveProperty("bic");
   });
 });
 

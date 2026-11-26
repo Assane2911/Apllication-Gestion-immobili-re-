@@ -280,8 +280,6 @@ export const anonymiserOwner = asyncHandler(async (req: Request, res: Response) 
         email: `anonyme-${existing.id}@supprime.invalid`,
         phone: "",
         address: null,
-        iban: null,
-        bic: null,
         notes: null,
         userId: null,
         anonymizedAt: new Date(),
