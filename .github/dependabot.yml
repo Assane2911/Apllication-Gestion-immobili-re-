@@ -22,6 +22,10 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+      # pdfkit 0.21 charge fontkit v3 (module ES seul) : la fonction Vercel plante au démarrage (ERR_REQUIRE_ESM,
+      # 26 novembre 2026). À ne retenter qu'après l'avoir essayée sur un aperçu Vercel, pas seulement en CI.
+      - dependency-name: "pdfkit"
+        versions: [">=0.21.0"]
 
   - package-ecosystem: "npm"
     directory: "/frontend"
