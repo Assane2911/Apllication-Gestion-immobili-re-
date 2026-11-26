@@ -120,7 +120,7 @@ export async function construireExportLocataire(tenantId: string) {
   }
   const journal = await db.select().from(activityLogs).where(or(...entitesConcernees));
 
-  // Le détail des encaissements de ses factures (date, montant, moyen, référence de virement saisie par le locataire)
+  // Le détail des encaissements de ses factures (date, montant, moyen, référence saisie)
   // et les révisions de loyer de ses baux : des données qui le concernent, que les factures et les contrats ne
   // montrent qu'en résumé (dernier moyen de paiement, loyer actuel).
   const encaissements = idsFactures.length
@@ -270,8 +270,6 @@ export async function construireExportProprietaire(ownerId: string) {
       email: proprietaire.email,
       phone: proprietaire.phone,
       address: proprietaire.address,
-      iban: proprietaire.iban,
-      bic: proprietaire.bic,
       managementFeeRate: proprietaire.managementFeeRate,
       notes: proprietaire.notes,
       language: proprietaire.language,

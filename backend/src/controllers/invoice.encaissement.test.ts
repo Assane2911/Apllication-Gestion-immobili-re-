@@ -25,7 +25,7 @@ const marquer = (manager: { id: string }, id: string, corps: Record<string, unkn
   request(app).post(`/api/invoices/${id}/mark-paid`).set(authHeader(tokenFor(manager as never))).send(corps);
 
 describe("mark-paid — moyen d'encaissement", () => {
-  it.each(["BANK_TRANSFER", "CASH", "CHEQUE", "MOBILE_MONEY"])("enregistre le moyen %s", async (moyen) => {
+  it.each(["CASH", "CHEQUE", "MOBILE_MONEY"])("enregistre le moyen %s", async (moyen) => {
     const { manager, invoice } = await facture();
     const res = await marquer(manager, invoice.id, { paymentMethod: moyen });
     expect(res.status).toBe(200);

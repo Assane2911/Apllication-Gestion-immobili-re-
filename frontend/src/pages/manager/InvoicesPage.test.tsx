@@ -214,7 +214,7 @@ describe("InvoicesPage (manager)", () => {
     await waitFor(() =>
       expect(mockedApi.post).toHaveBeenCalledWith(
         "/invoices/inv-1/mark-paid",
-        expect.objectContaining({ paymentMethod: "BANK_TRANSFER", paidAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) })
+        expect.objectContaining({ paymentMethod: "CASH", paidAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) })
       )
     );
     await waitFor(() => expect(getFactures).toHaveBeenCalledTimes(2));
@@ -426,9 +426,9 @@ describe("InvoicesPage — marquer une facture réglée", () => {
     expect(mockedApi.post).not.toHaveBeenCalled();
   });
 
-  it("propose virement par défaut et la date du jour, sans dépasser aujourd'hui", async () => {
+  it("propose espèces par défaut et la date du jour, sans dépasser aujourd'hui", async () => {
     const { fenetre } = await ouvrirLaFenetre();
-    expect(within(fenetre).getByLabelText("Moyen de paiement")).toHaveValue("BANK_TRANSFER");
+    expect(within(fenetre).getByLabelText("Moyen de paiement")).toHaveValue("CASH");
     const date = within(fenetre).getByLabelText("Date d'encaissement") as HTMLInputElement;
     const d = new Date();
     const aujourdhui = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;

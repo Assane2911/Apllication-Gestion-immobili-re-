@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import { AuthContext } from "../../context/auth";
 import type { AuthContextValue } from "../../context/auth";
-import type { AuthUser, PlatformSettings } from "../../types";
+import type { AuthUser } from "../../types";
 import AdminSettingsPage from "./AdminSettingsPage";
 
 vi.mock("../../api/client", async () => {
@@ -32,15 +32,11 @@ function authValue(user: AuthUser): AuthContextValue {
   };
 }
 
-/**
- * La page lit les coordonnées bancaires ET l'état de la maintenance (deux sections, deux appels, dans un ordre qui ne regarde pas
- * ces tests) : les réponses sont donc données par adresse, et non dans l'ordre des appels.
- */
-function reglages(resultat: { data: PlatformSettings } | Error) {
+/** La page ne lit plus que l'état de la maintenance : la réponse est donnée par adresse. */
+function maintenanceAbsente() {
   mockedApi.get.mockImplementation(async (url: string) => {
     if (url === "/admin/maintenance") return { data: { maintenance: null } };
-    if (resultat instanceof Error) throw resultat;
-    return resultat;
+    throw new Error(`appel inattendu : ${url}`);
   });
 }
 
@@ -53,15 +49,6 @@ function renderPage(twoFactorEnabled = false) {
   );
 }
 
-function settings(overrides: Partial<PlatformSettings> = {}): PlatformSettings {
-  return {
-    id: "platform",
-    iban: null,
-    bic: null,
-    ...overrides,
-  };
-}
-
 describe("AdminSettingsPage", () => {
   beforeEach(() => {
     mockedApi.get.mockReset();
@@ -69,85 +56,21 @@ describe("AdminSettingsPage", () => {
     mockedApi.post.mockReset();
   });
 
-  it("pré-remplit le formulaire avec l'IBAN et le BIC déjà configurés", async () => {
-    reglages({
-      data: settings({ iban: "FR7630001007941234567890185", bic: "BDFEFRPPXXX" }),
-    });
-    renderPage();
+  it("ne propose plus de coordonnées bancaires : plus aucun moyen de paiement n'en a besoin", async () => {
+    maintenanceAbsente();
+    renderPage(false);
 
-    await waitFor(() =>
-      expect(screen.getByLabelText("IBAN de la plateforme")).toHaveValue("FR7630001007941234567890185")
-    );
-    expect(screen.getByLabelText("BIC / SWIFT")).toHaveValue("BDFEFRPPXXX");
-  });
-
-  it("laisse le formulaire vide quand rien n'est encore configuré", async () => {
-    reglages({ data: settings() });
-    renderPage();
-
-    await waitFor(() => expect(screen.getByLabelText("IBAN de la plateforme")).toBeInTheDocument());
-    expect(screen.getByLabelText("IBAN de la plateforme")).toHaveValue("");
-    expect(screen.getByLabelText("BIC / SWIFT")).toHaveValue("");
-  });
-
-  it("enregistre l'IBAN et le BIC saisis et affiche un message de succès", async () => {
-    const user = userEvent.setup();
-    reglages({ data: settings() });
-    mockedApi.put.mockResolvedValueOnce({
-      data: settings({ iban: "FR7630001007941234567890185", bic: "BDFEFRPPXXX" }),
-    });
-    renderPage();
-
-    await waitFor(() => expect(screen.getByLabelText("IBAN de la plateforme")).toBeInTheDocument());
-    await user.type(screen.getByLabelText("IBAN de la plateforme"), "FR7630001007941234567890185");
-    await user.type(screen.getByLabelText("BIC / SWIFT"), "BDFEFRPPXXX");
-    await user.click(screen.getByRole("button", { name: "Enregistrer" }));
-
-    await waitFor(() =>
-      expect(mockedApi.put).toHaveBeenCalledWith("/admin/settings", {
-        iban: "FR7630001007941234567890185",
-        bic: "BDFEFRPPXXX",
-      })
-    );
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Coordonnées bancaires enregistrées"));
-  });
-
-  it("affiche l'erreur du serveur quand l'IBAN saisi est invalide", async () => {
-    const user = userEvent.setup();
-    reglages({ data: settings() });
-    mockedApi.put.mockRejectedValueOnce({
-      response: { data: { error: "Requête invalide : données manquantes ou incorrectes (champ concerné : iban)." } },
-      isAxiosError: true,
-    });
-    renderPage();
-
-    await waitFor(() => expect(screen.getByLabelText("IBAN de la plateforme")).toBeInTheDocument());
-    await user.type(screen.getByLabelText("IBAN de la plateforme"), "FR00INVALIDE");
-    await user.click(screen.getByRole("button", { name: "Enregistrer" }));
-
-    await waitFor(() => expect(screen.getByText(/champ concerné : iban/)).toBeInTheDocument());
-  });
-
-  it("affiche une erreur générique si l'enregistrement échoue", async () => {
-    const user = userEvent.setup();
-    reglages({ data: settings() });
-    mockedApi.put.mockRejectedValueOnce({
-      response: { data: { error: "Erreur serveur" } },
-      isAxiosError: true,
-    });
-    renderPage();
-
-    await waitFor(() => expect(screen.getByLabelText("IBAN de la plateforme")).toBeInTheDocument());
-    await user.click(screen.getByRole("button", { name: "Enregistrer" }));
-
-    await waitFor(() => expect(screen.getByText("Erreur serveur")).toBeInTheDocument());
+    expect(await screen.findByRole("button", { name: "Activer la double authentification" })).toBeInTheDocument();
+    expect(screen.queryByLabelText(/IBAN/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/BIC/i)).not.toBeInTheDocument();
+    expect(mockedApi.get).not.toHaveBeenCalledWith("/admin/settings");
   });
 
   // Le compte administrateur est le plus puissant de la plateforme : il doit pouvoir activer sa propre
   // double authentification, comme un gestionnaire (la page n'offrait aucun moyen de le faire).
   it("propose d'activer la double authentification et lance l'enrôlement", async () => {
     const user = userEvent.setup();
-    reglages({ data: settings() });
+    maintenanceAbsente();
     mockedApi.post.mockResolvedValueOnce({ data: { secret: "ABCDEFGH", qrCodeDataUrl: "data:image/png;base64,AAAA" } });
     renderPage(false);
 
@@ -157,63 +80,11 @@ describe("AdminSettingsPage", () => {
   });
 
   it("indique que la double authentification est activée et propose de la désactiver", async () => {
-    reglages({ data: settings() });
+    maintenanceAbsente();
     renderPage(true);
 
     expect(await screen.findByText("Double authentification activée")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Désactiver" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Activer la double authentification" })).not.toBeInTheDocument();
-  });
-
-  it("garde la sécurité du compte accessible même quand les coordonnées bancaires ne se chargent pas", async () => {
-    reglages(new Error("réseau"));
-    renderPage(false);
-
-    expect(await screen.findByRole("button", { name: "Activer la double authentification" })).toBeInTheDocument();
-  });
-
-  it("contrôle la clé de l'IBAN et le format du BIC, sans empêcher l'enregistrement", async () => {
-    const user = userEvent.setup();
-    reglages({ data: settings() });
-    renderPage();
-
-    const iban = await screen.findByLabelText("IBAN de la plateforme");
-    await user.type(iban, "FR7630001007941234567890186");
-    expect(screen.getByText(/La clé de cet IBAN ne correspond pas/)).toBeInTheDocument();
-
-    await user.clear(iban);
-    await user.type(iban, "FR76 3000 1007 9412 3456 7890 185");
-    expect(screen.getByText("Clé IBAN valide")).toBeInTheDocument();
-
-    await user.type(screen.getByLabelText("BIC / SWIFT"), "BDFEFRP");
-    expect(screen.getByText("Un BIC compte 8 ou 11 caractères")).toBeInTheDocument();
-    await user.type(screen.getByLabelText("BIC / SWIFT"), "PXXX");
-    expect(screen.getByText("Format BIC valide")).toBeInTheDocument();
-  });
-
-  it("montre l'aperçu de ce que verront les gestionnaires, IBAN groupé par quatre", async () => {
-    const user = userEvent.setup();
-    reglages({ data: settings() });
-    renderPage();
-
-    const apercu = await screen.findByRole("complementary", { name: "Ce que verront les gestionnaires" });
-    expect(apercu).toHaveTextContent("Saisissez l'IBAN pour voir l'aperçu.");
-
-    await user.type(screen.getByLabelText("IBAN de la plateforme"), "fr7630001007941234567890185");
-    expect(apercu).toHaveTextContent("FR76 3000 1007 9412 3456 7890 185");
-  });
-
-  it("signale les modifications non enregistrées puis le retour à jour après l'enregistrement", async () => {
-    const user = userEvent.setup();
-    reglages({ data: settings({ iban: "FR7630001007941234567890185", bic: "BDFEFRPPXXX" }) });
-    mockedApi.put.mockResolvedValueOnce({ data: settings() });
-    renderPage();
-
-    expect(await screen.findByText("À jour")).toBeInTheDocument();
-    await user.type(screen.getByLabelText("BIC / SWIFT"), "A");
-    expect(screen.getByText("Modifications non enregistrées")).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "Enregistrer" }));
-    expect(await screen.findByText("À jour")).toBeInTheDocument();
   });
 });

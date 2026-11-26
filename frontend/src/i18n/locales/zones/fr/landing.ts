@@ -160,7 +160,7 @@ const zone = {
         },
         {
           q: "Quels moyens de paiement mes locataires peuvent-ils utiliser ?",
-          a: "Le virement bancaire vers le compte de votre agence : le locataire le déclare dans l'application, puis vous marquez la facture comme réglée à réception. Le paiement du loyer par carte ou Mobile Money n'est pas proposé pour le moment.",
+          a: "Vos locataires règlent leur loyer en ligne (Mobile Money ou carte bancaire) directement sur le compte PayDunya de votre agence, que vous branchez dans vos réglages : l'argent ne passe pas par la plateforme. Un loyer reçu autrement (espèces, chèque, Mobile Money) s'enregistre à la main, en un clic.",
         },
         {
           q: "Puis-je annuler mon abonnement à tout moment ?",

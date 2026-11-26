@@ -26,7 +26,7 @@ export default function CartouchePlan({ espace, page, rang, total }: Props) {
   ];
 
   return (
-    <div aria-hidden="true" className="mt-10 mb-14 border-[1.5px] border-ink-900 bg-white font-mono">
+    <div aria-hidden="true" className="mt-10 mb-14 overflow-hidden rounded-[var(--rayon-bouton)] border-[1.5px] border-ink-900 bg-white font-mono">
       {/* Bande hachurée : le filet décoratif qui ouvre le cartouche. */}
       <div className="bande-motif h-2 border-b-[1.5px] border-ink-900 opacity-70" />
       <div className="grid grid-cols-2 gap-px bg-ink-900 md:grid-cols-[1.3fr_1fr_1.5fr_1fr_auto]">

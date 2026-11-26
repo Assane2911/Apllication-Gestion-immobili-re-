@@ -123,7 +123,7 @@ export function csvLocataires(
   return CSV_BOM + sortie.join("\n");
 }
 
-/** Propriétaires en CSV : coordonnées, commission et accès au portail ; l'IBAN n'y figure pas (donnée bancaire). */
+/** Propriétaires en CSV : coordonnées, commission et accès au portail. */
 export function csvProprietaires(
   proprietaires: Owner[],
   libelles: { name: string; company: string; phone: string; email: string; feeRate: string; portal: string },

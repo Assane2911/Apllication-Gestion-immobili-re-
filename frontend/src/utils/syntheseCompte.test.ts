@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  avertissementsBancaires,
   basculerEtape,
   completudeProfil,
   csvHistoriqueAbonnement,
@@ -18,30 +17,22 @@ import {
   syntheseHistorique,
 } from "./syntheseCompte";
 
-const form = { agencyName: "Baobab", siretOrId: "", address: "Dakar", phone: " ", legalNotice: "", iban: "", bic: "" };
+const form = { agencyName: "Baobab", siretOrId: "", address: "Dakar", phone: " ", legalNotice: "" };
 
 describe("completudeProfil", () => {
   it("compte les éléments renseignés et liste ceux qui manquent avec leur rubrique", () => {
     const r = completudeProfil(form, "/logo.png", null);
-    expect(r.total).toBe(8);
+    expect(r.total).toBe(7);
     expect(r.faits).toBe(3);
     expect(r.complet).toBe(false);
-    expect(r.manquants.map((m) => m.cle)).toEqual(["legalId", "phone", "legalNotice", "bank", "stamp"]);
+    expect(r.manquants.map((m) => m.cle)).toEqual(["legalId", "phone", "legalNotice", "stamp"]);
     expect(r.manquants.find((m) => m.cle === "stamp")?.ancre).toBe("agency-stamp");
   });
 
   it("est complet quand tout est renseigné", () => {
-    const r = completudeProfil({ ...form, siretOrId: "123", phone: "+221", legalNotice: "SARL", iban: "SN08" }, "/l", "/s");
+    const r = completudeProfil({ ...form, siretOrId: "123", phone: "+221", legalNotice: "SARL" }, "/l", "/s");
     expect(r.complet).toBe(true);
     expect(r.manquants).toEqual([]);
-  });
-});
-
-describe("avertissementsBancaires", () => {
-  it("ne dit rien d'un champ vide, signale un IBAN à clé fausse et un BIC mal formé", () => {
-    expect(avertissementsBancaires("", "")).toEqual({ iban: false, bic: false });
-    expect(avertissementsBancaires("FR76 3000 6000 0112 3456 7890 189", "AGRIFRPP")).toEqual({ iban: false, bic: false });
-    expect(avertissementsBancaires("FR76 3000 6000 0112 3456 7890 188", "XX")).toEqual({ iban: true, bic: true });
   });
 });
 

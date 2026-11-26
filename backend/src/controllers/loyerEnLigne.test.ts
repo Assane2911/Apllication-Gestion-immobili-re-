@@ -20,8 +20,9 @@ import { testDb } from "../test/setupTestDb";
  * Stripe et PayDunya sont le compte de la PLATEFORME : ils servent à encaisser les abonnements des
  * agences. Un loyer payé par carte ou Mobile Money arriverait sur ce même compte avant d'être reversé à
  * l'agence, c'est-à-dire que la plateforme détiendrait de l'argent qui n'est pas le sien. Tant que
- * RENT_ONLINE_PAYMENTS n'est pas activé, le locataire règle son loyer par virement vers le compte de son
- * agence (déclaré dans l'application) et rien d'autre.
+ * RENT_ONLINE_PAYMENTS n'est pas activé, le locataire n'a aucun moyen en ligne sur ces comptes : il règle son
+ * agence directement, qui enregistre le paiement à la main (ou, si elle a branché son propre compte PayDunya,
+ * il paie en ligne chez elle — voir comptePaiementAgence.test.ts).
  */
 describe("paiement du loyer en ligne — réservé aux abonnements par défaut", () => {
   const original = {
@@ -71,7 +72,7 @@ describe("paiement du loyer en ligne — réservé aux abonnements par défaut",
     for (const method of ["STRIPE", "PAYDUNYA"]) {
       const res = await request(app).post(`/api/invoices/${invoice.id}/pay`).set(authHeader(tenantToken)).send({ method });
       expect(res.status, method).toBe(400);
-      expect(res.body.error, method).toContain("virement");
+      expect(res.body.error, method).toContain("Contactez");
     }
 
     expect(fetchMock).not.toHaveBeenCalled();
@@ -82,7 +83,7 @@ describe("paiement du loyer en ligne — réservé aux abonnements par défaut",
     expect(apres.paymentAttemptStartedAt).toBeNull();
   });
 
-  it("accepte toujours la déclaration d'un virement vers l'agence", async () => {
+  it("refuse la déclaration d'un virement : ce moyen n'existe plus", async () => {
     prestatairesConfigures();
     const { invoice, tenantToken } = await locataireAvecFacture();
 
@@ -91,17 +92,17 @@ describe("paiement du loyer en ligne — réservé aux abonnements par défaut",
       .set(authHeader(tenantToken))
       .send({ method: "BANK_TRANSFER", bankReference: "VIR-2026-001" });
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(400);
   });
 
-  it("ne propose au locataire que le virement, même quand les prestataires sont configurés", async () => {
+  it("ne propose aucun moyen au locataire sans compte d'agence, même quand les prestataires sont configurés", async () => {
     prestatairesConfigures();
     const manager = await createManager();
 
     const loyer = await request(app).get("/api/payments/methods?currency=XOF&usage=loyer").set(authHeader(tokenFor(manager)));
 
     expect(loyer.status).toBe(200);
-    expect(loyer.body.methods).toEqual(["BANK_TRANSFER"]);
+    expect(loyer.body.methods).toEqual([]);
   });
 
   it("continue de proposer Stripe et PayDunya pour l'abonnement", async () => {
@@ -135,6 +136,6 @@ describe("paiement du loyer en ligne — réservé aux abonnements par défaut",
 
     expect(res.body.methods).not.toContain("PAYDUNYA");
     expect(res.body.methods).toContain("STRIPE");
-    expect(res.body.methods).toContain("BANK_TRANSFER");
+    expect(res.body.methods).not.toContain("BANK_TRANSFER");
   });
 });

@@ -2,7 +2,6 @@ import { Router } from "express";
 import {
   deleteAgencyLogo,
   deleteAgencyStamp,
-  getAgencyBankInfoForTenant,
   getAgencySettings,
   updateAgencySettings,
   uploadLogo,
@@ -13,9 +12,6 @@ import { authenticate, requireActiveSubscription, requireRole } from "../middlew
 import { uploadAgencyLogo, uploadAgencyStamp } from "../middleware/upload";
 
 const router = Router();
-
-// Portail locataire (toujours accessible, avant le verrou gestionnaire ci-dessous).
-router.get("/mine", authenticate, requireRole("TENANT"), getAgencyBankInfoForTenant);
 
 router.use(authenticate, requireRole("MANAGER"), requireActiveSubscription);
 

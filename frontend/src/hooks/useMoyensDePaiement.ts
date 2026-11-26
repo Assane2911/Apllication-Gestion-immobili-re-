@@ -16,11 +16,9 @@ import type { PaymentMethod } from "../types";
  *
  * `null` signifie « pas encore chargé », à distinguer d'une liste vide.
  *
- * En cas d'échec réseau, on retombe sur le virement bancaire seul. Ce n'est
- * pas une supposition optimiste : côté serveur, le virement est une
- * déclaration et non un encaissement, il est donc toujours accepté (voir
- * indisponibilite dans payment.service.ts). Proposer davantage sans réponse du
- * serveur reviendrait à réintroduire le bouton qui échoue.
+ * En cas d'échec réseau, la liste est vide : sans réponse du serveur, proposer un
+ * moyen reviendrait à réintroduire le bouton qui échoue. Les écrans affichent alors
+ * qu'aucun moyen n'est disponible pour le moment.
  */
 export function useMoyensDePaiement(
   currency: string | null | undefined,
@@ -43,7 +41,7 @@ export function useMoyensDePaiement(
         if (!annule) setMoyens(res.data.methods);
       })
       .catch(() => {
-        if (!annule) setMoyens(["BANK_TRANSFER"]);
+        if (!annule) setMoyens([]);
       });
 
     return () => {

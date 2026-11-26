@@ -7,6 +7,14 @@ import { authHeader, createContract, createManager, createProperty, createTenant
 import { testDb } from "../test/setupTestDb";
 
 /**
+ * Les textes lisibles d'une ligne du journal, là où l'identité d'une personne pourrait fuiter. Les identifiants (id de la ligne, du
+ * gestionnaire, de l'auteur) sont aléatoires : sérialiser toute la ligne faisait échouer les tests quand l'un d'eux contenait par
+ * hasard les lettres « awa » du prénom cherché (échec observé sur la CI de main).
+ */
+const textesDuJournal = (l: { action: string; entityType: string; entityLabel: string | null; details: string | null }) =>
+  [l.action, l.entityType, l.entityLabel, l.details].join(" | ");
+
+/**
  * Un garant ou un prospect n'a pas de compte : il adresse sa demande d'accès ou d'effacement au gestionnaire (responsable de
  * traitement). Un garant d'un bail signé ne pouvait pas même être retiré.
  */
@@ -98,7 +106,7 @@ describe("export des données d'un garant ou d'un prospect", () => {
     const [ligne] = await testDb.select().from(activityLogs).where(eq(activityLogs.action, "personne.export"));
     expect(ligne.managerId).toBe(manager.id);
     expect(ligne.details).toContain("1 garant(s)");
-    expect(JSON.stringify(ligne)).not.toMatch(/awa|diop|example\.com|221770001122/i);
+    expect(textesDuJournal(ligne)).not.toMatch(/awa|diop|example\.com|221770001122/i);
   });
 
   it("exige l'authentification, refuse un locataire, et réserve la lecture au propriétaire de l'agence et aux administrateurs d'équipe", async () => {
@@ -172,6 +180,6 @@ describe("effacement des données d'un garant ou d'un prospect", () => {
     expect((await anonymiser(tokenFor(manager), { email: "awa.diop@example.com" })).status).toBe(200);
     const [ligne] = await testDb.select().from(activityLogs).where(eq(activityLogs.action, "personne.anonymize"));
     expect(ligne.details).toContain("1 garant(s)");
-    expect(JSON.stringify(ligne)).not.toMatch(/awa|diop|example\.com/i);
+    expect(textesDuJournal(ligne)).not.toMatch(/awa|diop|example\.com/i);
   });
 });

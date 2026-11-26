@@ -41,7 +41,7 @@ Application complète de gestion immobilière (**ImmoPlatform Pro**) : tableau d
 ### Portail locataire
 
 - Consultation du logement loué et du contrat en cours.
-- **Paiement des loyers en ligne** avec choix du moyen de paiement : carte bancaire (Stripe), PayDunya (Orange Money, Wave, Free Money, MTN...), virement bancaire déclaré (validé ensuite par le gestionnaire), ou mode démo (paiement simulé, pratique pour tester).
+- **Paiement des loyers en ligne** avec choix du moyen de paiement : carte bancaire (Stripe), PayDunya (Orange Money, Wave, Free Money, MTN...) sur le compte de l'agence, ou mode démo (paiement simulé, pratique pour tester). Le virement bancaire n'existe plus : une agence sans compte PayDunya enregistre le règlement à la main (espèces, chèque, Mobile Money).
 - **Signalement d'un problème** avec photo (prise directement depuis l'appareil sur mobile) et description ; le gestionnaire voit le signalement avec la photo dans son espace.
 
 ## Démarrage rapide (développement local)
@@ -121,7 +121,7 @@ Le module de paiement (`backend/src/services/payment.service.ts`) est conçu pou
 - **Les comptes Stripe et PayDunya de la plateforme ne servent qu'aux abonnements** des agences. Un loyer ne passe jamais par eux : il arriverait sur le compte de la plateforme avant d'être reversé à l'agence.
 - **Loyers payés en ligne, sur le compte de l'agence (PayDunya)** : chaque agence enregistre ses propres identifiants PayDunya dans *Paramètres de l'agence → Paiement du loyer en ligne* (réservé au propriétaire de l'agence). Le locataire paie alors par Mobile Money ou carte et l'argent arrive directement chez l'agence ; la confirmation revient sur `POST /api/payments/paydunya/ipn/agence/:managerId`, vérifiée avec les clés de cette agence et limitée à ses factures. Les identifiants sont chiffrés (AES-256-GCM) avec `PAYMENT_KEYS_ENCRYPTION_KEY` (32 octets en hexadécimal : `openssl rand -hex 32`) : **sans cette variable, la fonction reste fermée** et rien ne change pour les agences. Ne changez pas cette clé une fois des comptes enregistrés : les identifiants deviendraient illisibles et chaque agence devrait les ressaisir.
 - **`RENT_ONLINE_PAYMENTS`** ne concerne plus que Stripe (compte de la plateforme) : laissez `false`. PayDunya n'est jamais ouvert aux loyers via les clés de la plateforme.
-- **Virement bancaire** : le locataire déclare une référence de virement ; le gestionnaire valide manuellement dans l'onglet "Paiements" ("Marquer réglée").
+- **Plus de virement bancaire** : ni pour l'abonnement (carte via Stripe ; Mobile Money via PayDunya annoncé « bientôt disponible » tant que le compte marchand n'est pas approuvé), ni pour les loyers (le gestionnaire enregistre à la main un loyer reçu en espèces, par chèque ou par Mobile Money, onglet "Paiements" → "Marquer réglée"). Les colonnes `iban`/`bic` et la valeur `BANK_TRANSFER` de l'énumération restent en base, inutilisées : elles portent encore les anciens enregistrements et leur retrait demande une migration distincte.
 - **Mode démo** (`PAYMENTS_DEMO_MODE`) : les paiements sont simulés et confirmés instantanément, sans aucune vraie transaction — pratique pour tester tout le flux en local. Il est **actif par défaut en local** et **n'existe pas en production** (`NODE_ENV=production` ou Vercel) : `PAYMENTS_DEMO_MODE=true` y est ignoré et signalé au démarrage, car un abonnement s'activerait sans qu'un centime ne soit encaissé. Il court-circuite aussi Stripe et PayDunya, même si leurs clés sont configurées.
 
 ### WhatsApp, connexion Google et suivi des erreurs

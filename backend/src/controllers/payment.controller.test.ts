@@ -27,7 +27,7 @@ describe("GET /api/payments/methods", () => {
     expect(res.status).toBe(401);
   });
 
-  it("ne propose que le virement quand aucune clé n'est configurée", async () => {
+  it("ne propose aucun moyen quand aucune clé n'est configurée", async () => {
     env.payments.demoMode = false;
     env.payments.stripeSecretKey = "";
     env.payments.paydunya = { ...original.paydunya, masterKey: "", privateKey: "", token: "" };
@@ -39,7 +39,7 @@ describe("GET /api/payments/methods", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.currency).toBe("XOF");
-    expect(res.body.methods).toEqual(["BANK_TRANSFER"]);
+    expect(res.body.methods).toEqual([]);
   });
 
   it("ajoute PayDunya dès que les clés et la devise correspondent", async () => {

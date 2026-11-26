@@ -41,7 +41,7 @@ export const DEVISE_PAR_DEFAUT = "EUR";
  * Attention, tarifer n'est pas encaisser : le paiement par carte refuse toute
  * devise absente de STRIPE_CURRENCIES (voir .env.example et
  * payment.service.ts::indisponibilite), et PayDunya n'encaisse que dans la
- * devise de son compte. Le virement bancaire, lui, reste toujours proposé.
+ * devise de son compte.
  *
  * Pour changer un prix, il n'y a qu'une ligne à toucher ici : c'est aussi
  * pourquoi les champs monthlyPrice / annualPrice ont disparu du catalogue
@@ -245,11 +245,10 @@ export const getStatus = asyncHandler(async (req: Request, res: Response) => {
 const subscribeSchema = z.object({
   plan: z.enum(["STARTER", "PRO", "ENTERPRISE"]),
   billingCycle: z.enum(["MONTHLY", "ANNUAL"]).default("MONTHLY"),
-  paymentMethod: z.enum(["STRIPE", "PAYDUNYA", "BANK_TRANSFER", "DEMO"]),
-  bankReference: z.string().trim().max(200, "La référence ne peut pas dépasser 200 caractères").optional(),
+  paymentMethod: z.enum(["STRIPE", "PAYDUNYA", "DEMO"]),
   // Renouvellement automatique réel (Stripe Subscriptions) — voir CGU §4 :
   // seul le paiement par carte via Stripe le propose "explicitement dans
-  // l'interface" ; PayDunya et le virement restent des paiements ponctuels.
+  // l'interface" ; PayDunya reste un paiement ponctuel.
   autoRenew: z.boolean().optional().default(false),
 });
 
@@ -296,6 +295,31 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
   const tarif = tarifPourDevise(body.plan, currency);
   if (!tarif) throw new ApiError(400, "Plan invalide", "PLAN_INVALID");
 
+  // Plafond de biens de la formule choisie. Le plafond n'est vérifié qu'à la CRÉATION d'un bien : sans ce contrôle, un gestionnaire
+  // qui a ajouté 12 biens pendant l'essai (formule effective Pro, 25 biens) souscrivait à Starter (5 biens) pour 9 € et gardait ses
+  // 12 biens — un tarif que la formule n'annonce pas. On refuse donc la souscription AVANT tout paiement, en proposant une formule
+  // supérieure : rien n'est retiré au gestionnaire, qui choisit en connaissance de cause.
+  //
+  // Exception : renouveler la formule qu'on a DÉJÀ payée. Un abonné d'avant ce contrôle qui dépasse son plafond ne doit pas se voir
+  // refuser le paiement de ce qu'il utilise déjà ; la page Abonnement lui signale le dépassement (voir getSubscriptionStatus).
+  const plafondDeLaFormule = maxPropertiesForPlan(body.plan);
+  const abonnePayant = user.subscriptionStatus === "ACTIVE" || user.subscriptionStatus === "CANCELLED";
+  const renouvelleSaFormule = abonnePayant && user.subscriptionPlan === body.plan;
+  if (plafondDeLaFormule !== null && !renouvelleSaFormule) {
+    const [{ count: nombreDeBiens }] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(properties)
+      .where(eq(properties.managerId, user.id));
+    if (nombreDeBiens > plafondDeLaFormule) {
+      throw new ApiError(
+        409,
+        `Vous gérez ${nombreDeBiens} biens, et la formule ${planDef.name} en autorise ${plafondDeLaFormule}. Choisissez une formule supérieure, ou réduisez votre nombre de biens avant de souscrire.`,
+        "PLAN_TOO_SMALL_FOR_PROPERTIES",
+        { count: nombreDeBiens, max: plafondDeLaFormule, plan: planDef.name }
+      );
+    }
+  }
+
   const amount = body.billingCycle === "ANNUAL" ? tarif.annual : tarif.monthly;
   const paymentReferenceId = `sub_${user.id}_${Date.now()}`;
 
@@ -340,7 +364,6 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
       invoiceId: paymentReferenceId,
       usage: "ABONNEMENT",
       payerEmail: user.email,
-      bankReference: body.bankReference,
       returnPath: "/subscription",
       autoRenew: body.autoRenew,
       billingCycle: body.billingCycle,
@@ -388,7 +411,7 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
   // NOTE : ce calcul ne sert de valeur DÉFINITIVE que pour un paiement
   // confirmé tout de suite (isConfirmed ci-dessous, ex. DEMO) — "now" est
   // alors bien l'instant réel d'activation. Pour un paiement asynchrone
-  // (virement, PayDunya, Stripe), il n'est stocké sur l'enregistrement PENDING
+  // (PayDunya, Stripe), il n'est stocké sur l'enregistrement PENDING
   // qu'à titre indicatif : activateSubscriptionRecord() refait ce même calcul
   // au moment où l'accès s'ouvre réellement (voir calculerPeriodeActivation).
   const { startDate, endDate } = calculerPeriodeActivation({
@@ -412,8 +435,7 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
 
   // N'active RÉELLEMENT l'abonnement (droits d'accès) que si le paiement est
   // confirmé (status "PAID" — cas DEMO, simulation sans clé configurée, ou
-  // futur webhook PayDunya synchrone). Un virement déclaré (BANK_TRANSFER,
-  // toujours "PENDING_VALIDATION") ou un paiement encore en attente d'action
+  // futur webhook PayDunya synchrone). Un paiement encore en attente d'action
   // (Stripe/PayDunya réels, "REQUIRES_ACTION") ne doit jamais accorder l'accès
   // tant qu'aucune confirmation réelle n'est arrivée — sans quoi n'importe quel
   // compte peut s'auto-déclarer un abonnement gratuit. On enregistre malgré
@@ -439,36 +461,6 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
           .where(eq(users.id, user.id))
           .returning()
       : await tx.select().from(users).where(eq(users.id, user.id)).for("update");
-
-    // Un virement déclaré de nouveau à l'identique (même formule, même cycle, même montant, même devise) alors qu'un
-    // précédent attend encore sa validation n'est PAS un second paiement : c'est le même virement, redéclaré (double clic,
-    // retour sur la page, référence corrigée). Créer une ligne de plus remplissait l'historique de lignes identiques, et
-    // chacune pouvait ensuite être validée par l'administration, prolongeant l'abonnement autant de fois. On réutilise donc
-    // la ligne en attente, dont la référence est mise à jour si une nouvelle est saisie.
-    if (!isConfirmed && body.paymentMethod === "BANK_TRANSFER") {
-      const [enAttente] = await tx
-        .select()
-        .from(platformSubscriptions)
-        .where(
-          and(
-            eq(platformSubscriptions.userId, user.id),
-            eq(platformSubscriptions.status, "PENDING"),
-            eq(platformSubscriptions.paymentMethod, "BANK_TRANSFER"),
-            eq(platformSubscriptions.plan, body.plan),
-            eq(platformSubscriptions.billingCycle, body.billingCycle),
-            eq(platformSubscriptions.currency, currency),
-            eq(platformSubscriptions.amount, amount)
-          )
-        )
-        .orderBy(desc(platformSubscriptions.createdAt))
-        .limit(1);
-      if (enAttente) {
-        const [majRef] = body.bankReference
-          ? await tx.update(platformSubscriptions).set({ paymentRef: paymentResult.reference }).where(eq(platformSubscriptions.id, enAttente.id)).returning()
-          : [enAttente];
-        return { updatedUser, subscriptionRecord: majRef };
-      }
-    }
 
     const [subscriptionRecord] = await tx
       .insert(platformSubscriptions)
@@ -536,7 +528,7 @@ export const cancelSubscription = asyncHandler(async (req: Request, res: Respons
   // (Stripe Subscriptions, voir subscribe()) a un abonnement Stripe à
   // résilier côté prestataire — RÉGRESSION évitée : ce message affirmait
   // auparavant "le renouvellement automatique a été annulé" pour TOUT
-  // paiement, y compris ponctuel (PayDunya, virement, ou Stripe sans
+  // paiement, y compris ponctuel (PayDunya, ou Stripe sans
   // reconduction), alors qu'aucun renouvellement automatique n'avait jamais
   // existé pour ces comptes-là.
   //

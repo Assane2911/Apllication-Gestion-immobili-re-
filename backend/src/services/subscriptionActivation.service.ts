@@ -12,8 +12,8 @@ import { BillingCycle, calculerPeriodeActivation } from "./subscriptionPeriod.se
  * (subscriptionStatus/plan/endsAt/paymentMethod).
  *
  * Utilisé après coup pour confirmer un paiement déjà enregistré en PENDING —
- * par le webhook PayDunya (paiement Mobile Money confirmé) et par la
- * validation manuelle d'un virement bancaire par un administrateur. C'est
+ * par le webhook PayDunya (paiement Mobile Money confirmé) et par le
+ * webhook Stripe (paiement confirmé en différé). C'est
  * distinct de subscribe(), qui crée ET active l'abonnement en une seule
  * transaction lorsque le paiement est confirmé immédiatement (DEMO, ou futur
  * paiement carte synchrone) — il n'a pas besoin de cette fonction puisqu'il
@@ -30,8 +30,7 @@ import { BillingCycle, calculerPeriodeActivation } from "./subscriptionPeriod.se
  * pourrait ni entrer, ni repayer (l'enregistrement est déjà PAID). Le MRR de
  * l'écran d'administration, lui, le compterait comme abonné actif.
  *
- * Les trois appelants — webhook Stripe, webhook PayDunya, validation d'un
- * virement par un administrateur — n'ouvraient aucune transaction. Plutôt que
+ * Les appelants — webhook Stripe, webhook PayDunya — n'ouvraient aucune transaction. Plutôt que
  * de le leur demander et d'espérer qu'un futur appelant y pense, la fonction
  * ouvre la sienne quand on ne lui en fournit pas.
  *
@@ -52,16 +51,14 @@ async function activerAvec(subscriptionId: string, dbClient: DbClient) {
   if (!record) return null;
   if (record.status === "PAID") return record;
 
-  // Un enregistrement REJECTED (virement bancaire explicitement rejeté par un
-  // administrateur, voir rejectBankTransfer) ne doit JAMAIS pouvoir être
-  // activé après coup : sans ce garde-fou, confirmer un virement déjà rejeté
-  // (ou rappeler cette fonction par erreur sur un enregistrement rejeté)
-  // donnait quand même accès à l'abonnement payant. On lève une erreur
+  // Un enregistrement REJECTED (demande explicitement rejetée) ne doit JAMAIS
+  // pouvoir être activé après coup : sans ce garde-fou, rappeler cette fonction
+  // sur un enregistrement rejeté donnait quand même accès à l'abonnement payant. On lève une erreur
   // plutôt que de faire un no-op silencieux comme pour PAID, car ici
   // l'appelant croit confirmer un paiement qui n'a en réalité jamais été
   // validé.
   if (record.status === "REJECTED") {
-    throw new ApiError(400, "Ce virement a été rejeté : impossible de le confirmer", "TRANSFER_REJECTED_CANNOT_CONFIRM");
+    throw new ApiError(400, "Cette demande a été rejetée : impossible de la confirmer", "SUBSCRIPTION_REJECTED_CANNOT_CONFIRM");
   }
 
   // Compte supprimé : la ligne n'est conservée qu'anonymisée (obligation comptable), il n'y a plus d'abonnement à activer.
@@ -70,8 +67,8 @@ async function activerAvec(subscriptionId: string, dbClient: DbClient) {
   if (!compte) return null;
 
   // La période est RECALCULÉE ici, et non reprise telle qu'elle avait été
-  // enregistrée à la demande. Un virement bancaire est validé plusieurs jours
-  // après avoir été déclaré ; garder les dates de la demande revenait à faire
+  // enregistrée à la demande. Un paiement peut être confirmé plusieurs heures
+  // après la demande ; garder les dates de la demande revenait à faire
   // courir l'abonnement pendant un délai où le compte était encore fermé — le
   // client payait un mois et en recevait trois semaines. Le même écart existe
   // pour tout paiement confirmé en différé.
@@ -82,8 +79,8 @@ async function activerAvec(subscriptionId: string, dbClient: DbClient) {
   // RÉGRESSION : cette fonction recalculait auparavant la période avec
   // calculerPeriode seul, en ignorant totalement record.plan/record.amount et
   // la proratisation ajoutée dans subscribe(). Cette fonction étant le SEUL
-  // chemin réellement emprunté pour tout paiement asynchrone (virement,
-  // PayDunya, Stripe), un changement de plan payé par l'un de ces moyens
+  // chemin réellement emprunté pour tout paiement asynchrone (PayDunya,
+  // Stripe), un changement de plan payé par l'un de ces moyens
   // recevait le temps restant reporté à valeur nominale pleine sur le nouveau
   // plan au lieu d'être reconverti.
   const maintenant = new Date();
@@ -126,7 +123,7 @@ async function activerAvec(subscriptionId: string, dbClient: DbClient) {
   // Réclamation atomique : la transition PENDING → PAID est conditionnée au
   // statut lu plus haut. Sans cette garde, un rejeu de webhook (Stripe et
   // PayDunya documentent eux-mêmes rejouer leurs événements) ou un double clic
-  // administrateur sur "confirmer le virement" pouvaient tous deux passer le
+  // administrateur sur "confirmer" pouvaient tous deux passer le
   // contrôle précédent (record.status === "PAID" au tout début de la
   // fonction) avant que l'un des deux n'ait committé, puis exécuter chacun
   // leur propre écriture. La condition ci-dessous fait qu'un seul de ces

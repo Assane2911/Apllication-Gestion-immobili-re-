@@ -1,4 +1,3 @@
-import * as Sentry from "@sentry/node";
 import { and, eq, like } from "drizzle-orm";
 import { env } from "../config/env";
 import { db } from "../db/client";
@@ -7,6 +6,7 @@ import { ApiError } from "../utils/asyncHandler";
 import { escapeHtml } from "../utils/html";
 import { fetchAvecDelai } from "../utils/fetchAvecDelai";
 import { formaterMontant } from "../utils/montant";
+import { signalerASentry } from "../utils/signalerASentry";
 import { logActivity } from "./activity.service";
 import { sendEmail } from "./email.service";
 import { depuisPlusPetiteUnite } from "./payment.service";
@@ -72,15 +72,11 @@ export async function signalerRemboursementOuLitige(evenement: EvenementPaiement
   try {
     const [abonnement] = await db.select().from(platformSubscriptions).where(eq(platformSubscriptions.paymentRef, sessionId));
     if (abonnement) {
-      try {
-        Sentry.captureMessage(`Abonnement à la plateforme : ${natureTexte} d'un paiement Stripe (à examiner)`, {
-          level: "error",
-          tags: { source: "abonnement.remboursement_ou_litige", nature: evenement.nature },
-          extra: { session: sessionId, reference: evenement.referenceStripe, montant, devise },
-        });
-      } catch {
-        // Un suivi d'erreurs indisponible ne doit jamais faire échouer le webhook.
-      }
+      await signalerASentry(`Abonnement à la plateforme : ${natureTexte} d'un paiement Stripe (à examiner)`, {
+        level: "error",
+        tags: { source: "abonnement.remboursement_ou_litige", nature: evenement.nature },
+        extra: { session: sessionId, reference: evenement.referenceStripe, montant, devise },
+      });
       return;
     }
 

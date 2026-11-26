@@ -17,7 +17,6 @@ import { ApiError, asyncHandler } from "../utils/asyncHandler";
 import { resteDu } from "../utils/montants";
 import { assertOwnership, chargerProprietaireDuCompte } from "../utils/authorization";
 import { buildPaginatedResult, parsePagination } from "../utils/pagination";
-import { bicSchema, ibanSchema } from "../utils/iban";
 import { CIVILITES, nomAvecCivilite } from "../utils/nom";
 import { MESSAGE_TELEPHONE_INVALIDE, versE164 } from "../utils/phone";
 import { avecCode } from "../utils/validationExplicite";
@@ -45,12 +44,6 @@ const ownerSchema = z.object({
     .transform((v) => versE164(v)!),
   email: z.string().max(254, "L'adresse email est trop longue").email().transform((v) => v.trim().toLowerCase()),
   address: z.string().max(300, "L'adresse ne peut pas dépasser 300 caractères").optional(),
-  // Même validation (structure + clé MOD 97-10) que agency.controller.ts :
-  // sans elle, une faute de frappe sur ces coordonnées — un VRAI virement de
-  // reversement au propriétaire, pas juste un affichage — n'était détectée
-  // qu'au premier virement resté sans suite.
-  iban: ibanSchema,
-  bic: bicSchema,
   managementFeeRate: z.coerce.number().min(0).max(100).optional(),
   notes: z.string().max(5000, "Les notes ne peuvent pas dépasser 5 000 caractères").optional(),
   // Langue des e-mails de ce propriétaire. Facultative : à la création, elle prend la langue de l'interface du gestionnaire.
@@ -287,8 +280,6 @@ export const anonymiserOwner = asyncHandler(async (req: Request, res: Response) 
         email: `anonyme-${existing.id}@supprime.invalid`,
         phone: "",
         address: null,
-        iban: null,
-        bic: null,
         notes: null,
         userId: null,
         anonymizedAt: new Date(),

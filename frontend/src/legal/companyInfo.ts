@@ -2,10 +2,13 @@
  * Informations juridiques de l'éditeur d'ImmoPlatform Pro.
  *
  * Le service est édité par ImmoPlatform Pro LLC, société à responsabilité limitée
- * de droit américain immatriculée dans l'État du Wyoming. Son numéro d'identification
- * fiscale (EIN) a été attribué par l'IRS le 8 octobre 2026 ; l'adresse est celle
- * qui figure sur la lettre de l'IRS (adresse du registered agent). Le dirigeant
- * est son membre unique.
+ * de droit américain immatriculée dans l'État du Wyoming. L'adresse est celle qui
+ * figure sur la lettre de l'IRS (adresse du registered agent). Le dirigeant est son
+ * membre unique.
+ *
+ * Son numéro d'identification fiscale (EIN) n'est volontairement PAS publié : aucune
+ * obligation de l'afficher, et c'est un identifiant fiscal que des fraudeurs exploitent.
+ * Il se communique directement aux organismes qui le demandent (Stripe, banque, IRS).
  *
  * La date d'immatriculation de la LLC n'est pas affichée : elle ne figure pas sur
  * la lettre de l'IRS, et on n'affiche pas une date que l'on n'a pas vérifiée.
@@ -22,14 +25,12 @@ export const COMPANY = {
   tradeName: "ImmoPlatform Pro",
   /** Statut juridique. */
   legalStatus: "Société à responsabilité limitée de droit américain (LLC), immatriculée dans l'État du Wyoming (États-Unis)",
-  /** Numéro d'identification fiscale américain (EIN), attribué par l'IRS. */
-  ein: "30-1510500",
   /** Numéro SIRET (14 chiffres) — non applicable : société de droit américain. */
   siret: "Non applicable (société de droit américain)",
   /** Adresse professionnelle (celle de la lettre de l'IRS). */
   address: "30 N Gould St, Ste R, Sheridan, WY 82801, États-Unis",
   /** Email de contact pour les questions légales, contractuelles et RGPD. */
-  contactEmail: "assane@immoplatformpro.com",
+  contactEmail: "contact@immoplatformpro.com",
   /** Pays de l'éditeur : celui de son siège (la LLC est américaine ; elle n'a pas d'établissement en France). */
   country: "États-Unis",
   /**
@@ -38,7 +39,7 @@ export const COMPANY = {
    */
   governingLaw: "droit français",
   /** Date de dernière mise à jour des documents légaux (à mettre à jour à chaque révision). */
-  lastUpdated: "18 novembre 2026",
+  lastUpdated: "26 novembre 2026",
 };
 
 /** Sous-traitants techniques mentionnés dans la politique de confidentialité. */

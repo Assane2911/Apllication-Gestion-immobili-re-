@@ -120,8 +120,6 @@ export interface Owner {
   email: string;
   phone: string;
   address?: string | null;
-  iban?: string | null;
-  bic?: string | null;
   managementFeeRate: number;
   notes?: string | null;
   userId?: string | null;
@@ -497,8 +495,6 @@ export interface AgencySettings {
   email?: string | null;
   legalNotice?: string | null;
   stampOrSignatureUrl?: string | null;
-  iban?: string | null;
-  bic?: string | null;
   /** Relances graduées des impayés. */
   overdueRemindersEnabled?: boolean;
   overdueGraceDays?: number;
@@ -506,31 +502,11 @@ export interface AgencySettings {
   overdueNotifyGuarantors?: boolean;
 }
 
-/** Coordonnées bancaires vues par le locataire (voir GET /api/agency/mine) — un sous-ensemble minimal, pas les paramètres complets de l'agence. */
-export interface AgencyBankInfo {
-  agencyName: string | null;
-  iban: string | null;
-  bic: string | null;
-}
-
-/** Paramètres bancaires de LA PLATEFORME (un seul compte, celui de l'exploitant) — voir GET/PUT /api/admin/settings. */
-export interface PlatformSettings {
-  id: string;
-  iban?: string | null;
-  bic?: string | null;
-}
-
-/** Coordonnées bancaires de la plateforme vues par un gestionnaire qui règle son abonnement (voir GET /api/subscription/bank-details). */
-export interface PlatformBankInfo {
-  iban: string | null;
-  bic: string | null;
-}
-
 export type InvoiceStatus = "PENDING" | "PAID" | "LATE" | "CANCELLED";
-export type PaymentMethod = "STRIPE" | "PAYDUNYA" | "BANK_TRANSFER" | "DEMO" | "CASH" | "CHEQUE" | "MOBILE_MONEY";
+export type PaymentMethod = "STRIPE" | "PAYDUNYA" | "DEMO" | "CASH" | "CHEQUE" | "MOBILE_MONEY";
 
 /** Moyens que le gestionnaire peut saisir à la main en marquant un loyer réglé. */
-export type MoyenSaisiAlaMain = "BANK_TRANSFER" | "CASH" | "CHEQUE" | "MOBILE_MONEY";
+export type MoyenSaisiAlaMain = "CASH" | "CHEQUE" | "MOBILE_MONEY";
 
 export interface Invoice {
   id: string;
@@ -699,8 +675,6 @@ export interface CrgSynthesis {
   ownerId: string;
   ownerName: string;
   ownerCompanyName?: string | null;
-  iban?: string | null;
-  bic?: string | null;
   managementFeeRate: number;
   month: number;
   year: number;
@@ -716,7 +690,7 @@ export interface CrgSynthesis {
   resteAReverserByCurrency?: Record<string, number>;
 }
 
-export type PayoutMethod = "BANK_TRANSFER" | "CASH" | "CHEQUE" | "MOBILE_MONEY" | "OTHER";
+export type PayoutMethod = "CASH" | "CHEQUE" | "MOBILE_MONEY" | "OTHER";
 
 /** Argent versé par l'agence à un propriétaire au titre d'un mois de gestion. */
 export interface OwnerPayout {

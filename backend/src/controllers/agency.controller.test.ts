@@ -134,14 +134,14 @@ describe("PUT /api/agency", () => {
   });
 
   // Marque blanche (logo) : fonctionnalité Pro (CGU §3) — le reste des
-  // réglages (coordonnées, IBAN...) reste ouvert à toutes les formules.
+  // réglages (coordonnées...) reste ouvert à toutes les formules.
   it("laisse un gestionnaire Starter modifier ses coordonnées sans logo", async () => {
     const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER" });
 
     const res = await request(app)
       .put("/api/agency")
       .set(authHeader(tokenFor(manager)))
-      .send({ agencyName: "Agence Indépendante", iban: "FR7630006000011234567890189" });
+      .send({ agencyName: "Agence Indépendante" });
 
     expect(res.status).toBe(200);
     expect(res.body.agencyName).toBe("Agence Indépendante");
@@ -349,138 +349,32 @@ describe("Tampon de l'agence", () => {
   });
 });
 
-/**
- * L'IBAN/BIC est montré tel quel au locataire pour lui dire où envoyer son
- * virement (voir tenant.controller / TenantInvoicesPage.tsx) : une faute de
- * frappe qui passerait la validation enverrait un locataire vers un compte
- * qui n'existe pas, sans qu'aucun message ne prévienne le gestionnaire avant
- * qu'un premier virement échoue à l'autre bout.
- */
-describe("PUT /api/agency — IBAN / BIC", () => {
-  it("enregistre un IBAN/BIC valides, normalisés (espaces retirés, majuscules)", async () => {
+describe("PUT /api/agency — plus de coordonnées bancaires", () => {
+  it("ignore un IBAN ou un BIC envoyé par un ancien client : rien n'est enregistré ni renvoyé", async () => {
     const manager = await createManager();
 
     const res = await request(app)
-      .put("/api/agency")
-      .set(authHeader(tokenFor(manager)))
-      .send({ agencyName: "Horizon Immobilier", iban: "fr76 3000 6000 0112 3456 7890 189", bic: "bnpafrpp xxx" });
-
-    expect(res.status).toBe(200);
-    expect(res.body.iban).toBe("FR7630006000011234567890189");
-    expect(res.body.bic).toBe("BNPAFRPPXXX");
-  });
-
-  it("rejette (400) un IBAN dont la clé de contrôle est fausse", async () => {
-    const manager = await createManager();
-
-    const res = await request(app)
-      .put("/api/agency")
-      .set(authHeader(tokenFor(manager)))
-      // Deux chiffres inversés au milieu par rapport à un IBAN réel.
-      .send({ agencyName: "Horizon Immobilier", iban: "FR76 3000 6000 0112 3456 7809 189" });
-
-    expect(res.status).toBe(400);
-    const rows = await testDb.select().from(agencySettings).where(eq(agencySettings.userId, manager.id));
-    expect(rows).toHaveLength(0);
-  });
-
-  it("rejette (400) un BIC de mauvaise longueur", async () => {
-    const manager = await createManager();
-
-    const res = await request(app)
-      .put("/api/agency")
-      .set(authHeader(tokenFor(manager)))
-      .send({ agencyName: "Horizon Immobilier", bic: "BNPAFRP" });
-
-    expect(res.status).toBe(400);
-  });
-
-  it("accepte une chaîne vide comme effacement du champ, sans le traiter comme invalide", async () => {
-    const manager = await createManager();
-    await request(app)
-      .put("/api/agency")
-      .set(authHeader(tokenFor(manager)))
-      .send({ agencyName: "Horizon Immobilier", iban: "FR7630006000011234567890189" });
-
-    const res = await request(app)
-      .put("/api/agency")
-      .set(authHeader(tokenFor(manager)))
-      .send({ agencyName: "Horizon Immobilier", iban: "" });
-
-    expect(res.status).toBe(200);
-    expect(res.body.iban).toBeNull();
-  });
-});
-
-describe("GET /api/agency/mine (portail locataire)", () => {
-  async function setupLocataire(agencyOverrides: { iban?: string; bic?: string } = {}) {
-    const manager = await createManager();
-    if (agencyOverrides.iban || agencyOverrides.bic) {
-      await request(app)
-        .put("/api/agency")
-        .set(authHeader(tokenFor(manager)))
-        .send({ agencyName: "Horizon Immobilier", ...agencyOverrides });
-    }
-    const property = await createProperty(manager.id);
-    const tenant = await createTenant(manager.id);
-    await createContract(property.id, tenant.id);
-    const tenantToken = await tokenLocataire(tenant.id);
-    return { manager, tenant, tenantToken };
-  }
-
-  it("refuse l'accès à un gestionnaire", async () => {
-    const manager = await createManager();
-    const res = await request(app).get("/api/agency/mine").set(authHeader(tokenFor(manager)));
-    expect(res.status).toBe(403);
-  });
-
-  it("renvoie l'IBAN/BIC de l'agence de son propre gestionnaire, pas d'un autre", async () => {
-    const { tenantToken } = await setupLocataire({ iban: "FR7630006000011234567890189", bic: "BNPAFRPPXXX" });
-    // Une autre agence, avec son propre IBAN : ne doit jamais fuiter ici.
-    await setupLocataire({ iban: "DE89370400440532013000" });
-
-    const res = await request(app).get("/api/agency/mine").set(authHeader(tenantToken));
-
-    expect(res.status).toBe(200);
-    expect(res.body.agencyName).toBe("Horizon Immobilier");
-    expect(res.body.iban).toBe("FR7630006000011234567890189");
-    expect(res.body.bic).toBe("BNPAFRPPXXX");
-  });
-
-  it("renvoie null plutôt qu'une erreur quand l'agence n'a pas encore renseigné son IBAN", async () => {
-    const { tenantToken } = await setupLocataire();
-
-    const res = await request(app).get("/api/agency/mine").set(authHeader(tenantToken));
-
-    expect(res.status).toBe(200);
-    expect(res.body.iban).toBeNull();
-    expect(res.body.bic).toBeNull();
-  });
-});
-
-describe("PUT /api/agency — champs omis", () => {
-  /**
-   * Régression : `ibanSchema`/`bicSchema` transformaient un champ ABSENT en null,
-   * et `.set({ iban: null })` l'écrivait. Toute requête qui ne renvoyait pas
-   * l'IBAN (client API, ancienne version de l'application) effaçait en silence
-   * les coordonnées bancaires affichées aux locataires pour leurs virements.
-   */
-  it("ne touche ni à l'IBAN ni au BIC quand la requête ne les mentionne pas", async () => {
-    const manager = await createManager();
-    await request(app)
       .put("/api/agency")
       .set(authHeader(tokenFor(manager)))
       .send({ agencyName: "Horizon Immobilier", iban: "FR7630006000011234567890189", bic: "BNPAFRPPXXX" });
 
-    const res = await request(app)
-      .put("/api/agency")
-      .set(authHeader(tokenFor(manager)))
-      .send({ agencyName: "Horizon Immobilier 2" });
-
     expect(res.status).toBe(200);
-    expect(res.body.agencyName).toBe("Horizon Immobilier 2");
-    expect(res.body.iban).toBe("FR7630006000011234567890189");
-    expect(res.body.bic).toBe("BNPAFRPPXXX");
+    expect(res.body.agencyName).toBe("Horizon Immobilier");
+    expect(res.body).not.toHaveProperty("iban");
+    expect(res.body).not.toHaveProperty("bic");
+  });
+});
+
+describe("GET /api/agency/mine : supprimée avec le virement", () => {
+  it("n'est plus offerte au locataire : la route passe sous le verrou gestionnaire (403)", async () => {
+    const manager = await createManager();
+    const property = await createProperty(manager.id);
+    const tenant = await createTenant(manager.id);
+    await createContract(property.id, tenant.id);
+
+    const res = await request(app).get("/api/agency/mine").set(authHeader(await tokenLocataire(tenant.id)));
+
+    expect(res.status).toBe(403);
   });
 });
 
@@ -498,33 +392,12 @@ describe("PUT /api/agency — bornes des champs", () => {
 });
 
 /**
- * Régression : modifier les réglages de l'agence — dont l'IBAN que les
- * locataires voient pour leurs virements — ne laissait aucune trace. Un IBAN
- * remplacé (compte détourné, collaborateur indélicat) ne pouvait plus être
- * attribué ni daté. Le journal nomme les champs modifiés, jamais leur valeur
- * complète.
+ * Modifier les réglages de l'agence laisse une trace : le journal nomme les champs modifiés, jamais leur valeur complète.
  */
 describe("journal d'activité des réglages d'agence", () => {
   type Ligne = typeof activityLogs.$inferSelect;
-  const IBAN = "FR7630006000011234567890189";
   const journal = (managerId: string) =>
     testDb.select().from(activityLogs).where(and(eq(activityLogs.managerId, managerId), eq(activityLogs.entityType, "agency")));
-
-  it("trace un changement d'IBAN sans écrire l'IBAN en entier", async () => {
-    const manager = await createManager();
-    const put = (corps: Record<string, unknown>) =>
-      request(app).put("/api/agency").set(authHeader(tokenFor(manager))).send({ agencyName: "Horizon", ...corps });
-    await put({});
-    await put({ iban: IBAN });
-
-    const logs = await journal(manager.id);
-    const entree = logs.find((l: Ligne) => l.details?.includes("IBAN"));
-    expect(entree).toBeDefined();
-    expect(entree!.action).toBe("agency.update");
-    expect(entree!.details).toContain("…0189");
-    expect(entree!.details).not.toContain(IBAN);
-    expect(entree!.details).not.toContain("3000 6000");
-  });
 
   it("nomme les champs modifiés et ne trace rien quand rien ne change", async () => {
     const manager = await createManager();

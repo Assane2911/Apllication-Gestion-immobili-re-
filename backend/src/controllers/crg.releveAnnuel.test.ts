@@ -88,7 +88,7 @@ describe("relevé annuel (gestionnaire)", () => {
     const verse = await request(app)
       .post(`/api/crg/${owner.id}/payouts`)
       .set(h)
-      .send({ month: 3, year: 2026, currency: "EUR", amount: 800, method: "BANK_TRANSFER", paidAt: "2026-04-05", reference: "VIR-0326", note: "Note interne" });
+      .send({ month: 3, year: 2026, currency: "EUR", amount: 800, method: "MOBILE_MONEY", paidAt: "2026-04-05", reference: "VIR-0326", note: "Note interne" });
     expect(verse.status).toBe(201);
 
     const res = await request(app).get(`/api/crg/${owner.id}/annual?year=2026`).set(h);

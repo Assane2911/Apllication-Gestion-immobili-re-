@@ -3,15 +3,15 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
 import BandeauChiffres from "../../components/BandeauChiffres";
-import BankDetails from "../../components/BankDetails";
 import { useAuth } from "../../context/auth";
 import { useCurrency } from "../../context/currency";
 import { useMoyensDePaiement } from "../../hooks/useMoyensDePaiement";
 import { useRetourDePaiement } from "../../hooks/useRetourDePaiement";
-import type { PaymentMethod, PlatformBankInfo, SubscriptionPlanDetail } from "../../types";
+import type { PaymentMethod, SubscriptionPlanDetail } from "../../types";
 import Bulle from "../../components/Bulle";
 import Dialogue from "../../components/Dialogue";
 import { FORMULE_REPRISE } from "../../data/lignesFormules";
+import { paysParCode } from "../../data/pays";
 import { formaterDateHeureLongue } from "../../utils/dateHeure";
 import { csvHistoriqueAbonnement, economieAnnuelle, formuleSuperieure, syntheseHistorique } from "../../utils/syntheseCompte";
 import { dateDuJourPourFichier, telechargerCsv } from "../../utils/telechargement";
@@ -64,8 +64,6 @@ export default function SubscriptionPage() {
   const [billingCycle, setBillingCycle] = useState<"MONTHLY" | "ANNUAL">("MONTHLY");
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlanDetail | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("PAYDUNYA");
-  const [bankRef, setBankRef] = useState("");
-  const [bankInfo, setBankInfo] = useState<PlatformBankInfo | null>(null);
   const [autoRenew, setAutoRenew] = useState(false);
   const [, setLoading] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
@@ -84,6 +82,15 @@ export default function SubscriptionPage() {
     hint: t(`manager.subscription.paymentMethods.${key}.hint`),
   }));
 
+  // Mobile money (Wave, Orange Money, MTN…) via PayDunya : tant que le compte marchand n'est pas approuvé, le serveur ne propose pas
+  // ce moyen. Une agence de la zone franc CFA le voit alors annoncé « bientôt disponible », au lieu de croire qu'il n'existe pas.
+  // Dès que PayDunya est actif, le moyen apparaît dans la liste ci-dessus et cette annonce disparaît d'elle-même.
+  const aucunMoyen = Array.isArray(moyensDisponibles) && moyensDisponibles.length === 0;
+  const mobileMoneyBientot =
+    Array.isArray(moyensDisponibles) &&
+    !moyensDisponibles.includes("PAYDUNYA") &&
+    (currency === "XOF" || paysParCode(user?.country ?? "")?.devise === "XOF");
+
   // Le moyen présélectionné doit exister dans la liste : sinon le premier clic
   // sur « Payer » partirait sur un moyen que le serveur refuse.
   useEffect(() => {
@@ -91,17 +98,6 @@ export default function SubscriptionPage() {
       setSelectedMethod(moyensDisponibles[0]);
     }
   }, [moyensDisponibles, selectedMethod]);
-
-  // Coordonnées bancaires de LA PLATEFORME (distinctes de celles de l'agence
-  // affichées au locataire) : nécessaires si le gestionnaire choisit de régler
-  // son abonnement par virement. Échec silencieux : l'absence de RIB configuré
-  // ne doit pas empêcher d'afficher le reste du formulaire de paiement.
-  useEffect(() => {
-    api
-      .get<PlatformBankInfo>("/subscription/bank-details")
-      .then((res) => setBankInfo(res.data))
-      .catch(() => setBankInfo(null));
-  }, []);
 
   const loadData = useCallback(() => {
     setLoading(true);
@@ -149,7 +145,6 @@ export default function SubscriptionPage() {
         plan: selectedPlan.id,
         billingCycle,
         paymentMethod: selectedMethod,
-        bankReference: selectedMethod === "BANK_TRANSFER" ? bankRef : undefined,
         // Renouvellement automatique réel (Stripe Subscriptions) : réservé au
         // paiement par carte — voir CGU §4. Le serveur ignore/rejette cette
         // valeur pour tout autre moyen, mais autant ne jamais l'envoyer.
@@ -412,7 +407,7 @@ export default function SubscriptionPage() {
 
       {/* Switch Mensuel / Annuel */}
       <div className="flex flex-col items-center gap-3">
-        <div className="flex items-stretch border border-slate-400 bg-white">
+        <div className="flex items-stretch overflow-hidden rounded-[var(--rayon-bouton)] border border-slate-400 bg-white">
           <button
             onClick={() => setBillingCycle("MONTHLY")}
             className={`cursor-pointer border-r border-slate-400 px-5 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider transition-colors ${
@@ -452,13 +447,18 @@ export default function SubscriptionPage() {
       </div>
 
       {/* Tableau des formules */}
-      <div className="grid grid-cols-1 divide-y divide-slate-300 border border-slate-300 bg-white md:grid-cols-3 md:divide-x md:divide-y-0">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3 lg:gap-8">
         {plans.map((plan, rang) => {
           const isCurrentPlan = sub?.plan === plan.id && sub?.status === "ACTIVE";
           const price = billingCycle === "ANNUAL" ? Math.round(plan.annualPrice / 12) : plan.monthlyPrice;
 
           return (
-            <div key={plan.id} className="relative flex flex-col">
+            <div
+              key={plan.id}
+              className={`relative flex flex-col overflow-hidden rounded-[16px] border bg-white ${
+                plan.popular ? "border-orange-700 shadow-md" : "border-slate-300"
+              }`}
+            >
               <div
                 className={`border-b px-6 py-2 font-mono text-[10px] font-semibold uppercase tracking-wider ${
                   plan.popular ? "border-orange-700 bg-orange-700 text-white" : "border-slate-300 bg-slate-50 text-slate-600"
@@ -492,7 +492,7 @@ export default function SubscriptionPage() {
                   <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-900">{t("manager.subscription.includedInPlan")}</p>
                   {plan.features.map((_feat, idx) => (
                     <div key={idx} className="flex items-start gap-2.5">
-                      <span className="mt-px flex h-4 w-4 shrink-0 items-center justify-center border border-ink-900 bg-white">
+                      <span className="mt-px flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border border-ink-900 bg-white">
                         <Check size={11} strokeWidth={3} className="text-ink-900" aria-hidden="true" />
                       </span>
                       <span>{libelleLigne(plan, idx)}</span>
@@ -506,7 +506,7 @@ export default function SubscriptionPage() {
                     setAutoRenew(false);
                   }}
                   disabled={isCurrentPlan}
-                  className={`w-full border px-4 py-2.5 text-xs font-bold transition-colors ${
+                  className={`w-full rounded-[10px] border px-4 py-2.5 text-xs font-bold transition-colors ${
                     isCurrentPlan
                       ? "cursor-not-allowed border-slate-300 bg-slate-100 text-slate-600"
                       : plan.popular
@@ -551,6 +551,11 @@ export default function SubscriptionPage() {
               {/* Choix du moyen de paiement */}
               <div className="space-y-3">
                 <span id="subscription-payment-method" className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">{t("manager.subscription.paymentMethodLabel")}</span>
+                {aucunMoyen && (
+                  <p role="alert" className="rounded-[var(--rayon-bouton)] border border-orange-700/40 bg-orange-50 p-3 text-xs text-orange-900">
+                    {t("manager.subscription.noPaymentMethod", { currency })}
+                  </p>
+                )}
                 <div role="radiogroup" aria-labelledby="subscription-payment-method" className="grid grid-cols-1 gap-2.5">
                   {paymentMethods.map((m) => (
                     <label
@@ -575,12 +580,25 @@ export default function SubscriptionPage() {
                       </div>
                     </label>
                   ))}
+                  {mobileMoneyBientot && (
+                    <div className="flex items-start gap-3 rounded-[var(--rayon-bouton)] border border-dashed border-slate-300 bg-slate-50 p-3" data-testid="mobile-money-bientot">
+                      <div>
+                        <p className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-700">
+                          {t("manager.subscription.paymentMethods.PAYDUNYA_BIENTOT.label")}
+                          <span className="bg-orange-100 px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-orange-800">
+                            {t("manager.subscription.paymentMethods.PAYDUNYA_BIENTOT.badge")}
+                          </span>
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-slate-600">{t("manager.subscription.paymentMethods.PAYDUNYA_BIENTOT.hint")}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Renouvellement automatique réel (Stripe Subscriptions) :
                     réservé au paiement par carte via Stripe, "explicitement
-                    proposé dans l'interface" (CGU §4) — PayDunya et le
-                    virement restent des paiements ponctuels, à renouveler soi-même
+                    proposé dans l'interface" (CGU §4) — PayDunya reste un
+                    paiement ponctuel, à renouveler soi-même
                     à chaque échéance. */}
                 {selectedMethod === "STRIPE" && (
                   <label className="flex cursor-pointer items-start gap-2.5 border border-slate-300 p-3">
@@ -600,29 +618,6 @@ export default function SubscriptionPage() {
                     </div>
                   </label>
                 )}
-
-                {selectedMethod === "BANK_TRANSFER" && (
-                  <div className="pt-2">
-                    <BankDetails
-                      info={bankInfo}
-                      title={t("manager.subscription.bankDetails.title")}
-                      ibanLabel={t("manager.subscription.bankDetails.iban")}
-                      bicLabel={t("manager.subscription.bankDetails.bic")}
-                      missingMessage={t("manager.subscription.bankDetails.missing")}
-                      copyLabel={t("manager.subscription.bankDetails.copy")}
-                      copiedLabel={t("manager.subscription.bankDetails.copied")}
-                    />
-                    <label htmlFor="subscription-bank-ref" className="mb-1 mt-3 block font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">{t("manager.subscription.bankRefLabel")}</label>
-                    <input
-                      id="subscription-bank-ref"
-                      type="text"
-                      value={bankRef}
-                      onChange={(e) => setBankRef(e.target.value)}
-                      placeholder={t("manager.subscription.bankRefPlaceholder")}
-                      className="w-full border border-slate-400 bg-white px-3 py-2 text-xs text-slate-900"
-                    />
-                  </div>
-                )}
               </div>
 
               {/* Boutons d'action */}
@@ -638,7 +633,7 @@ export default function SubscriptionPage() {
                   <button
                     type="button"
                     onClick={handleSubscribe}
-                    disabled={subscribing}
+                    disabled={subscribing || aucunMoyen}
                     className="cursor-pointer border border-ink-900 bg-ink-900 px-5 py-2.5 text-xs font-bold text-white transition-colors hover:bg-brand-600 disabled:opacity-50"
                   >
                     {subscribing ? t("manager.subscription.processing") : t("manager.subscription.confirmAndActivate")}

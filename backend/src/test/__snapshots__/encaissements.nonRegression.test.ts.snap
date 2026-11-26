@@ -260,8 +260,6 @@ Compte;Libellé compte;Devise;Total Débit;Total Crédit;Solde Débiteur;Solde C
 
 exports[`bilans — chiffres inchangés pour des factures réglées d'un coup > compte-rendu de gestion du propriétaire, mois 9/2026 1`] = `
 {
-  "bic": null,
-  "iban": null,
   "managementFeeRate": 8,
   "month": 9,
   "ownerCompanyName": null,
@@ -312,8 +310,6 @@ exports[`bilans — chiffres inchangés pour des factures réglées d'un coup > 
 
 exports[`bilans — chiffres inchangés pour des factures réglées d'un coup > compte-rendu de gestion du propriétaire, mois 10/2026 1`] = `
 {
-  "bic": null,
-  "iban": null,
   "managementFeeRate": 8,
   "month": 10,
   "ownerCompanyName": null,

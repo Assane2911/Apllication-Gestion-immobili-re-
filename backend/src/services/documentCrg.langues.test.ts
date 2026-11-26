@@ -23,8 +23,6 @@ const crg: CrgExportData = {
   agencyName: "<i>Teranga</i> Immo",
   ownerName: "Fatou <b>Diop</b>",
   ownerCompanyName: "SCI <u>Diop</u>",
-  iban: "FR7630006000011234567890189",
-  bic: "AGRIFRPP",
   managementFeeRate: 10,
   month: 6,
   year: 2026,
@@ -36,7 +34,7 @@ const crg: CrgExportData = {
   reversements: [{ currency: "XOF", amount: 100000, paidAt: new Date(Date.UTC(2026, 6, 5, 12)), method: "BANK_TRANSFER", reference: "VIR-<b>1</b>" }],
   resteAReverserByCurrency: { XOF: 123765.5 },
 };
-const vide: CrgExportData = { ...crg, iban: null, bic: null, ownerCompanyName: null, properties: [], totalLoyersByCurrency: {}, totalChargesByCurrency: {}, totalCommissionByCurrency: {}, totalNetByCurrency: {}, reversements: [], resteAReverserByCurrency: { XOF: -500 } };
+const vide: CrgExportData = { ...crg, ownerCompanyName: null, properties: [], totalLoyersByCurrency: {}, totalChargesByCurrency: {}, totalCommissionByCurrency: {}, totalNetByCurrency: {}, reversements: [], resteAReverserByCurrency: { XOF: -500 } };
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -111,8 +109,8 @@ describe("generateCrgHtml — langue du propriétaire", () => {
     }
   });
 
-  it("l'IBAN et le BIC sont conservés tels quels", () => {
-    for (const l of LANGUES) expect(generateCrgHtml({ ...crg, langue: l })).toContain("FR7630006000011234567890189");
+  it("le compte-rendu ne mentionne plus aucune coordonnée bancaire", () => {
+    for (const l of LANGUES) expect(generateCrgHtml({ ...crg, langue: l })).not.toMatch(/IBAN|BIC/);
   });
 });
 

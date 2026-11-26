@@ -162,7 +162,7 @@ const zone: ZoneLanding = {
         },
         {
           q: "Que meios de pagamento os meus inquilinos podem utilizar?",
-          a: "A transferência bancária para a conta da sua agência: o inquilino declara-a na aplicação e o gestor marca a fatura como paga quando a receber. O pagamento da renda por cartão ou Mobile Money não é oferecido por agora.",
+          a: "Os seus inquilinos pagam a renda online (Mobile Money ou cartão) diretamente na conta PayDunya da sua agência, que liga nas definições: o dinheiro não passa pela plataforma. Uma renda recebida de outra forma (dinheiro, cheque, Mobile Money) regista-se à mão, num clique.",
         },
         {
           q: "Posso cancelar a minha subscrição a qualquer momento?",

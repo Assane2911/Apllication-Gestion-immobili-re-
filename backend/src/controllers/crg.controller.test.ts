@@ -279,13 +279,9 @@ describe("GET /api/crg/:ownerId/export et /api/crg/mine/export", () => {
     vi.useRealTimers();
   });
 
-  it("exporte le CRG en HTML côté gestionnaire, avec le net à reverser et l'IBAN du propriétaire", async () => {
+  it("exporte le CRG en HTML côté gestionnaire, avec le net à reverser, sans coordonnées bancaires", async () => {
     const manager = await createManager();
-    const owner = await createOwner(manager.id, {
-      managementFeeRate: 10,
-      iban: "FR7630006000011234567890189",
-      bic: "AGRIFRPP",
-    });
+    const owner = await createOwner(manager.id, { managementFeeRate: 10 });
     const property = await createProperty(manager.id, { title: "Villa Ngor", ownerId: owner.id });
     const tenant = await createTenant(manager.id);
     const contract = await createContract(property.id, tenant.id);
@@ -299,12 +295,12 @@ describe("GET /api/crg/:ownerId/export et /api/crg/mine/export", () => {
     expect(res.headers["content-type"]).toContain("text/html");
     expect(res.text).toContain("COMPTE-RENDU DE GESTION");
     expect(res.text).toContain("Villa Ngor");
-    expect(res.text).toContain("FR7630006000011234567890189");
+    expect(res.text).not.toMatch(/IBAN|BIC/);
     // Le compte-rendu emploie désormais la même écriture que le reste du
     // Service (voir utils/montant.ts) : « 900 € » et non « 900 EUR ». Ce
     // n'est pas que cosmétique — les totaux cumulés y traînaient des résidus
     // de flottants imprimés tels quels au propriétaire, du type
-    // « 1870.4699999999998 EUR », juste à côté de son IBAN.
+    // « 1870.4699999999998 EUR ».
     expect(res.text).toContain("900 €");
   });
 

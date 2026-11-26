@@ -102,7 +102,7 @@ const zone: ZoneTenant = {
       inspectionDocTitle: "Estado de Bien - {{property}}",
     },
     invoices: {
-      transferDeclared: "Transferencia declarada, pendiente de validación por el gestor.",
+      noOnlineMethod: "Su agencia no ha activado el pago en línea. Contáctela: registrará su pago.",
       summary: {
         label: "Situación de sus alquileres",
         due: "Total adeudado",
@@ -147,21 +147,11 @@ const zone: ZoneTenant = {
       pay: "Pagar",
       chooseMethod: "Elegir este método",
       paying: "Procesando...",
-      bankRefPlaceholder: "Referencia de la transferencia",
       noInvoices: "Aún no hay facturas",
       receiptTitle: "Recibo de alquiler - {{period}}",
-      bankDetails: {
-        title: "Datos bancarios de la agencia",
-        iban: "IBAN",
-        bic: "BIC / SWIFT",
-        missing: "Su agencia todavía no ha configurado sus datos bancarios. Contáctela antes de hacer la transferencia.",
-        copy: "Copiar",
-        copied: "¡Copiado!",
-      },
       methods: {
         STRIPE: { label: "Tarjeta bancaria", hint: "Pago seguro con Stripe" },
         PAYDUNYA: { label: "PayDunya", hint: "Orange Money, Wave, Free Money, MTN, tarjeta bancaria..." },
-        BANK_TRANSFER: { label: "Transferencia bancaria", hint: "Declare su transferencia, validación por el gestor" },
         DEMO: { label: "Modo demo", hint: "Pago simulado, confirmación inmediata" },
       },
     },

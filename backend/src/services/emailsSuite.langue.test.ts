@@ -118,7 +118,7 @@ describe("au garant — dans la langue du locataire qu'il garantit", () => {
 describe("au propriétaire — reversement", () => {
   async function agence(langue: string | null) {
     const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "ENTERPRISE" });
-    const owner = await createOwner(manager.id, { managementFeeRate: 10, iban: "FR7630006000011234567890189", email: "proprio@test.local" });
+    const owner = await createOwner(manager.id, { managementFeeRate: 10, email: "proprio@test.local" });
     await testDb.update((await import("../db/schema")).owners).set({ language: langue }).where(eq((await import("../db/schema")).owners.id, owner.id));
     const property = await createProperty(manager.id, { title: "Villa Ngor", ownerId: owner.id });
     const tenant = await createTenant(manager.id);
@@ -128,7 +128,7 @@ describe("au propriétaire — reversement", () => {
     return { owner, h: authHeader(tokenFor(manager)) };
   }
   const reverser = (h: Record<string, string>, ownerId: string) =>
-    request(app).post(`/api/crg/${ownerId}/payouts`).set(h).send({ month: 9, year: 2026, currency: "EUR", method: "BANK_TRANSFER", paidAt: "2026-10-05", amount: 800, notifyOwner: true });
+    request(app).post(`/api/crg/${ownerId}/payouts`).set(h).send({ month: 9, year: 2026, currency: "EUR", method: "MOBILE_MONEY", paidAt: "2026-10-05", amount: 800, notifyOwner: true });
 
   it("l'annonce du reversement part dans la langue du propriétaire, moyen de paiement compris", async () => {
     const { owner, h } = await agence("en");
@@ -136,7 +136,7 @@ describe("au propriétaire — reversement", () => {
     expect(res.status).toBe(201);
     const [message] = messagesVers("proprio@test.local");
     expect(message.sujet).toBe("Payment of your rents — September 2026");
-    expect(message.html).toContain("(bank transfer)");
+    expect(message.html).toContain("(mobile money)");
   });
 
   it("sans langue sur la fiche (d'avant), en français comme avant", async () => {
@@ -144,7 +144,7 @@ describe("au propriétaire — reversement", () => {
     await reverser(h, owner.id);
     const [message] = messagesVers("proprio@test.local");
     expect(message.sujet).toBe("Reversement de vos loyers — septembre 2026");
-    expect(message.html).toContain("(virement)");
+    expect(message.html).toContain("(mobile money)");
   });
 });
 

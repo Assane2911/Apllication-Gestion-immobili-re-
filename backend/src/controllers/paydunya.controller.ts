@@ -195,12 +195,12 @@ async function traiterIpnPaydunya(req: Request, res: Response, portee: PorteeIpn
 
     if (!subscriptionRow) {
       console.warn(`[paydunya] Abonnement introuvable pour le token ${paydunyaToken}`);
-      signalerAbonnementNonRapproche({ prestataire: "PAYDUNYA", referencePrestataire: paydunyaToken, montant: paidAmount, raison: "abonnement introuvable pour ce jeton" });
+      await signalerAbonnementNonRapproche({ prestataire: "PAYDUNYA", referencePrestataire: paydunyaToken, montant: paidAmount, raison: "abonnement introuvable pour ce jeton" });
     } else if (!amountMatches(paidAmount, subscriptionRow.amount)) {
       console.warn(
         `[paydunya] IPN rejetée pour l'abonnement ${subscriptionRow.id} : montant confirmé (${paidAmount}) ≠ montant attendu (${subscriptionRow.amount}).`
       );
-      signalerAbonnementNonRapproche({ prestataire: "PAYDUNYA", referencePrestataire: paydunyaToken, montant: paidAmount, raison: "montant différent de l'abonnement attendu" });
+      await signalerAbonnementNonRapproche({ prestataire: "PAYDUNYA", referencePrestataire: paydunyaToken, montant: paidAmount, raison: "montant différent de l'abonnement attendu" });
     } else {
       // Marque l'historique de paiement PAID ET active réellement l'accès du
       // compte (subscriptionStatus/plan/endsAt) — voir subscriptionActivation.service.ts.
@@ -212,10 +212,10 @@ async function traiterIpnPaydunya(req: Request, res: Response, portee: PorteeIpn
     }
   } else {
     // Rapprochement restreint aux factures réglées PAR PAYDUNYA, même raison
-    // que côté Stripe : paymentRef sert aussi de référence de virement saisie
-    // librement par le locataire (payInvoice) et n'a aucune contrainte
-    // d'unicité — sans ce filtre, une IPN authentique pouvait solder une
-    // facture déclarée en virement portant le même texte.
+    // que côté Stripe : paymentRef sert aussi de référence libre pour les
+    // encaissements saisis à la main et n'a aucune contrainte d'unicité —
+    // sans ce filtre, une IPN authentique pouvait solder une autre facture
+    // portant le même texte.
     // Sur le compte d'une agence, la facture doit être l'une des SIENNES (bail d'un de ses biens) : un jeton rejoué ou
     // fabriqué ne peut pas solder la facture d'une autre agence.
     const [trouvee] = await db

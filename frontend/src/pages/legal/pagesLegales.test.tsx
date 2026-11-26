@@ -49,10 +49,10 @@ describe("Pages légales", () => {
 
     const texte = container.textContent ?? "";
     expect(texte).toMatch(/Adresse\s*:\s*\S/);
-    expect(texte).toContain("assane@immoplatformpro.com");
+    expect(texte).toContain("contact@immoplatformpro.com");
   });
 
-  it("présente l'éditeur comme la LLC immatriculée, avec son EIN, son État et son adresse — plus comme une société « en cours de formation »", () => {
+  it("présente l'éditeur comme la LLC immatriculée, avec son État et son adresse, sans publier son EIN — plus comme une société « en cours de formation »", () => {
     const { container } = render(
       <MemoryRouter>
         <MentionsLegalesPage />
@@ -62,8 +62,9 @@ describe("Pages légales", () => {
     const texte = container.textContent ?? "";
     expect(texte).toContain("ImmoPlatform Pro LLC");
     expect(texte).toContain("Wyoming");
-    expect(texte).toContain("EIN");
-    expect(texte).toContain("30-1510500");
+    // L'EIN est un identifiant fiscal sensible : il ne figure sur aucune page publique, ni sous son nom, ni sous la forme NN-NNNNNNN.
+    expect(texte).not.toContain("EIN");
+    expect(texte).not.toMatch(/\b\d{2}-\d{7}\b/);
     expect(texte).toContain("30 N Gould St");
     expect(texte).toContain("Sheridan");
     expect(texte).toMatch(/Représentant légal\s*:\s*Imame Assane Thiam/);
@@ -71,6 +72,25 @@ describe("Pages légales", () => {
     for (const perime of ["en cours de formation", "en cours d'immatriculation", "Personne physique", "communiquée sur demande"]) {
       expect(texte).not.toContain(perime);
     }
+  });
+
+  it("les CGU/CGV ne présentent pas PayDunya comme moyen de payer l'abonnement tant que le compte de l'éditeur n'est pas actif", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <CGUPage />
+      </MemoryRouter>
+    );
+
+    const texte = (container.textContent ?? "").replace(/\s+/g, " ");
+    // L'abonnement se paie par carte via Stripe ; le virement bancaire n'est plus proposé.
+    expect(texte).toContain("le paiement par carte bancaire via Stripe");
+    expect(texte).not.toMatch(/virement/i);
+    expect(texte).not.toMatch(/mobile money et carte bancaire par PayDunya/);
+    expect(texte).toContain("Le compte Stripe de l'éditeur ne sert qu'à régler l'abonnement");
+    expect(texte).not.toMatch(/comptes Stripe et PayDunya de l'éditeur/);
+    // La fonction existe encore côté agence (son PROPRE compte PayDunya, identifiants chiffrés) : elle reste décrite.
+    expect(texte).toContain("avec son propre compte PayDunya");
+    expect(texte).toContain("Les identifiants PayDunya que le Gestionnaire enregistre pour son agence sont conservés chiffrés");
   });
 
   it.each(PAGES)("%s ne parle plus d'une société en cours de constitution", (_nom, Page) => {

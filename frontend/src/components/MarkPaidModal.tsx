@@ -7,7 +7,7 @@ import CadreModale from "./CadreModale";
 import ChampDate from "./ChampDate";
 import { AIDE, AVIS, BOUTON_ANNULER, BOUTON_PLEIN, BOUTON_TRAIT, CHAMP, ERREUR, ETIQUETTE } from "./styleFormulaire";
 
-const MOYENS: MoyenSaisiAlaMain[] = ["BANK_TRANSFER", "CASH", "CHEQUE", "MOBILE_MONEY"];
+const MOYENS: MoyenSaisiAlaMain[] = ["CASH", "CHEQUE", "MOBILE_MONEY"];
 
 interface MarkPaidModalProps {
   invoiceId: string;
@@ -38,7 +38,7 @@ export default function MarkPaidModal({ invoiceId, tenantName, amountLabel, rema
   const { t } = useTranslation();
   const { formatMoney } = useCurrency();
   const aujourdhui = aujourdhuiLocal();
-  const [method, setMethod] = useState<MoyenSaisiAlaMain>("BANK_TRANSFER");
+  const [method, setMethod] = useState<MoyenSaisiAlaMain>("CASH");
   const [montant, setMontant] = useState(String(remaining));
   const [paidAt, setPaidAt] = useState(aujourdhui);
   const [reference, setReference] = useState("");

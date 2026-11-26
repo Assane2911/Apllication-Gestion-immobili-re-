@@ -3,13 +3,12 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
 import BandeauChiffres from "../../components/BandeauChiffres";
-import BankDetails from "../../components/BankDetails";
 import DocumentModal from "../../components/DocumentModal";
 import GroupeFiltres from "../../components/GroupeFiltres";
 import { useCurrency } from "../../context/currency";
 import { useMoyensDePaiement } from "../../hooks/useMoyensDePaiement";
 import { useRetourDePaiement } from "../../hooks/useRetourDePaiement";
-import type { AgencyBankInfo, Invoice, InvoiceStatus, PaymentMethod } from "../../types";
+import type { Invoice, InvoiceStatus, PaymentMethod } from "../../types";
 import Bulle from "../../components/Bulle";
 import { formaterJour } from "../../utils/jourCivil";
 import { joursDeRetard } from "../../utils/syntheseLoyers";
@@ -35,9 +34,7 @@ export default function TenantInvoicesPage() {
   const [payingId, setPayingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [bankRef, setBankRef] = useState("");
   const [activeReceiptInvoice, setActiveReceiptInvoice] = useState<Invoice | null>(null);
-  const [bankInfo, setBankInfo] = useState<AgencyBankInfo | null>(null);
   const [filtre, setFiltre] = useState<FiltreLoyers>("all");
   const [annee, setAnnee] = useState<number | "all">("all");
 
@@ -64,16 +61,6 @@ export default function TenantInvoicesPage() {
 
   useEffect(load, []);
 
-  // Chargées une fois pour toutes : ce sont les coordonnées de SON agence, pas
-  // d'une facture en particulier, donc pas besoin de les redemander à chaque
-  // ouverture du panneau de règlement.
-  useEffect(() => {
-    api
-      .get<AgencyBankInfo>("/agency/mine")
-      .then((res) => setBankInfo(res.data))
-      .catch(() => setBankInfo(null));
-  }, []);
-
   const [enCoursDePaiement, setEnCoursDePaiement] = useState(false);
 
   const retourPaiement = useRetourDePaiement(load);
@@ -81,24 +68,22 @@ export default function TenantInvoicesPage() {
   async function pay(invoiceId: string, method: PaymentMethod) {
     // Le seul geste irréversible du portail locataire n'avait aucun garde-fou :
     // ni bouton grisé, ni indication de progression. Rien ne bougeant à
-    // l'écran, recliquer était le réflexe naturel — et déclarait le virement
-    // deux fois, ou créait deux intentions de paiement avant la redirection.
+    // l'écran, recliquer était le réflexe naturel — et créait deux intentions
+    // de paiement avant la redirection.
     if (enCoursDePaiement) return;
     setEnCoursDePaiement(true);
     setError(null);
     setMessage(null);
     try {
-      const { data } = await api.post(`/invoices/${invoiceId}/pay`, { method, bankReference: bankRef || undefined });
+      const { data } = await api.post(`/invoices/${invoiceId}/pay`, { method });
 
       if (data.payment?.status === "REQUIRES_ACTION" && data.payment?.redirectUrl) {
         window.location.assign(data.payment.redirectUrl);
         return;
       }
 
-      // Le texte vient d'ici, dans la langue de l'interface : celui du serveur est en français pour tout le monde.
-      setMessage(data.payment.status === "PENDING_VALIDATION" ? t("tenant.invoices.transferDeclared") : data.payment.message);
+      setMessage(data.payment.message);
       setPayingId(null);
-      setBankRef("");
       load();
     } catch (err) {
       setError(apiErrorMessage(err));
@@ -317,32 +302,16 @@ export default function TenantInvoicesPage() {
               {payingId === inv.id && (
                 <div className="border-t border-slate-300 bg-slate-50 p-4">
                   <p className="mb-3 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-900">{t("tenant.invoices.choosePaymentTitle")}</p>
+                  {Array.isArray(moyensDisponibles) && methods.length === 0 && (
+                    <p role="status" className="rounded-[var(--rayon-bouton)] border border-orange-700/40 bg-orange-50 p-3 text-xs text-orange-900">
+                      {t("tenant.invoices.noOnlineMethod")}
+                    </p>
+                  )}
                   <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
                     {methods.map((m) => (
                       <div key={m.key} className="border border-slate-300 bg-white p-4 transition-colors hover:border-ink-900 hover:shadow-[inset_4px_0_0_var(--color-orange-700)]">
                         <p className="text-sm font-bold text-slate-800">{m.label}</p>
                         <p className="mt-1 text-xs text-slate-600">{m.hint}</p>
-                        {m.key === "BANK_TRANSFER" && (
-                          <>
-                            <BankDetails
-                              info={bankInfo}
-                              title={t("tenant.invoices.bankDetails.title")}
-                              ibanLabel={t("tenant.invoices.bankDetails.iban")}
-                              bicLabel={t("tenant.invoices.bankDetails.bic")}
-                              missingMessage={t("tenant.invoices.bankDetails.missing")}
-                              copyLabel={t("tenant.invoices.bankDetails.copy")}
-                              copiedLabel={t("tenant.invoices.bankDetails.copied")}
-                            />
-                            <input
-                              aria-label={t("tenant.invoices.bankRefPlaceholder")}
-                              placeholder={t("tenant.invoices.bankRefPlaceholder")}
-                              value={bankRef}
-                              maxLength={200}
-                              onChange={(e) => setBankRef(e.target.value)}
-                              className="mt-3 w-full border border-slate-400 bg-white px-3 py-1.5 text-xs text-slate-900"
-                            />
-                          </>
-                        )}
                         <Bulle texte={t("tenant.tips.pay")} className="block">
                           <button
                             onClick={() => pay(inv.id, m.key)}

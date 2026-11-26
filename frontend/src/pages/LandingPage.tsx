@@ -770,14 +770,14 @@ export default function LandingPage() {
 
         {/* Tableau comparatif : légende de plan, la colonne ImmoPlatform Pro cernée d'un trait d'encre */}
         <Reveal delay={120}>
-          <div className="bg-white border-[1.5px] border-ink-900 ">
-            {/* En-tête du tableau */}
-            <div className="hidden md:grid md:grid-cols-12 bg-ink-900 text-white">
+          <div className="space-y-4">
+            {/* En-tête du tableau : un bandeau arrondi, détaché des lignes */}
+            <div className="hidden md:grid md:grid-cols-12 overflow-hidden rounded-[16px] bg-ink-900 text-white">
               <div className="md:col-span-4 px-6 py-4 font-mono text-[11px] uppercase tracking-[0.12em] flex items-center">
                 {t("landing.compare.headers.feature")}
               </div>
               <div className="md:col-span-4 px-6 py-4 border-l border-white/25 text-sm font-semibold flex items-center gap-2.5 text-slate-200">
-                <span aria-hidden="true" className="flex h-5 w-5 shrink-0 items-center justify-center border border-slate-400">
+                <span aria-hidden="true" className="flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] border border-slate-400">
                   <X size={12} strokeWidth={2.5} />
                 </span>
                 <span>{t("landing.compare.headers.traditional")}</span>
@@ -787,25 +787,25 @@ export default function LandingPage() {
                   <Sparkles size={16} className="shrink-0" aria-hidden="true" />
                   <span>ImmoPlatform Pro</span>
                 </div>
-                <span className="font-mono text-[10px] uppercase tracking-wider bg-white text-ink-900 px-2 py-0.5">
+                <span className="rounded-[6px] font-mono text-[10px] uppercase tracking-wider bg-white text-ink-900 px-2 py-0.5">
                   {t("landing.compare.headers.recommended")}
                 </span>
               </div>
             </div>
 
-            {/* Lignes du comparatif */}
-            <div>
+            {/* Lignes du comparatif : une carte arrondie par critère, séparées par un espace */}
+            <div className="space-y-4">
               {COMPARE_ROWS.map((row, i) => (
                 <div
                   key={i}
-                  className="group grid grid-cols-1 md:grid-cols-12 border-t border-slate-300 first:border-t-0 md:first:border-t-0"
+                  className="group grid grid-cols-1 md:grid-cols-12 overflow-hidden rounded-[16px] border-[1.5px] border-ink-900 bg-white"
                 >
                   {/* Nom du critère */}
                   <div className="md:col-span-4 px-6 py-5 flex items-start gap-4 transition-colors duration-200 group-hover:bg-slate-100">
                     <span aria-hidden="true" className="w-5 shrink-0 pt-2.5 font-mono text-[11px] text-orange-700">
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center border border-slate-400 bg-white text-ink-900">
+                    <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border border-slate-400 bg-white text-ink-900">
                       <row.icon size={19} strokeWidth={1.75} />
                     </span>
                     <div>
@@ -820,7 +820,7 @@ export default function LandingPage() {
                     className="md:col-span-4 px-6 py-5 bg-slate-50 md:border-l border-slate-300 transition-colors duration-200 group-hover:bg-slate-100 max-md:before:block max-md:before:mb-2 max-md:before:font-mono max-md:before:text-[10px] max-md:before:uppercase max-md:before:tracking-wider max-md:before:text-slate-600 max-md:before:content-[attr(data-etiquette)]"
                   >
                     <div className="flex items-start gap-3">
-                      <span aria-hidden="true" className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center border border-rose-700/60 text-rose-700">
+                      <span aria-hidden="true" className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] border border-rose-700/60 text-rose-700">
                         <X size={12} strokeWidth={2.5} />
                       </span>
                       <span className="text-[13px] text-slate-700 leading-relaxed">{t(`landing.compare.rows.${row.key}.traditional`)}</span>
@@ -833,7 +833,7 @@ export default function LandingPage() {
                     className="md:col-span-4 px-6 py-5 bg-brand-50 md:border-l-[1.5px] border-ink-900 transition-colors duration-200 group-hover:bg-brand-100 max-md:before:block max-md:before:mb-2 max-md:before:font-mono max-md:before:text-[10px] max-md:before:uppercase max-md:before:tracking-wider max-md:before:text-orange-700 max-md:before:content-[attr(data-etiquette)]"
                   >
                     <div className="flex items-start gap-3">
-                      <span aria-hidden="true" className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center bg-ink-900 text-white">
+                      <span aria-hidden="true" className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] bg-ink-900 text-white">
                         <Check size={12} strokeWidth={3} />
                       </span>
                       <span className="text-[13px] text-slate-900 font-medium leading-relaxed">
@@ -849,7 +849,7 @@ export default function LandingPage() {
 
         {/* CTA sous le comparatif */}
         <Reveal delay={200} className="mt-12 text-center">
-          <div className="inline-flex flex-col sm:flex-row items-center gap-4 bg-white border-[1.5px] border-ink-900 p-4 sm:px-8 ">
+          <div className="inline-flex flex-col sm:flex-row items-center gap-4 rounded-[16px] bg-white border-[1.5px] border-ink-900 p-4 sm:px-8 ">
             <span className="text-xs text-slate-700 font-medium">
               {t("landing.compare.cta.text")}
             </span>
@@ -957,7 +957,7 @@ export default function LandingPage() {
         {/* Devise et période : seulement quand le serveur a donné ses tarifs dans les deux devises. */}
         {choixTarifaire && (
           <Reveal className="mb-6 flex flex-wrap items-center gap-3">
-            <div role="group" aria-label={t("landing.pricing.currencyLabel")} className="flex border border-slate-400 bg-white">
+            <div role="group" aria-label={t("landing.pricing.currencyLabel")} className="flex overflow-hidden rounded-[var(--rayon-bouton)] border border-slate-400 bg-white">
               {(["EUR", "XOF"] as const).map((code) => (
                 <button
                   key={code}
@@ -972,7 +972,7 @@ export default function LandingPage() {
                 </button>
               ))}
             </div>
-            <div role="group" aria-label={t("landing.pricing.cycleLabel")} className="flex border border-slate-400 bg-white">
+            <div role="group" aria-label={t("landing.pricing.cycleLabel")} className="flex overflow-hidden rounded-[var(--rayon-bouton)] border border-slate-400 bg-white">
               {(["MONTHLY", "ANNUAL"] as const).map((valeur) => (
                 <button
                   key={valeur}
@@ -1039,7 +1039,7 @@ export default function LandingPage() {
         </Reveal>
 
         <Reveal>
-          <div className="grid grid-cols-1 divide-y divide-slate-400 border-2 border-ink-900 bg-white md:grid-cols-3 md:divide-x md:divide-y-0">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3 lg:gap-8">
             {(
               [
                 { cle: "starter", id: "STARTER", fonctionnalites: starterFeatures, populaire: false },
@@ -1047,7 +1047,10 @@ export default function LandingPage() {
                 { cle: "enterprise", id: "ENTERPRISE", fonctionnalites: enterpriseFeatures, populaire: false },
               ] as const
             ).map((formule) => (
-              <article key={formule.cle} className="flex flex-col">
+              <article
+                key={formule.cle}
+                className={`flex flex-col overflow-hidden rounded-[16px] border-2 bg-white ${formule.populaire ? "border-orange-700 shadow-md" : "border-ink-900"}`}
+              >
                 {/* Bandeau de colonne : le nom de la formule ; orange et avec la mention « populaire » pour la formule conseillée. */}
                 <div
                   className={`flex items-center justify-between gap-3 border-b px-6 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-wider ${
@@ -1075,7 +1078,7 @@ export default function LandingPage() {
                     <ul className="mt-6 space-y-3 border-t border-slate-300 pt-5 text-xs text-slate-800">
                       {formule.fonctionnalites.map((feat, i) => (
                         <li key={i} className="flex items-start gap-2.5">
-                          <span className="mt-px flex h-4 w-4 shrink-0 items-center justify-center border border-ink-900 bg-white">
+                          <span className="mt-px flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border border-ink-900 bg-white">
                             <Check size={11} strokeWidth={3} className="text-ink-900" aria-hidden="true" />
                           </span>
                           {feat}

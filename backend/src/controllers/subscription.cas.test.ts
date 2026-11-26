@@ -62,14 +62,14 @@ describe("GET /api/subscription/status — historique et biens du seul gestionna
 });
 
 describe("POST /api/subscription/subscribe — ce qui part au prestataire", () => {
-  it("transmet l'usage « abonnement », le montant et la devise du plan, le cycle, la référence bancaire et une référence propre au compte", async () => {
+  it("transmet l'usage « abonnement », le montant et la devise du plan, le cycle et une référence propre au compte", async () => {
     const manager = await createManager({ currency: "XOF" });
     const espion = vi.spyOn(paymentService, "initiatePayment");
 
     const res = await request(app)
       .post("/api/subscription/subscribe")
       .set(authHeader(tokenFor(manager)))
-      .send({ plan: "PRO", billingCycle: "ANNUAL", paymentMethod: "DEMO", bankReference: "  VIR-2026-001  " });
+      .send({ plan: "PRO", billingCycle: "ANNUAL", paymentMethod: "DEMO" });
 
     expect(res.status).toBe(200);
     expect(espion).toHaveBeenCalledTimes(1);
@@ -80,7 +80,6 @@ describe("POST /api/subscription/subscribe — ce qui part au prestataire", () =
       currency: "XOF",
       usage: "ABONNEMENT",
       payerEmail: manager.email,
-      bankReference: "VIR-2026-001",
       returnPath: "/subscription",
       autoRenew: false,
       billingCycle: "ANNUAL",
@@ -116,8 +115,8 @@ describe("POST /api/subscription/subscribe — le crédit de jours d'un changeme
     const fin = new Date(Date.now() + 10 * JOUR);
     const manager = await createManager({ subscriptionStatus: "ACTIVE", subscriptionPlan: "STARTER", subscriptionEndsAt: fin });
     await createPlatformSubscription(manager.id, { plan: "STARTER", amount: 9, billingCycle: "MONTHLY", startDate: debut, endDate: fin, createdAt: new Date(Date.now() - 20 * JOUR) });
-    // Plus récents, mais pas réglés : un virement attendu à 29 et un rejeté à 49.
-    await createPlatformSubscription(manager.id, { plan: "PRO", amount: 29, status: "PENDING", paymentMethod: "BANK_TRANSFER", billingCycle: "MONTHLY", startDate: debut, endDate: fin, createdAt: new Date(Date.now() - 5 * JOUR) });
+    // Plus récents, mais pas réglés : un paiement PayDunya attendu à 29 et un ancien virement rejeté à 49.
+    await createPlatformSubscription(manager.id, { plan: "PRO", amount: 29, status: "PENDING", paymentMethod: "PAYDUNYA", billingCycle: "MONTHLY", startDate: debut, endDate: fin, createdAt: new Date(Date.now() - 5 * JOUR) });
     await createPlatformSubscription(manager.id, { plan: "ENTERPRISE", amount: 49, status: "REJECTED", paymentMethod: "BANK_TRANSFER", billingCycle: "MONTHLY", startDate: debut, endDate: fin, createdAt: new Date(Date.now() - 2 * JOUR) });
 
     const joursTotal = await passerEnPro(manager);
@@ -181,7 +180,7 @@ describe("POST /api/subscription/subscribe — ce qui est enregistré et annonc�
     expect(compte.subscriptionEndsAt).toEqual(ligne.endDate);
   });
 
-  it("un virement déclaré n'active rien, s'enregistre en attente avec sa référence et l'annonce comme tel", async () => {
+  it("un virement n'est plus accepté : 400, aucune ligne d'historique, l'essai reste intact", async () => {
     const manager = await createManager();
 
     const res = await request(app)
@@ -189,17 +188,11 @@ describe("POST /api/subscription/subscribe — ce qui est enregistré et annonc�
       .set(authHeader(tokenFor(manager)))
       .send({ plan: "STARTER", billingCycle: "ANNUAL", paymentMethod: "BANK_TRANSFER", bankReference: "VIR-42" });
 
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(false);
-    expect(res.body.message).toContain("en attente de confirmation");
-    expect(res.body.message).not.toContain("a été activé");
+    expect(res.status).toBe(400);
     const [compte] = await testDb.select().from(users).where(eq(users.id, manager.id));
     expect(compte.subscriptionStatus).toBe("TRIAL");
     expect(compte.subscriptionPaymentMethod).toBeNull();
-    const [ligne] = await testDb.select().from(platformSubscriptions).where(eq(platformSubscriptions.userId, manager.id));
-    expect(ligne).toMatchObject({ status: "PENDING", plan: "STARTER", amount: 86, billingCycle: "ANNUAL", paymentMethod: "BANK_TRANSFER" });
-    expect(ligne.paymentRef).toBeTruthy();
-    expect(ligne.paymentRef).toBe(res.body.payment.reference);
+    expect(await testDb.select().from(platformSubscriptions).where(eq(platformSubscriptions.userId, manager.id))).toHaveLength(0);
   });
 });
 

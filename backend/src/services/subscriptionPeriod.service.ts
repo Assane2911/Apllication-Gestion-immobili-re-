@@ -13,11 +13,11 @@ export type BillingCycle = "MONTHLY" | "ANNUAL";
  *    l'échéance — le comportement que l'interface encourage, et le seul qui
  *    évite une coupure d'accès — était puni.
  *
- * 2. VIREMENT BANCAIRE. La période était figée au moment de la DEMANDE, alors
- *    que l'accès ne s'ouvre qu'à la validation du virement par un
- *    administrateur. Entre les deux il peut s'écouler plusieurs jours : le
- *    client payait un mois et en recevait trois semaines. Même chose pour un
- *    paiement Mobile Money ou carte confirmé en différé.
+ * 2. PAIEMENT CONFIRMÉ EN DIFFÉRÉ. La période était figée au moment de la
+ *    DEMANDE, alors que l'accès ne s'ouvre qu'à la confirmation du paiement.
+ *    Entre les deux il peut s'écouler plusieurs heures : le client payait un
+ *    mois et en recevait un peu moins. C'est le cas d'un paiement Mobile Money
+ *    ou carte confirmé en différé.
  *
  * La règle est la même dans les deux cas : la nouvelle période commence au
  * plus tard entre MAINTENANT et la fin des droits déjà acquis. Rien n'est
@@ -96,13 +96,13 @@ export function ajouterJours(depuis: Date, jours: number): Date {
  * Calcule la période à appliquer au moment où un paiement d'abonnement est
  * RÉELLEMENT activé — que ce soit tout de suite (subscribe(), paiement
  * confirmé de façon synchrone) ou en différé (activateSubscriptionRecord,
- * webhook PayDunya/Stripe ou validation d'un virement par un administrateur).
+ * webhook PayDunya/Stripe).
  *
  * RÉGRESSION que cette fonction corrige : les deux points d'activation
  * dupliquaient chacun leur propre calcul de la période, et seul celui de
  * subscribe() avait été mis à jour avec la proratisation (calculerJoursCredit)
  * lors d'un changement de plan. activateSubscriptionRecord — le SEUL chemin
- * réellement emprunté pour tout paiement asynchrone (virement bancaire,
+ * réellement emprunté pour tout paiement asynchrone (
  * PayDunya, Stripe) — continuait d'appeler calculerPeriode seul, en ignorant
  * totalement le plan/montant de l'ancien abonnement : un changement de plan
  * payé par un moyen différé recevait donc le temps restant reporté À VALEUR

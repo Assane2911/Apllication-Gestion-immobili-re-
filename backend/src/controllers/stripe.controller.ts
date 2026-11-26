@@ -161,7 +161,7 @@ export const handleStripeWebhook = asyncHandler(async (req: Request, res: Respon
     return res.json({ received: true });
   }
 
-  // `async_payment_succeeded` : un moyen de paiement à confirmation différée (prélèvement SEPA, virement…) laisse
+  // `async_payment_succeeded` : un moyen de paiement à confirmation différée (prélèvement SEPA…) laisse
   // la session « completed » mais « unpaid » ; l'argent n'arrive que plus tard, annoncé par cet événement — dont
   // l'objet est la même session, désormais « paid ». Sans lui, le locataire avait payé et la facture restait due.
   if (evenement.type !== "checkout.session.completed" && evenement.type !== "checkout.session.async_payment_succeeded") {
@@ -199,12 +199,12 @@ export const handleStripeWebhook = asyncHandler(async (req: Request, res: Respon
 
     if (!abonnement) {
       console.warn(`[stripe] Abonnement introuvable pour la session ${sessionId}`);
-      signalerAbonnementNonRapproche({ prestataire: "STRIPE", referencePrestataire: sessionId, montant: montantPaye, raison: "abonnement introuvable pour cette session" });
+      await signalerAbonnementNonRapproche({ prestataire: "STRIPE", referencePrestataire: sessionId, montant: montantPaye, raison: "abonnement introuvable pour cette session" });
     } else if (!montantCorrespond(montantPaye, abonnement.amount)) {
       console.warn(
         `[stripe] Webhook rejeté pour l'abonnement ${abonnement.id} : montant confirmé (${montantPaye}) ≠ montant attendu (${abonnement.amount}).`
       );
-      signalerAbonnementNonRapproche({ prestataire: "STRIPE", referencePrestataire: sessionId, montant: montantPaye, raison: "montant différent de l'abonnement attendu" });
+      await signalerAbonnementNonRapproche({ prestataire: "STRIPE", referencePrestataire: sessionId, montant: montantPaye, raison: "montant différent de l'abonnement attendu" });
     } else {
       // Idempotent : un abonnement déjà PAID est renvoyé tel quel. Stripe
       // rejoue ses webhooks en cas de doute, et un double clic ne doit pas
@@ -226,12 +226,11 @@ export const handleStripeWebhook = asyncHandler(async (req: Request, res: Respon
     }
   } else {
     // Rapprochement restreint aux factures réglées PAR STRIPE : paymentRef
-    // sert aussi de référence de virement SAISIE PAR LE LOCATAIRE (voir
-    // payInvoice, bankReference libre) et n'a aucune contrainte d'unicité.
-    // Sans ce filtre, un locataire pouvait déclarer un virement portant
-    // l'identifiant de session Stripe d'une autre de ses factures : la
-    // confirmation soldait alors la mauvaise — quittance légale émise pour un
-    // loyer non réglé, pendant que celle réellement payée restait due.
+    // sert aussi de référence libre pour les encaissements saisis à la main
+    // par le gestionnaire, et n'a aucune contrainte d'unicité. Sans ce filtre,
+    // la confirmation d'un paiement pouvait solder la mauvaise facture —
+    // quittance légale émise pour un loyer non réglé, pendant que celle
+    // réellement payée restait due.
     const [facture] = await db
       .select()
       .from(invoices)
@@ -326,7 +325,7 @@ async function traiterFactureRenouvellement(facture: StripeInvoice): Promise<voi
   });
   if (!resultat) {
     console.warn(`[stripe] Renouvellement non appliqué pour la facture ${facture.id} (abonnement introuvable ou montant/devise incohérents).`);
-    signalerAbonnementNonRapproche({ prestataire: "STRIPE", referencePrestataire: facture.id, montant: montantPaye, raison: "renouvellement non appliqué (abonnement introuvable ou montant/devise incohérents)" });
+    await signalerAbonnementNonRapproche({ prestataire: "STRIPE", referencePrestataire: facture.id, montant: montantPaye, raison: "renouvellement non appliqué (abonnement introuvable ou montant/devise incohérents)" });
   }
 }
 

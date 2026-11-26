@@ -1,5 +1,5 @@
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { CheckCircle2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
@@ -15,7 +15,7 @@ import TwoFactorSetupModal from "../../components/TwoFactorSetupModal";
 import { useAuth } from "../../context/auth";
 import type { AgencySettings, RetentionEcheances, TeamMember, TeamRole } from "../../types";
 import { calendrierRelances } from "../../utils/relances";
-import { avertissementsBancaires, completudeProfil, formulaireModifie } from "../../utils/syntheseCompte";
+import { completudeProfil, formulaireModifie } from "../../utils/syntheseCompte";
 
 const ROLES_EQUIPE: TeamRole[] = ["FULL", "AGENT", "ACCOUNTANT", "READ_ONLY"];
 import Bulle from "../../components/Bulle";
@@ -29,8 +29,6 @@ const FORMULAIRE_INITIAL = {
   phone: "",
   email: "",
   legalNotice: "",
-  iban: "",
-  bic: "",
   overdueRemindersEnabled: false,
   overdueGraceDays: "5",
   overdueIntervalDays: "10",
@@ -43,6 +41,14 @@ export default function AgencySettingsPage() {
   const { logout, user, refreshUser } = useAuth();
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  // Minuteur qui efface le message de succès : annulé au démontage et avant d'en armer un nouveau.
+  const minuteurSucces = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (minuteurSucces.current) clearTimeout(minuteurSucces.current);
+    },
+    []
+  );
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -108,8 +114,6 @@ export default function AgencySettingsPage() {
           phone: res.data.phone || "",
           email: res.data.email || "",
           legalNotice: res.data.legalNotice || "",
-          iban: res.data.iban || "",
-          bic: res.data.bic || "",
           overdueRemindersEnabled: Boolean(res.data.overdueRemindersEnabled),
           overdueGraceDays: String(res.data.overdueGraceDays ?? 5),
           overdueIntervalDays: String(res.data.overdueIntervalDays ?? 10),
@@ -224,6 +228,7 @@ export default function AgencySettingsPage() {
     setSaving(true);
     setSuccess(false);
     setError(null);
+    if (minuteurSucces.current) clearTimeout(minuteurSucces.current);
     try {
       await api.put<AgencySettings>("/agency", {
         ...form,
@@ -232,7 +237,7 @@ export default function AgencySettingsPage() {
       });
       setEnregistre(form);
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 4000);
+      minuteurSucces.current = setTimeout(() => setSuccess(false), 4000);
     } catch (err) {
       setError(apiErrorMessage(err));
     } finally {
@@ -242,7 +247,6 @@ export default function AgencySettingsPage() {
 
   const modifie = formulaireModifie(form, enregistre);
   const profil = completudeProfil(form, logoUrl, stampUrl);
-  const bancaire = avertissementsBancaires(form.iban, form.bic);
 
   // Quitter la page (fermeture, rechargement, lien externe) avec des modifications non enregistrées : le navigateur demande confirmation.
   useEffect(() => {
@@ -260,7 +264,6 @@ export default function AgencySettingsPage() {
     { id: "agency-logo", cle: "logo" },
     { id: "agency-stamp", cle: "stamp" },
     { id: "agency-identite", cle: "identity" },
-    { id: "agency-banque", cle: "bank" },
     { id: "agency-relances", cle: "reminders" },
     { id: "agency-paiement", cle: "onlinePayment" },
     { id: "agency-conservation", cle: "retention" },
@@ -446,48 +449,6 @@ export default function AgencySettingsPage() {
                       placeholder={t("manager.agencySettings.fields.legalNoticePlaceholder")}
                       className={CHAMP}
                     />
-                  </div>
-                </div>
-              </SectionReglage>
-
-              <SectionReglage id="agency-banque" numero={numero("agency-banque")} titre={t("manager.agencySettings.fields.bankSectionTitle")}>
-                <p className="mb-4 text-sm text-slate-600">{t("manager.agencySettings.fields.bankSectionHint")}</p>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div>
-                    <label htmlFor="agency-iban" className={ETIQUETTE}>
-                      {t("manager.agencySettings.fields.iban")}
-                    </label>
-                    <input
-                      id="agency-iban"
-                      value={form.iban}
-                      onChange={(e) => setForm({ ...form, iban: e.target.value })}
-                      placeholder={t("manager.agencySettings.fields.ibanPlaceholder")}
-                      aria-describedby={bancaire.iban ? "agency-iban-alerte" : undefined}
-                      className={`${CHAMP} font-mono`}
-                    />
-                    {bancaire.iban && (
-                      <p id="agency-iban-alerte" aria-live="polite" className="mt-1 flex items-start gap-1.5 text-xs text-orange-800">
-                        <AlertTriangle size={13} className="mt-px shrink-0" aria-hidden="true" /> {t("manager.agencySettings.ibanWarning")}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label htmlFor="agency-bic" className={ETIQUETTE}>
-                      {t("manager.agencySettings.fields.bic")}
-                    </label>
-                    <input
-                      id="agency-bic"
-                      value={form.bic}
-                      onChange={(e) => setForm({ ...form, bic: e.target.value })}
-                      placeholder={t("manager.agencySettings.fields.bicPlaceholder")}
-                      aria-describedby={bancaire.bic ? "agency-bic-alerte" : undefined}
-                      className={`${CHAMP} font-mono`}
-                    />
-                    {bancaire.bic && (
-                      <p id="agency-bic-alerte" aria-live="polite" className="mt-1 flex items-start gap-1.5 text-xs text-orange-800">
-                        <AlertTriangle size={13} className="mt-px shrink-0" aria-hidden="true" /> {t("manager.agencySettings.bicWarning")}
-                      </p>
-                    )}
                   </div>
                 </div>
               </SectionReglage>

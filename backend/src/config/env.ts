@@ -159,7 +159,7 @@ export const env = {
     // Stripe et PayDunya sont le compte de la PLATEFORME : ils encaissent les abonnements des agences.
     // Laisser un locataire y payer son loyer ferait passer l'argent des agences par ce compte (voir
     // payment.service.ts::indisponibilitePourLoyer). Désactivé tant qu'un montage dédié (un compte par
-    // agence, ou virement direct) n'a pas été mis en place ; il faut le demander EXPLICITEMENT.
+    // agence) n'a pas été mis en place ; il faut le demander EXPLICITEMENT.
     rentOnline: process.env.RENT_ONLINE_PAYMENTS === "true",
     // Clé qui chiffre les identifiants PayDunya que chaque agence enregistre pour encaisser SES loyers sur SON compte
     // (voir services/comptePaiementAgence.service.ts). 32 octets en hexadécimal (64 caractères) ou en base64. Absente :

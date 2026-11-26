@@ -198,7 +198,7 @@ export function requireRole(...roles: Array<AuthPayload["role"]>) {
 }
 
 /**
- * L'espace d'administration exige la double authentification : ce compte confirme les virements, suspend et supprime des
+ * L'espace d'administration exige la double authentification : ce compte suspend et supprime des
  * agences, change les paramètres de la plateforme ; un mot de passe volé ne doit pas suffire à tout cela.
  *
  * Un administrateur qui ne l'a pas encore activée n'est pas enfermé dehors : il se connecte, et seules les routes de
