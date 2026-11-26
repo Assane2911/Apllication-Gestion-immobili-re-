@@ -25,7 +25,7 @@ function crg(extra: Partial<CrgSynthesis> = {}): CrgSynthesis {
     totalChargesByCurrency: { EUR: 100 },
     totalCommissionByCurrency: { EUR: 100 },
     totalNetByCurrency: { EUR: 800 },
-    reversements: [{ id: "p1", currency: "EUR", amount: 500, paidAt: "2026-10-05T00:00:00.000Z", method: "BANK_TRANSFER", reference: "VIR-0925", note: null }],
+    reversements: [{ id: "p1", currency: "EUR", amount: 500, paidAt: "2026-10-05T00:00:00.000Z", method: "MOBILE_MONEY", reference: "MM-0925", note: null }],
     totalReverseByCurrency: { EUR: 500 },
     resteAReverserByCurrency: { EUR: 300 },
     ...extra,
@@ -51,8 +51,8 @@ describe("ReversementsSection", () => {
     afficher(crg());
     expect(screen.getByText("Net du mois 800 EUR · déjà reversé 500 EUR")).toBeInTheDocument();
     expect(screen.getByText("Reste à reverser : 300 EUR")).toBeInTheDocument();
-    expect(screen.getByText(/Virement/)).toBeInTheDocument();
-    expect(screen.getByText(/VIR-0925/)).toBeInTheDocument();
+    expect(screen.getByText(/Mobile money/)).toBeInTheDocument();
+    expect(screen.getByText(/MM-0925/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Enregistrer le reversement" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Supprimer ce reversement" })).not.toBeInTheDocument();
   });

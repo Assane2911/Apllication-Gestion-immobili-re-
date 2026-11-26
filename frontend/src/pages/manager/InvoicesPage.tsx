@@ -77,7 +77,6 @@ export default function InvoicesPage() {
   const methodLabels: Record<string, string> = {
     STRIPE: t("common.paymentMethods.STRIPE"),
     PAYDUNYA: t("common.paymentMethods.PAYDUNYA"),
-    BANK_TRANSFER: t("common.paymentMethods.BANK_TRANSFER"),
     DEMO: t("common.paymentMethods.DEMO"),
     CASH: t("common.paymentMethods.CASH"),
     CHEQUE: t("common.paymentMethods.CHEQUE"),

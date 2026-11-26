@@ -57,12 +57,6 @@ export default function PolitiqueConfidentialitePage() {
               bail, montants de loyer et dépôts de garantie, historique des paiements, dépenses.
             </>,
             <>
-              <strong className="text-slate-900">Coordonnées bancaires de virement</strong> : IBAN et BIC
-              saisis par le Gestionnaire — ceux de son agence, affichés au Locataire qui règle par virement,
-              et ceux des propriétaires auxquels il reverse les loyers. Aucune coordonnée bancaire de
-              Locataire n'est enregistrée.
-            </>,
-            <>
               <strong className="text-slate-900">Photos d'incidents</strong> : photographies transmises par
               les Locataires lors du signalement d'un problème dans leur logement.
             </>,
@@ -88,8 +82,7 @@ export default function PolitiqueConfidentialitePage() {
         <p>
           {COMPANY.tradeName} n'a jamais accès aux données de carte bancaire ni aux identifiants de compte
           mobile money : ces données transitent exclusivement par nos prestataires de paiement (voir section
-          5) et ne sont jamais enregistrées par le Service. Seuls les IBAN et BIC de virement mentionnés
-          ci-dessus, saisis volontairement par le Gestionnaire, sont conservés.
+          5) et ne sont jamais enregistrées par le Service. Le Service ne conserve aucune coordonnée bancaire.
         </p>
       </LegalSection>
 
@@ -227,8 +220,8 @@ export default function PolitiqueConfidentialitePage() {
           directement une table n'obtiendrait aucune donnée, quel que soit son auteur.
         </p>
         <p>
-          L'accès à l'espace d'administration du Service, qui permet notamment de confirmer des virements et de
-          suspendre ou supprimer des agences, exige une double authentification. Les mots de passe choisis
+          L'accès à l'espace d'administration du Service, qui permet notamment de suspendre ou supprimer des
+          agences, exige une double authentification. Les mots de passe choisis
           lors de l'inscription ou d'une réinitialisation sont refusés lorsqu'ils figurent parmi les plus
           courants ou reprennent l'adresse email du compte.
         </p>
@@ -263,7 +256,7 @@ export default function PolitiqueConfidentialitePage() {
           propre initiative — celle-ci relève de votre Gestionnaire, comme indiqué ci-dessus. En tant que{" "}
           <strong className="text-slate-900">Propriétaire</strong>, la même logique s'applique : adressez-vous
           à votre Gestionnaire, qui dispose de la même fonction d'effacement pour vos propres données
-          identifiantes (nom, raison sociale, email, téléphone, adresse, IBAN/BIC et accès au portail), tandis
+          identifiantes (nom, raison sociale, email, téléphone, adresse et accès au portail), tandis
           que les biens qui vous sont associés et l'historique de vos comptes-rendus de gestion sont conservés
           pour les mêmes raisons comptables. L'espace Propriétaire vous permet de télécharger, à tout moment et
           sans demande préalable, une copie complète des données détenues à votre sujet (fiche, biens,

@@ -9,7 +9,7 @@ import { AVIS, BOUTON_PLEIN } from "./styleFormulaire";
  * Écran qui remplace l'espace d'administration tant que le compte n'a pas activé la double authentification.
  *
  * Le serveur refuse toute route d'administration à un administrateur sans second facteur (voir exigerDeuxFacteursAdmin,
- * backend/src/middleware/auth.ts) : ce compte confirme les virements, suspend et supprime des agences ; un mot de passe volé ne
+ * backend/src/middleware/auth.ts) : ce compte suspend et supprime des agences ; un mot de passe volé ne
  * doit pas suffire. L'administrateur n'est pas enfermé dehors pour autant : il s'enrôle ici avec sa session, puis l'espace
  * s'ouvre sans qu'il ait à se reconnecter (refreshUser relit `twoFactorEnabled`).
  */

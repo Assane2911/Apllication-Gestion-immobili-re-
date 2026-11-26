@@ -25,8 +25,6 @@ function owner(overrides: Partial<Owner> = {}): Owner {
     email: "awa@example.com",
     phone: "+221771223344",
     address: null,
-    iban: null,
-    bic: null,
     managementFeeRate: 8,
     notes: null,
     portalStatus: "NONE",
@@ -39,7 +37,7 @@ function paginated(items: Owner[]): { data: PaginatedResponse<Owner> } {
   return { data: { items, page: 1, pageSize: 20, total: items.length, totalPages: 1 } };
 }
 
-type LigneSynthese = { ownerId: string; ownerName: string; hasIban: boolean; resteByCurrency: Record<string, number> };
+type LigneSynthese = { ownerId: string; ownerName: string; resteByCurrency: Record<string, number> };
 
 // Reproduit l'ordre des appels de load() : /owners, puis la synthèse des reversements du mois écoulé.
 function queueOwners(items: Owner[], synthese: LigneSynthese[] = []) {
@@ -141,8 +139,6 @@ describe("OwnersPage (manager)", () => {
       civility: undefined,
       companyName: undefined,
       address: undefined,
-      iban: undefined,
-      bic: undefined,
       notes: undefined,
     });
 
@@ -316,15 +312,15 @@ describe("OwnersPage (manager)", () => {
     queueOwners(
       [owner({ id: "own-1" }), owner({ id: "own-2", firstName: "Moussa" })],
       [
-        { ownerId: "own-1", ownerName: "Mme Awa Diallo", hasIban: false, resteByCurrency: { EUR: 300 } },
-        { ownerId: "own-2", ownerName: "Moussa Diallo", hasIban: true, resteByCurrency: { EUR: 0 } },
+        { ownerId: "own-1", ownerName: "Mme Awa Diallo", resteByCurrency: { EUR: 300 } },
+        { ownerId: "own-2", ownerName: "Moussa Diallo", resteByCurrency: { EUR: 0 } },
       ]
     );
     renderPage();
 
     const encart = await screen.findByRole("region", { name: /Reversements de .* à effectuer \(1\)/ });
     expect(encart).toHaveTextContent("Mme Awa Diallo");
-    expect(encart).toHaveTextContent("Pas d'IBAN renseigné");
+    expect(encart).not.toHaveTextContent(/IBAN/);
     expect(encart).not.toHaveTextContent("Moussa Diallo");
     expect(encart.querySelector("a")?.getAttribute("href")).toBe("/proprietaires/own-1/crg?month=9&year=2026");
     expect(mockedApi.get).toHaveBeenCalledWith("/crg/payouts/summary", expect.objectContaining({ params: expect.any(Object) }));
@@ -339,11 +335,11 @@ describe("OwnersPage (manager)", () => {
     expect(screen.queryByRole("region", { name: /Reversements de/ })).not.toBeInTheDocument();
   });
 
-  describe("synthèse, recherche, filtres et IBAN", () => {
+  describe("synthèse, recherche et filtres", () => {
     const parc = [
-      owner({ id: "o1", firstName: "Awa", lastName: "Diallo", iban: "FR7630006000011234567890189", portalStatus: "ACTIVE", managementFeeRate: 6 }),
+      owner({ id: "o1", firstName: "Awa", lastName: "Diallo", portalStatus: "ACTIVE", managementFeeRate: 6 }),
       owner({ id: "o2", firstName: "Moussa", lastName: "Ba", companyName: "SCI Baobab", email: "moussa@example.com", portalStatus: "PENDING", managementFeeRate: 10 }),
-      owner({ id: "o3", firstName: "Élodie", lastName: "Sow", email: "elodie@example.com", iban: "FR7630006000011234567890189", managementFeeRate: 8 }),
+      owner({ id: "o3", firstName: "Élodie", lastName: "Sow", email: "elodie@example.com", managementFeeRate: 8 }),
       owner({ id: "o4", firstName: "Ibrahima", lastName: "Fall", email: "ibra@example.com", managementFeeRate: 12 }),
     ];
 
@@ -355,16 +351,16 @@ describe("OwnersPage (manager)", () => {
 
     const lignes = () => within(screen.getByRole("table")).getAllByRole("row").slice(1).map((r) => r.textContent ?? "");
 
-    it("résume les accès, la commission moyenne et les propriétaires sans IBAN", async () => {
+    it("résume les accès et la commission moyenne", async () => {
       await afficher();
       const synthese = screen.getByLabelText("Synthèse des propriétaires");
       expect(within(synthese).getByText("1 / 4")).toBeInTheDocument();
       expect(within(synthese).getByText("1 invité, 2 sans accès")).toBeInTheDocument();
       expect(within(synthese).getByText("9 %")).toBeInTheDocument();
-      expect(within(synthese).getByText("2")).toBeInTheDocument(); // sans IBAN
+      expect(within(synthese).queryByText(/IBAN/)).not.toBeInTheDocument();
     });
 
-    it("filtre les propriétaires sans accès, invités ou sans IBAN", async () => {
+    it("filtre les propriétaires invités, et ne propose plus de filtre « Sans IBAN »", async () => {
       const user = userEvent.setup();
       await afficher();
       const filtres = screen.getByRole("group", { name: "Filtrer les propriétaires" });
@@ -373,8 +369,7 @@ describe("OwnersPage (manager)", () => {
       expect(lignes()).toHaveLength(1);
       expect(lignes()[0]).toContain("Moussa Ba");
 
-      await user.click(within(filtres).getByRole("button", { name: /Sans IBAN\s*2/ }));
-      expect(lignes()).toHaveLength(2);
+      expect(within(filtres).queryByRole("button", { name: /IBAN/ })).not.toBeInTheDocument();
     });
 
     it("cherche par société, et trie par commission décroissante", async () => {
@@ -391,15 +386,15 @@ describe("OwnersPage (manager)", () => {
 
     it("totalise les reversements à effectuer devise par devise", async () => {
       await afficher([
-        { ownerId: "o1", ownerName: "Awa Diallo", hasIban: true, resteByCurrency: { EUR: 400 } },
-        { ownerId: "o3", ownerName: "Élodie Sow", hasIban: false, resteByCurrency: { EUR: 250, XOF: 300000 } },
+        { ownerId: "o1", ownerName: "Awa Diallo", resteByCurrency: { EUR: 400 } },
+        { ownerId: "o3", ownerName: "Élodie Sow", resteByCurrency: { EUR: 250, XOF: 300000 } },
       ]);
       const bloc = await screen.findByRole("region", { name: /Reversements de/ });
       expect(within(bloc).getByText(/Total à reverser : 650 € \+ 300 000/)).toBeInTheDocument();
-      expect(within(bloc).getByText("Pas d'IBAN renseigné")).toBeInTheDocument();
+      expect(within(bloc).queryByText(/IBAN/)).not.toBeInTheDocument();
     });
 
-    it("exporte les propriétaires en CSV, sans l'IBAN", async () => {
+    it("exporte les propriétaires en CSV, sans donnée bancaire", async () => {
       const user = userEvent.setup();
       let blob: Blob | undefined;
       Object.defineProperty(URL, "createObjectURL", { value: (b: Blob) => ((blob = b), "blob:test"), configurable: true });
@@ -418,21 +413,14 @@ describe("OwnersPage (manager)", () => {
     });
   });
 
-  it("indique si la clé de contrôle de l'IBAN saisi est valide, sans bloquer l'enregistrement", async () => {
+  it("le formulaire ne demande plus d'IBAN ni de BIC", async () => {
     const user = userEvent.setup();
     queueOwners([]);
     renderPage();
     await user.click((await screen.findAllByRole("button", { name: "+ Ajouter un propriétaire" }))[0]);
 
-    const iban = screen.getByLabelText(/IBAN/);
-    await user.type(iban, "FR7630006000011234567890189");
-    expect(screen.getByText("Clé de contrôle valide")).toBeInTheDocument();
-    await user.clear(iban);
-    await user.type(iban, "FR7630006000011234567890180");
-    expect(screen.getByText("La clé de contrôle ne correspond pas : vérifiez la saisie.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Enregistrer" })).toBeEnabled();
-
-    await user.type(screen.getByLabelText(/BIC/), "ABC");
-    expect(screen.getByText("Un BIC compte 8 ou 11 caractères.")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Taux de commission/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/IBAN/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/BIC/)).not.toBeInTheDocument();
   });
 });

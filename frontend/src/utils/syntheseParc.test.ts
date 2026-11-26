@@ -96,10 +96,9 @@ describe("exports CSV", () => {
     expect(csv.split("\n")[1]).toBe('"Awa Ndiaye";"\'+221770000000";"awa@exemple.com";"Oui";""');
   });
 
-  it("propriétaires : aucune donnée bancaire", () => {
-    const o: Owner = { id: "o1", firstName: "Awa", lastName: "Ndiaye", email: "a@b.sn", phone: "1", managementFeeRate: 8, portalStatus: "PENDING", iban: "FR7630001007941234567890185", createdAt: "2026-01-01T00:00:00.000Z" };
+  it("propriétaires : coordonnées, commission et portail seulement", () => {
+    const o: Owner = { id: "o1", firstName: "Awa", lastName: "Ndiaye", email: "a@b.sn", phone: "1", managementFeeRate: 8, portalStatus: "PENDING", createdAt: "2026-01-01T00:00:00.000Z" };
     const csv = csvProprietaires([o], { name: "Nom", company: "Société", phone: "Tél", email: "Email", feeRate: "Commission", portal: "Portail" }, () => "Invité");
-    expect(csv).not.toContain("FR76");
     expect(csv.split("\n")[1]).toBe('"Awa Ndiaye";"";"1";"a@b.sn";8,00;"Invité"');
   });
 });

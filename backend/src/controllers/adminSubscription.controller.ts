@@ -159,7 +159,7 @@ export const changeManagerPlan = asyncHandler(async (req: Request, res: Response
  * (le webhook réécrirait la fin de période). Un compte déjà illimité l'est
  * aussi, pour ne pas laisser de trace d'audit d'un changement qui n'en est pas
  * un. L'accès se retire avec revokeUnlimitedAccess ; un paiement ultérieur
- * (virement confirmé) le remplace par une échéance datée.
+ * (paiement confirmé) le remplace par une échéance datée.
  */
 export const grantUnlimitedAccess = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;

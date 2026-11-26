@@ -114,16 +114,11 @@ describe("initiatePayment — aiguillage", () => {
     expect(err?.params).toEqual({ currency: "USD" });
   });
 
-  it("le virement garde sa référence fournie, ou en fabrique une, avec son message ; le paiement simulé a une référence reconnaissable", async () => {
-    const donnee = await initiatePayment({ method: "BANK_TRANSFER", currency: "EUR", amount: 100, invoiceId: "inv-1", usage: "ABONNEMENT", payerEmail: "a@test.local", bankReference: "VIR-42" });
-    const fabriquee = await initiatePayment({ method: "BANK_TRANSFER", currency: "EUR", amount: 100, invoiceId: "inv-1", usage: "ABONNEMENT", payerEmail: "a@test.local" });
+  it("le paiement simulé a une référence et un message reconnaissables", async () => {
     env.payments.demoMode = true;
     const demo = await initiatePayment({ method: "DEMO", currency: "EUR", amount: 100, invoiceId: "inv-1", usage: "ABONNEMENT", payerEmail: "a@test.local" });
     const simuleStripe = await initiatePayment({ method: "STRIPE", currency: "EUR", amount: 100, invoiceId: "inv-1", usage: "ABONNEMENT", payerEmail: "a@test.local" });
 
-    expect(donnee.reference).toBe("VIR-42");
-    expect(donnee.message).toBe("Virement de 100 EUR déclaré, en attente de validation par le gestionnaire.");
-    expect(fabriquee.reference).toBe("virement_inv-1");
     expect(demo.message).toBe("Paiement démo de 100 EUR confirmé instantanément.");
     expect(simuleStripe.reference).toMatch(/^demo_stripe_inv-1_\d+$/);
   });
@@ -184,12 +179,13 @@ describe("conversions et disponibilité", () => {
 
   it("propose les moyens dans l'ordre de l'interface, démo comprise, et tient compte du compte d'agence pour un loyer", () => {
     env.payments.demoMode = true;
-    expect(MOYENS_DE_PAIEMENT).toEqual(["PAYDUNYA", "STRIPE", "BANK_TRANSFER", "DEMO"]);
-    expect(moyensDePaiementDisponibles("EUR")).toEqual(["PAYDUNYA", "STRIPE", "BANK_TRANSFER", "DEMO"]);
+    expect(MOYENS_DE_PAIEMENT).toEqual(["PAYDUNYA", "STRIPE", "DEMO"]);
+    expect(moyensDePaiementDisponibles("EUR")).toEqual(["PAYDUNYA", "STRIPE", "DEMO"]);
 
     env.payments.demoMode = false;
-    expect(moyensDePaiementDisponibles("XOF", "LOYER", COMPTE)).toEqual(["PAYDUNYA", "BANK_TRANSFER"]);
-    expect(moyensDePaiementDisponibles("XOF", "LOYER", null)).toEqual(["BANK_TRANSFER"]);
+    expect(moyensDePaiementDisponibles("XOF", "LOYER", COMPTE)).toEqual(["PAYDUNYA"]);
+    // Sans compte PayDunya de l'agence : aucun moyen en ligne pour un loyer (l'agence enregistre le règlement à la main).
+    expect(moyensDePaiementDisponibles("XOF", "LOYER", null)).toEqual([]);
   });
 });
 

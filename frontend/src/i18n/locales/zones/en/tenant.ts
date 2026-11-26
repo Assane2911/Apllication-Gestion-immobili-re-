@@ -102,7 +102,7 @@ const zone: ZoneTenant = {
       inspectionDocTitle: "Move-in/Move-out Report - {{property}}",
     },
     invoices: {
-      transferDeclared: "Transfer declared, awaiting validation by the manager.",
+      noOnlineMethod: "Your agency has not enabled online payment. Contact it: it will record your payment.",
       summary: {
         label: "Your rent situation",
         due: "Total due",
@@ -147,21 +147,11 @@ const zone: ZoneTenant = {
       pay: "Pay",
       chooseMethod: "Choose this method",
       paying: "Processing...",
-      bankRefPlaceholder: "Transfer reference",
       noInvoices: "No invoices yet",
       receiptTitle: "Rent receipt - {{period}}",
-      bankDetails: {
-        title: "Agency bank details",
-        iban: "IBAN",
-        bic: "BIC / SWIFT",
-        missing: "Your agency hasn't set up its bank details yet. Contact them before making the transfer.",
-        copy: "Copy",
-        copied: "Copied!",
-      },
       methods: {
         STRIPE: { label: "Credit/debit card", hint: "Secure payment via Stripe" },
         PAYDUNYA: { label: "PayDunya", hint: "Orange Money, Wave, Free Money, MTN, card..." },
-        BANK_TRANSFER: { label: "Bank transfer", hint: "Declare your transfer, validated by the manager" },
         DEMO: { label: "Demo mode", hint: "Simulated payment, instant confirmation" },
       },
     },

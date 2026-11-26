@@ -403,18 +403,11 @@ describe("compte rendu de gestion : totaux, banque et reversements", () => {
     expect(generateCrgHtml(crg())).not.toContain("Fatou Diop (");
   });
 
-  it("IBAN et BIC : l'IBAN seul, l'IBAN avec son BIC, ou le message « aucune coordonnée »", () => {
-    const seul = generateCrgHtml(crg({ iban: "SN08 0000", bic: null }));
-    const avec = generateCrgHtml(crg({ iban: "SN08 0000", bic: "CBAOSNDA" }));
-    const aucun = generateCrgHtml(crg({ iban: null, bic: "CBAOSNDA" })); // un BIC sans IBAN ne s'imprime pas
+  it("aucune coordonnée bancaire n'est imprimée : ni IBAN, ni BIC, ni message « aucune coordonnée »", () => {
+    const html = generateCrgHtml(crg());
 
-    expect(seul).toContain("SN08 0000");
-    expect(seul).not.toContain("CBAOSNDA");
-    expect(seul).not.toContain(TEXTES_CRG.fr.bic); // pas d'étiquette « BIC » sans valeur
-    expect(avec).toContain(TEXTES_CRG.fr.bic);
-    expect(avec).toContain("CBAOSNDA");
-    expect(aucun).not.toContain("CBAOSNDA");
-    expect(aucun).toContain("color:#94a3b8");
+    expect(html).not.toMatch(/IBAN|BIC/);
+    expect(html).not.toContain("color:#94a3b8");
   });
 
   it("aucun reversement ni reste : la section n'existe pas", () => {

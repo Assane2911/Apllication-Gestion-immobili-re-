@@ -100,7 +100,7 @@ const zone = {
       inspectionDocTitle: "État des Lieux - {{property}}",
     },
     invoices: {
-      transferDeclared: "Virement déclaré, en attente de validation par le gestionnaire.",
+      noOnlineMethod: "Votre agence n'a pas activé le paiement en ligne. Contactez-la : elle enregistrera votre règlement.",
       summary: {
         label: "Situation de vos loyers",
         due: "Total dû",
@@ -145,21 +145,11 @@ const zone = {
       pay: "Payer",
       chooseMethod: "Choisir ce moyen",
       paying: "Paiement en cours...",
-      bankRefPlaceholder: "Référence du virement",
       noInvoices: "Aucune facture pour le moment",
       receiptTitle: "Quittance de loyer - {{period}}",
-      bankDetails: {
-        title: "Coordonnées bancaires de l'agence",
-        iban: "IBAN",
-        bic: "BIC / SWIFT",
-        missing: "Votre agence n'a pas encore renseigné ses coordonnées bancaires. Contactez-la avant d'effectuer le virement.",
-        copy: "Copier",
-        copied: "Copié !",
-      },
       methods: {
         STRIPE: { label: "Carte bancaire", hint: "Paiement sécurisé par Stripe" },
         PAYDUNYA: { label: "PayDunya", hint: "Orange Money, Wave, Free Money, MTN, carte bancaire..." },
-        BANK_TRANSFER: { label: "Virement bancaire", hint: "Déclarez votre virement, validation par le gestionnaire" },
         DEMO: { label: "Mode démo", hint: "Paiement simulé, confirmation immédiate" },
       },
     },

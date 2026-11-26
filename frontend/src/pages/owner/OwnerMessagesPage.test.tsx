@@ -67,8 +67,8 @@ describe("OwnerMessagesPage (espace propriétaire)", () => {
     const user = userEvent.setup();
     mockedApi.get.mockResolvedValueOnce({ data: { messages: [] } });
     renderPage();
-    await user.click(await screen.findByRole("button", { name: "Date du virement" }));
-    expect(screen.getByLabelText("Écrivez votre message...")).toHaveValue("Bonjour, pouvez-vous me confirmer la date de mon prochain virement ?");
+    await user.click(await screen.findByRole("button", { name: "Date du reversement" }));
+    expect(screen.getByLabelText("Écrivez votre message...")).toHaveValue("Bonjour, pouvez-vous me confirmer la date de mon prochain reversement ?");
     expect(mockedApi.post).not.toHaveBeenCalled();
   });
 

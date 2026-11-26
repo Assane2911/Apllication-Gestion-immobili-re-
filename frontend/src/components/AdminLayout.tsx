@@ -1,4 +1,4 @@
-import { Building2, Landmark, LayoutDashboard, Lightbulb, Megaphone, Menu, ScrollText, Settings } from "lucide-react";
+import { Building2, LayoutDashboard, Lightbulb, Megaphone, Menu, ScrollText, Settings } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet, useLocation } from "react-router-dom";
@@ -19,7 +19,6 @@ const groupes: ReadonlyArray<GroupeMenu> = [
     items: [
       { to: "/admin/gestionnaires", key: "managers", icone: Building2 },
       { to: "/admin/annonces", key: "listings", icone: Megaphone },
-      { to: "/admin/virements", key: "transfers", icone: Landmark },
     ],
   },
   {

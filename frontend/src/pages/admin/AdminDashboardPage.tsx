@@ -1,8 +1,8 @@
-import { ArrowRight, Building2, CheckCircle2, Clock3, CreditCard, FileText, Landmark, Mail, Users, Wallet } from "lucide-react";
+import { ArrowRight, Building2, CheckCircle2, Clock3, CreditCard, FileText, Mail, Users, Wallet } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { api, apiErrorMessage, liste } from "../../api/client";
+import { api, apiErrorMessage } from "../../api/client";
 import BoutonRappelEssai from "../../components/BoutonRappelEssai";
 import EmptyState from "../../components/EmptyState";
 import { Skeleton, StatCardSkeleton } from "../../components/Skeleton";
@@ -40,10 +40,6 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  // Nombre de virements à traiter : `null` tant qu'il n'est pas connu. C'est un complément de la page, pas son contenu —
-  // s'il manque (réseau, serveur plus ancien), la zone « À traiter » se passe de cette ligne au lieu de faire échouer
-  // tout le tableau de bord.
-  const [virementsEnAttente, setVirementsEnAttente] = useState<number | null>(null);
   // Idem pour les suggestions restées « Nouvelles » : un complément de la zone « À traiter », jamais une condition.
   const [suggestionsNonLues, setSuggestionsNonLues] = useState<number | null>(null);
 
@@ -55,9 +51,6 @@ export default function AdminDashboardPage() {
       .then((res) => setStats(res.data))
       .catch((err) => setError(apiErrorMessage(err)))
       .finally(() => setLoading(false));
-    Promise.resolve(api.get<unknown>("/admin/subscriptions/pending-bank-transfers"))
-      .then((res) => setVirementsEnAttente(res?.data === undefined ? null : liste<unknown>(res.data).length))
-      .catch(() => setVirementsEnAttente(null));
     Promise.resolve(api.get<{ counts?: { NEW?: number } }>("/admin/suggestions", { params: { page: 1, status: "NEW" } }))
       .then((res) => setSuggestionsNonLues(typeof res?.data?.counts?.NEW === "number" ? res.data.counts.NEW : null))
       .catch(() => setSuggestionsNonLues(null));
@@ -109,7 +102,6 @@ export default function AdminDashboardPage() {
   // ── Ce qui attend l'administrateur : chaque ligne est un raccourci vers la page qui règle le sujet.
   const suspendus = managers.suspended ?? 0;
   const aTraiter = [
-    virementsEnAttente ? { cle: "transfers", to: "/admin/virements", icone: Landmark, texte: t("admin.dashboard.todo.transfers", { count: virementsEnAttente }), urgent: true } : null,
     suggestionsNonLues ? { cle: "suggestions", to: "/admin/suggestions", icone: Mail, texte: t("admin.dashboard.todo.suggestions", { count: suggestionsNonLues }), urgent: false } : null,
     trialsEndingSoon.length > 0 ? { cle: "trials", to: "/admin/gestionnaires", icone: Clock3, texte: t("admin.dashboard.todo.trials", { count: trialsEndingSoon.length }), urgent: true } : null,
     managers.expired > 0 ? { cle: "expired", to: "/admin/gestionnaires", icone: Users, texte: t("admin.dashboard.todo.expired", { count: managers.expired }), urgent: false } : null,

@@ -34,7 +34,7 @@ describe("POST /api/subscription/subscribe — compte à accès illimité", () =
     const res = await request(app)
       .post("/api/subscription/subscribe")
       .set(authHeader(tokenFor(manager)))
-      .send({ plan: "PRO", billingCycle: "MONTHLY", paymentMethod: "BANK_TRANSFER" });
+      .send({ plan: "PRO", billingCycle: "MONTHLY", paymentMethod: "DEMO" });
 
     expect(res.status).toBe(409);
     expect(await testDb.select().from(platformSubscriptions).where(eq(platformSubscriptions.userId, manager.id))).toHaveLength(0);
@@ -51,7 +51,7 @@ describe("POST /api/subscription/subscribe — compte à accès illimité", () =
     const souscription = await request(app)
       .post("/api/subscription/subscribe")
       .set(authHeader(tokenFor(manager)))
-      .send({ plan: "PRO", billingCycle: "MONTHLY", paymentMethod: "BANK_TRANSFER" });
+      .send({ plan: "PRO", billingCycle: "MONTHLY", paymentMethod: "DEMO" });
     expect(souscription.status).toBe(200);
   });
 });

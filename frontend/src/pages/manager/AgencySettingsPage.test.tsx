@@ -93,36 +93,6 @@ describe("AgencySettingsPage", () => {
     expect(screen.getByLabelText("Indicatif du pays")).toHaveValue("FR");
   });
 
-  it("pré-remplit aussi l'IBAN et le BIC quand ils sont déjà renseignés", async () => {
-    mockedApi.get.mockResolvedValueOnce({
-      data: settings({ iban: "FR7630006000011234567890189", bic: "BNPAFRPPXXX" }),
-    });
-    renderPage();
-
-    await waitFor(() => expect(screen.getByLabelText("IBAN")).toHaveValue("FR7630006000011234567890189"));
-    expect(screen.getByLabelText("BIC / SWIFT")).toHaveValue("BNPAFRPPXXX");
-  });
-
-  it("enregistre l'IBAN et le BIC saisis", async () => {
-    mockedApi.get.mockResolvedValueOnce({ data: settings() });
-    mockedApi.put.mockResolvedValueOnce({
-      data: settings({ iban: "FR7630006000011234567890189", bic: "BNPAFRPPXXX" }),
-    });
-    renderPage();
-
-    await waitFor(() => expect(screen.getByLabelText("Nom commercial de l'agence *")).toHaveValue("Agence du Port"));
-    await userEvent.setup().type(screen.getByLabelText("IBAN"), "FR7630006000011234567890189");
-    await userEvent.setup().type(screen.getByLabelText("BIC / SWIFT"), "BNPAFRPPXXX");
-    await userEvent.setup().click(screen.getByRole("button", { name: "Enregistrer les paramètres" }));
-
-    await waitFor(() =>
-      expect(mockedApi.put).toHaveBeenCalledWith(
-        "/agency",
-        expect.objectContaining({ iban: "FR7630006000011234567890189", bic: "BNPAFRPPXXX" })
-      )
-    );
-  });
-
   it("relances des impayés : désactivées par défaut, activables avec délai, intervalle et option garants", async () => {
     const user = userEvent.setup();
     mockedApi.get.mockResolvedValueOnce({ data: settings() });
@@ -158,21 +128,6 @@ describe("AgencySettingsPage", () => {
     await waitFor(() => expect(screen.getByLabelText("Délai de grâce après l'échéance (jours)")).toHaveValue(2));
     expect(screen.getByLabelText("Intervalle entre deux relances (jours)")).toHaveValue(14);
     expect(screen.getByRole("checkbox", { name: "Prévenir les garants à la dernière relance" })).toBeChecked();
-  });
-
-  it("affiche l'erreur du serveur quand l'IBAN saisi est invalide", async () => {
-    mockedApi.get.mockResolvedValueOnce({ data: settings() });
-    mockedApi.put.mockRejectedValueOnce({
-      response: { data: { error: "Requête invalide : données manquantes ou incorrectes (champ concerné : iban)." } },
-      isAxiosError: true,
-    });
-    renderPage();
-
-    await waitFor(() => expect(screen.getByLabelText("Nom commercial de l'agence *")).toHaveValue("Agence du Port"));
-    await userEvent.setup().type(screen.getByLabelText("IBAN"), "FR00INVALIDE");
-    await userEvent.setup().click(screen.getByRole("button", { name: "Enregistrer les paramètres" }));
-
-    await waitFor(() => expect(screen.getByText(/champ concerné : iban/)).toBeInTheDocument());
   });
 
   it("enregistre les modifications et affiche un message de succès", async () => {
@@ -695,14 +650,24 @@ describe("AgencySettingsPage — profil, saisie bancaire et modifications en att
     localStorage.clear();
   });
 
+  it("ne propose plus de coordonnées bancaires : ni champ IBAN, ni BIC, ni rubrique dédiée", async () => {
+    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    renderPage();
+    await screen.findByRole("region", { name: "Complétude du profil" });
+
+    expect(screen.queryByLabelText("IBAN")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("BIC / SWIFT")).not.toBeInTheDocument();
+    expect(document.getElementById("agency-banque")).toBeNull();
+  });
+
   it("mesure la complétude du profil et propose d'ajouter ce qui manque, en lien vers la rubrique", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: settings() });
     renderPage();
 
     const profil = await screen.findByRole("region", { name: "Complétude du profil" });
-    expect(within(profil).getByText("5 / 8 éléments renseignés")).toBeInTheDocument();
+    expect(within(profil).getByText("5 / 7 éléments renseignés")).toBeInTheDocument();
     expect(within(profil).getByRole("progressbar")).toHaveAttribute("aria-valuenow", "5");
-    expect(within(profil).getByRole("link", { name: "+ IBAN pour les virements" })).toHaveAttribute("href", "#agency-banque");
+    expect(within(profil).queryByRole("link", { name: /IBAN/ })).not.toBeInTheDocument();
     expect(within(profil).getByRole("link", { name: "+ Logo" })).toHaveAttribute("href", "#agency-logo");
     expect(within(profil).getByRole("link", { name: "+ Tampon ou signature" })).toHaveAttribute("href", "#agency-stamp");
     expect(within(profil).queryByRole("link", { name: /Mentions légales/ })).not.toBeInTheDocument();
@@ -710,33 +675,14 @@ describe("AgencySettingsPage — profil, saisie bancaire et modifications en att
 
   it("met le profil à jour au fil de la saisie", async () => {
     const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce({ data: settings() });
+    mockedApi.get.mockResolvedValueOnce({ data: settings({ legalNotice: "" }) });
     renderPage();
     const profil = await screen.findByRole("region", { name: "Complétude du profil" });
+    expect(within(profil).getByText("4 / 7 éléments renseignés")).toBeInTheDocument();
 
-    await user.type(screen.getByLabelText("IBAN"), "FR7630006000011234567890189");
-    expect(within(profil).getByText("6 / 8 éléments renseignés")).toBeInTheDocument();
-    expect(within(profil).queryByRole("link", { name: "+ IBAN pour les virements" })).not.toBeInTheDocument();
-  });
-
-  it("signale un IBAN à clé fausse et un BIC mal formé sans empêcher d'enregistrer", async () => {
-    const user = userEvent.setup();
-    mockedApi.get.mockResolvedValueOnce({ data: settings() });
-    renderPage();
-    await screen.findByRole("region", { name: "Complétude du profil" });
-
-    await user.type(screen.getByLabelText("IBAN"), "FR7630006000011234567890188");
-    expect(screen.getByText(/La clé de cet IBAN semble incorrecte/)).toBeInTheDocument();
-    await user.clear(screen.getByLabelText("IBAN"));
-    await user.type(screen.getByLabelText("IBAN"), "FR7630006000011234567890189");
-    expect(screen.queryByText(/La clé de cet IBAN semble incorrecte/)).not.toBeInTheDocument();
-
-    await user.type(screen.getByLabelText("BIC / SWIFT"), "XX");
-    expect(screen.getByText(/Ce BIC semble mal formé/)).toBeInTheDocument();
-
-    mockedApi.put.mockResolvedValueOnce({ data: {} });
-    await user.click(screen.getByRole("button", { name: "Enregistrer les paramètres" }));
-    await waitFor(() => expect(mockedApi.put).toHaveBeenCalled());
+    await user.type(screen.getByLabelText("Mentions légales du pied de page des quittances"), "SARL au capital de 1 000 €");
+    expect(within(profil).getByText("5 / 7 éléments renseignés")).toBeInTheDocument();
+    expect(within(profil).queryByRole("link", { name: /Mentions légales/ })).not.toBeInTheDocument();
   });
 
   it("signale les modifications non enregistrées, les annule, et s'éteint après l'enregistrement", async () => {

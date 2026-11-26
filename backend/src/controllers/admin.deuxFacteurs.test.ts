@@ -10,7 +10,7 @@ import { testDb } from "../test/setupTestDb";
  * L'espace d'administration exige la double authentification. Un administrateur qui ne l'a pas encore activée n'est pas
  * enfermé dehors : il se connecte, l'administration lui est refusée, et l'activation de la 2FA reste ouverte avec sa session.
  */
-const ROUTES_ADMIN = ["/api/admin/dashboard/stats", "/api/admin/managers", "/api/admin/settings", "/api/admin/audit-logs"];
+const ROUTES_ADMIN = ["/api/admin/dashboard/stats", "/api/admin/managers", "/api/admin/maintenance", "/api/admin/audit-logs"];
 
 describe("administration — double authentification obligatoire", () => {
   it("refuse (403, code traduisible) toute route d'administration à un administrateur sans 2FA", async () => {

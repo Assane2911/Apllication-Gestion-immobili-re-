@@ -436,8 +436,8 @@ describe("reversements", () => {
 });
 
 describe("résultat du compte-rendu", () => {
-  it("rend l'identité du propriétaire (civilité, société, IBAN, BIC), le taux du mois et la période", async () => {
-    const { owner, h } = await agence({ civility: "M", companyName: "SCI Soleil", iban: "FR7630006000011234567890189", bic: "AGRIFRPP", managementFeeRate: 7 });
+  it("rend l'identité du propriétaire (civilité, société), le taux du mois et la période, sans coordonnées bancaires", async () => {
+    const { owner, h } = await agence({ civility: "M", companyName: "SCI Soleil", managementFeeRate: 7 });
 
     const res = await request(app).get(`/api/crg/${owner.id}?month=4&year=2025`).set(h);
 
@@ -445,20 +445,20 @@ describe("résultat du compte-rendu", () => {
       ownerId: owner.id,
       ownerName: "Monsieur Fatou Diop",
       ownerCompanyName: "SCI Soleil",
-      iban: "FR7630006000011234567890189",
-      bic: "AGRIFRPP",
       managementFeeRate: 7,
       month: 4,
       year: 2025,
     });
   });
 
-  it("sans civilité ni société : le nom seul, et des champs nuls", async () => {
+  it("sans civilité ni société : le nom seul, et une société nulle", async () => {
     const { owner, h } = await agence();
 
     const res = await request(app).get(`/api/crg/${owner.id}?month=4&year=2025`).set(h);
 
-    expect(res.body).toMatchObject({ ownerName: "Fatou Diop", ownerCompanyName: null, iban: null, bic: null });
+    expect(res.body).toMatchObject({ ownerName: "Fatou Diop", ownerCompanyName: null });
+    expect(res.body).not.toHaveProperty("iban");
+    expect(res.body).not.toHaveProperty("bic");
   });
 
   it("le taux affiché est celui du mois demandé, pas le taux actuel", async () => {

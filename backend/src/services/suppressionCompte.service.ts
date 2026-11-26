@@ -48,7 +48,7 @@ function comptesPortailOrphelins(identifiants: string[]) {
  * clôture du compte. Ils sont conservés ANONYMISÉS : la clé étrangère
  * `platform_subscriptions.user_id` (ON DELETE SET NULL) coupe le lien avec le
  * compte, et il ne reste que plan, montant, devise, période, moyen et référence
- * de paiement. Les demandes jamais encaissées (virement en attente, rejeté)
+ * de paiement. Les demandes jamais encaissées (en attente, rejetée)
  * n'ont aucune valeur comptable : elles sont supprimées.
  *
  * Les comptes de connexion « portail » d'un locataire/propriétaire (users liés

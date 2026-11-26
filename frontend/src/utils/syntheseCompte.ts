@@ -2,14 +2,13 @@
  * Calculs du « compte de l'agence » : complétude du profil, historique d'abonnement, parrainage, import, guide.
  * Tout est pur (aucune lecture de l'horloge ni du réseau) pour rester testable ; les pages n'ajoutent que l'affichage.
  */
-import { bicValide, ibanValide } from "./iban";
 import { CSV_BOM, csvEscape, csvMontant } from "./csv";
 
 const ligne = (cases: Array<string | number>) => cases.map(csvEscape).join(";");
 
 // ───────────────────────────── Profil de l'agence ─────────────────────────────
 
-export type ElementProfil = "name" | "legalId" | "address" | "phone" | "legalNotice" | "bank" | "logo" | "stamp";
+export type ElementProfil = "name" | "legalId" | "address" | "phone" | "legalNotice" | "logo" | "stamp";
 
 export interface FormulaireProfil {
   agencyName: string;
@@ -17,8 +16,6 @@ export interface FormulaireProfil {
   address: string;
   phone: string;
   legalNotice: string;
-  iban: string;
-  bic: string;
 }
 
 /** Ancre de la rubrique où l'élément se renseigne (le sommaire des réglages porte les mêmes identifiants). */
@@ -28,7 +25,6 @@ export const ANCRE_PROFIL: Record<ElementProfil, string> = {
   address: "agency-identite",
   phone: "agency-identite",
   legalNotice: "agency-identite",
-  bank: "agency-banque",
   logo: "agency-logo",
   stamp: "agency-stamp",
 };
@@ -36,8 +32,7 @@ export const ANCRE_PROFIL: Record<ElementProfil, string> = {
 const rempli = (v: string | null | undefined) => Boolean(v && v.trim());
 
 /**
- * Les huit éléments que portent les documents de l'agence (bail, quittance, mise en demeure). Le champ « coordonnées
- * bancaires » compte quand l'IBAN est saisi : sa validité est une indication à part (`avertissementsBancaires`).
+ * Les sept éléments que portent les documents de l'agence (bail, quittance, mise en demeure).
  */
 export function completudeProfil(form: FormulaireProfil, logoUrl: string | null, stampUrl: string | null) {
   const faits: Record<ElementProfil, boolean> = {
@@ -46,18 +41,12 @@ export function completudeProfil(form: FormulaireProfil, logoUrl: string | null,
     address: rempli(form.address),
     phone: rempli(form.phone),
     legalNotice: rempli(form.legalNotice),
-    bank: rempli(form.iban),
     logo: Boolean(logoUrl),
     stamp: Boolean(stampUrl),
   };
   const elements = (Object.keys(faits) as ElementProfil[]).map((cle) => ({ cle, fait: faits[cle], ancre: ANCRE_PROFIL[cle] }));
   const nombreFaits = elements.filter((e) => e.fait).length;
   return { elements, faits: nombreFaits, total: elements.length, manquants: elements.filter((e) => !e.fait), complet: nombreFaits === elements.length };
-}
-
-/** Indications (jamais bloquantes) sur la saisie bancaire : la clé de l'IBAN et le gabarit du BIC. */
-export function avertissementsBancaires(iban: string, bic: string): { iban: boolean; bic: boolean } {
-  return { iban: rempli(iban) && !ibanValide(iban), bic: rempli(bic) && !bicValide(bic) };
 }
 
 /** Vrai quand le formulaire diffère de l'état enregistré (la comparaison se fait champ par champ). */

@@ -6,7 +6,7 @@ import { testDb } from "../test/setupTestDb";
 import { activateSubscriptionRecord, expireStripeSubscription, renewSubscriptionFromStripeInvoice } from "./subscriptionActivation.service";
 
 /**
- * Activation d'un paiement différé (virement, PayDunya, Stripe), renouvellement automatique Stripe et fin d'un abonnement
+ * Activation d'un paiement différé (PayDunya, Stripe), renouvellement automatique Stripe et fin d'un abonnement
  * Stripe : c'est ce qui ouvre, prolonge ou ferme l'accès payant d'une agence. On vérifie surtout les cas où une période
  * serait fausse (cycle annuel, droits déjà payés reportés), où un paiement ne doit rien ouvrir (rejeté, compte supprimé,
  * montant faux) et où un rejeu ne doit rien prolonger une seconde fois.
@@ -30,7 +30,7 @@ const ligne = (id: string) => testDb.select().from(platformSubscriptions).where(
 const lignesDe = (userId: string) => testDb.select().from(platformSubscriptions).where(eq(platformSubscriptions.userId, userId));
 const mois = (d: Date) => d.getFullYear() * 12 + d.getMonth();
 const demande = (userId: string | null, o: Partial<typeof platformSubscriptions.$inferInsert> = {}) =>
-  createPlatformSubscription(userId as string, { status: "PENDING", paymentMethod: "BANK_TRANSFER", plan: "PRO", amount: 29, currency: "EUR", ...o });
+  createPlatformSubscription(userId as string, { status: "PENDING", paymentMethod: "PAYDUNYA", plan: "PRO", amount: 29, currency: "EUR", ...o });
 
 describe("activateSubscriptionRecord", () => {
   it("un enregistrement inconnu ne fait rien (null)", async () => {
@@ -49,11 +49,11 @@ describe("activateSubscriptionRecord", () => {
     expect(apres.subscriptionPlan).toBe("STARTER");
   });
 
-  it("un virement rejeté ne s'active jamais (400, TRANSFER_REJECTED_CANNOT_CONFIRM) : ni accès ouvert, ni statut changé", async () => {
+  it("un paiement rejeté (ancienne demande de virement comprise) ne s'active jamais (400, SUBSCRIPTION_REJECTED_CANNOT_CONFIRM) : ni accès ouvert, ni statut changé", async () => {
     const m = await createManager({ subscriptionStatus: "EXPIRED", subscriptionPlan: "STARTER" });
     const v = await demande(m.id, { status: "REJECTED" });
 
-    await expect(activateSubscriptionRecord(v.id)).rejects.toMatchObject({ statusCode: 400, code: "TRANSFER_REJECTED_CANNOT_CONFIRM" });
+    await expect(activateSubscriptionRecord(v.id)).rejects.toMatchObject({ statusCode: 400, code: "SUBSCRIPTION_REJECTED_CANNOT_CONFIRM" });
 
     expect((await ligne(v.id)).status).toBe("REJECTED");
     expect((await compte(m.id)).subscriptionStatus).toBe("EXPIRED");
@@ -62,7 +62,7 @@ describe("activateSubscriptionRecord", () => {
   it("un paiement dont le compte a été supprimé (ligne anonymisée) n'active rien : null, l'enregistrement reste en attente", async () => {
     const v = await testDb
       .insert(platformSubscriptions)
-      .values({ userId: null, plan: "PRO", amount: 29, currency: "EUR", status: "PENDING", paymentMethod: "BANK_TRANSFER", startDate: MAINTENANT, endDate: new Date(MAINTENANT.getTime() + 30 * JOUR) })
+      .values({ userId: null, plan: "PRO", amount: 29, currency: "EUR", status: "PENDING", paymentMethod: "PAYDUNYA", startDate: MAINTENANT, endDate: new Date(MAINTENANT.getTime() + 30 * JOUR) })
       .returning()
       .then((r: Array<typeof platformSubscriptions.$inferSelect>) => r[0]);
 
@@ -80,7 +80,7 @@ describe("activateSubscriptionRecord", () => {
     expect(mois(res!.startDate)).toBe(mois(MAINTENANT));
     expect(mois(res!.endDate)).toBe(mois(MAINTENANT) + 1);
     const apres = await compte(m.id);
-    expect(apres).toMatchObject({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO", subscriptionPaymentMethod: "BANK_TRANSFER" });
+    expect(apres).toMatchObject({ subscriptionStatus: "ACTIVE", subscriptionPlan: "PRO", subscriptionPaymentMethod: "PAYDUNYA" });
     expect(apres.subscriptionEndsAt?.getTime()).toBe(res!.endDate.getTime());
   });
 

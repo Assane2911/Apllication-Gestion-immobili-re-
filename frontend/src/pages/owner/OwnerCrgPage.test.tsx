@@ -18,8 +18,6 @@ function crg(overrides: Partial<CrgSynthesis> = {}): CrgSynthesis {
   return {
     ownerId: "owner-1",
     ownerName: "Fatou Diop",
-    iban: "FR7630006000011234567890189",
-    bic: "AGRIFRPP",
     managementFeeRate: 10,
     month: 9,
     year: 2026,
@@ -65,7 +63,7 @@ describe("OwnerCrgPage", () => {
     vi.useRealTimers();
   });
 
-  it("affiche le CRG du propriétaire connecté, avec ses coordonnées bancaires", async () => {
+  it("affiche le CRG du propriétaire connecté, sans aucune coordonnée bancaire", async () => {
     mockedApi.get.mockResolvedValueOnce({ data: crg() });
     renderPage();
 
@@ -74,8 +72,8 @@ describe("OwnerCrgPage", () => {
       params: { month: 9, year: 2026 },
       signal: expect.anything(),
     });
-    expect(screen.getByText("FR7630006000011234567890189")).toBeInTheDocument();
-    expect(screen.getByText("AGRIFRPP")).toBeInTheDocument();
+    expect(screen.queryByText(/IBAN/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/coordonnée bancaire/i)).not.toBeInTheDocument();
   });
 
   it("chaque valeur du détail par bien porte son libellé de colonne (le tableau devient des cartes sur téléphone)", async () => {
@@ -87,15 +85,6 @@ describe("OwnerCrgPage", () => {
     const cellules = Array.from(document.querySelectorAll("tbody td[data-label]"));
     expect(cellules.map((c) => c.getAttribute("data-label"))).toEqual(["Devise", "Loyers encaissés", "Charges déduites", "Commission", "Net à reverser"]);
     expect(cellules.find((c) => c.getAttribute("data-label") === "Net à reverser")?.textContent).toContain("800");
-  });
-
-  it("affiche un message dédié quand aucune coordonnée bancaire n'est enregistrée", async () => {
-    mockedApi.get.mockResolvedValueOnce({ data: crg({ iban: null, bic: null }) });
-    renderPage();
-
-    await waitFor(() =>
-      expect(screen.getByText("Aucune coordonnée bancaire enregistrée — contactez votre agence.")).toBeInTheDocument()
-    );
   });
 
   it("affiche un message dédié quand aucun bien n'est associé", async () => {
@@ -177,25 +166,6 @@ describe("OwnerCrgPage", () => {
 
     await userEvent.setup().click(screen.getByRole("button", { name: "Mois précédent" }));
     await waitFor(() => expect(mockedApi.get).toHaveBeenLastCalledWith("/crg/mine", expect.objectContaining({ params: { month: 8, year: 2026 } })));
-  });
-
-  it("copie l'IBAN tel qu'enregistré, d'un clic", async () => {
-    const user = userEvent.setup();
-    const ecrire = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, "clipboard", { value: { writeText: ecrire }, configurable: true });
-    mockedApi.get.mockResolvedValueOnce({ data: crg() });
-    renderPage();
-    await waitFor(() => expect(screen.getByText("Villa Ngor")).toBeInTheDocument());
-
-    await user.click(screen.getByRole("button", { name: "Copier l'IBAN" }));
-    expect(ecrire).toHaveBeenCalledWith("FR7630006000011234567890189");
-  });
-
-  it("n'offre pas de copie d'IBAN quand aucune coordonnée n'est enregistrée", async () => {
-    mockedApi.get.mockResolvedValueOnce({ data: crg({ iban: null, bic: null }) });
-    renderPage();
-    await waitFor(() => expect(screen.getByText("Villa Ngor")).toBeInTheDocument());
-    expect(screen.queryByRole("button", { name: "Copier l'IBAN" })).not.toBeInTheDocument();
   });
 
   it("indique où en est le reversement du mois", async () => {

@@ -672,7 +672,7 @@ export const deleteContract = asyncHandler(async (req: Request, res: Response) =
         "CONTRACT_HAS_SETTLED_INVOICES"
       );
     }
-    // Une facture non annulée qui porte une référence de paiement (session Stripe ou PayDunya ouverte, virement déclaré par le
+    // Une facture non annulée qui porte une référence de paiement (session Stripe ou PayDunya ouverte, référence saisie par le
     // locataire) a peut-être déjà été payée : la confirmation du prestataire n'est pas encore arrivée. Supprimer le bail effacerait
     // la facture, et l'encaissement qui arrive ensuite ne retrouverait plus rien à rapprocher : l'argent serait perçu sans trace.
     // Le gestionnaire règle ou annule la facture d'abord (une facture annulée ne bloque pas).

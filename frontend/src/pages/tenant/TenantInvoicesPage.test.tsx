@@ -48,16 +48,7 @@ function renderPage() {
  * ne concerne que les AUTRES requêtes. Les mocks deviennent ainsi
  * indépendants du nombre d'appels que fait la page.
  */
-const MOYENS_PAR_DEFAUT = ["PAYDUNYA", "BANK_TRANSFER"];
-// Coordonnées bancaires par défaut pour les tests qui ne portent pas
-// spécifiquement dessus : /agency/mine est interrogée une seule fois au
-// montage (voir TenantInvoicesPage.tsx), indépendamment de la file `fileGet`
-// ci-dessous — sans quoi elle en décalerait chaque entrée d'un cran.
-const COORDONNEES_BANCAIRES_PAR_DEFAUT = {
-  agencyName: "Agence du Port",
-  iban: "FR7630006000011234567890189",
-  bic: "BNPAFRPPXXX",
-};
+const MOYENS_PAR_DEFAUT = ["PAYDUNYA"];
 const fileGet: { ok: boolean; valeur: unknown }[] = [];
 
 function queueGet(reponse: unknown) {
@@ -68,13 +59,10 @@ function queueGetError(erreur: unknown) {
   fileGet.push({ ok: false, valeur: erreur });
 }
 
-function installerGet(moyens: string[] = MOYENS_PAR_DEFAUT, coordonneesBancaires: unknown = COORDONNEES_BANCAIRES_PAR_DEFAUT) {
+function installerGet(moyens: string[] = MOYENS_PAR_DEFAUT) {
   mockedApi.get.mockImplementation((url: string) => {
     if (String(url).startsWith("/payments/methods")) {
       return Promise.resolve({ data: { currency: "EUR", methods: moyens } }) as never;
-    }
-    if (String(url).startsWith("/agency/mine")) {
-      return Promise.resolve({ data: coordonneesBancaires }) as never;
     }
     const suivant = fileGet.shift();
     if (!suivant) {
@@ -185,7 +173,7 @@ describe("TenantInvoicesPage", () => {
   // ne les propose pas. L'écran doit donc lui demander les moyens « pour un loyer », pas ceux d'un abonnement.
   it("demande au serveur les moyens de paiement d'un LOYER, pas ceux d'un abonnement", async () => {
     const user = userEvent.setup();
-    installerGet(["BANK_TRANSFER"]);
+    installerGet([]);
     queueGet({ data: [invoice({ status: "PENDING" })] });
 
     renderPage();
@@ -218,10 +206,7 @@ describe("TenantInvoicesPage", () => {
     await user.click(within(paydunyaCard).getByRole("button", { name: "Choisir ce moyen" }));
 
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Paiement de 500 confirmé."));
-    expect(mockedApi.post).toHaveBeenCalledWith("/invoices/inv-1/pay", {
-      method: "PAYDUNYA",
-      bankReference: undefined,
-    });
+    expect(mockedApi.post).toHaveBeenCalledWith("/invoices/inv-1/pay", { method: "PAYDUNYA" });
     // On compte les chargements de factures, et non tous les GET : la page
     // interroge aussi /payments/methods, dont le nombre d'appels n'a rien à
     // voir avec ce que ce test vérifie.
@@ -254,74 +239,23 @@ describe("TenantInvoicesPage", () => {
     expect(chargements).toHaveLength(1);
   });
 
-  it("virement bancaire : transmet la référence saisie", async () => {
-    const user = userEvent.setup();
-    queueGet({ data: [invoice({ status: "PENDING" })] });
-    mockedApi.post.mockResolvedValueOnce({
-      data: {
-        invoice: invoice({ status: "PENDING" }),
-        payment: { method: "BANK_TRANSFER", status: "PENDING_VALIDATION", message: "Texte du serveur, ignoré." },
-      },
-    });
-
-    renderPage();
-    await waitFor(() => expect(screen.getByRole("button", { name: "Payer" })).toBeInTheDocument());
-    await user.click(screen.getByRole("button", { name: "Payer" }));
-
-    const bankCard = screen.getByText("Virement bancaire").closest("div")!;
-    await user.type(within(bankCard).getByPlaceholderText("Référence du virement"), "VIR-2026-06-001");
-    await user.click(within(bankCard).getByRole("button", { name: "Choisir ce moyen" }));
-
-    await waitFor(() =>
-      expect(mockedApi.post).toHaveBeenCalledWith("/invoices/inv-1/pay", {
-        method: "BANK_TRANSFER",
-        bankReference: "VIR-2026-06-001",
-      })
-    );
-    // La confirmation est écrite par le site, dans la langue de l'interface : celle du serveur est toujours en français.
-    expect(await screen.findByText("Virement déclaré, en attente de validation par le gestionnaire.")).toBeInTheDocument();
-  });
-
   /**
-   * Régression : rien n'indiquait au locataire vers quel compte envoyer son
-   * virement — la carte "Virement bancaire" ne montrait qu'un champ de
-   * référence, sans IBAN ni BIC nulle part dans l'application.
+   * Plus de virement : une agence sans compte de paiement en ligne n'offre aucun moyen à son locataire. L'écran le dit au lieu de
+   * rester muet, et renvoie vers l'agence, qui enregistre le règlement à la main.
    */
-  it("virement bancaire : affiche l'IBAN et le BIC de l'agence, copiables", async () => {
+  it("aucun moyen en ligne : dit au locataire de contacter son agence, sans carte de paiement ni coordonnées bancaires", async () => {
     const user = userEvent.setup();
-    const ecrirePressePapiers = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, "clipboard", {
-      value: { writeText: ecrirePressePapiers },
-      configurable: true,
-    });
+    installerGet([]);
     queueGet({ data: [invoice({ status: "PENDING" })] });
 
     renderPage();
     await waitFor(() => expect(screen.getByRole("button", { name: "Payer" })).toBeInTheDocument());
     await user.click(screen.getByRole("button", { name: "Payer" }));
 
-    const bankCard = screen.getByText("Virement bancaire").closest("div")!;
-    expect(within(bankCard).getByText("FR7630006000011234567890189")).toBeInTheDocument();
-    expect(within(bankCard).getByText("BNPAFRPPXXX")).toBeInTheDocument();
-
-    await user.click(within(bankCard).getAllByRole("button", { name: /Copier/ })[0]);
-    expect(ecrirePressePapiers).toHaveBeenCalledWith("FR7630006000011234567890189");
-    expect(within(bankCard).getByText("Copié !")).toBeInTheDocument();
-  });
-
-  it("virement bancaire : prévient le locataire quand l'agence n'a pas encore renseigné son IBAN", async () => {
-    const user = userEvent.setup();
-    installerGet(MOYENS_PAR_DEFAUT, { agencyName: "Agence du Port", iban: null, bic: null });
-    queueGet({ data: [invoice({ status: "PENDING" })] });
-
-    renderPage();
-    await waitFor(() => expect(screen.getByRole("button", { name: "Payer" })).toBeInTheDocument());
-    await user.click(screen.getByRole("button", { name: "Payer" }));
-
-    const bankCard = screen.getByText("Virement bancaire").closest("div")!;
-    expect(
-      within(bankCard).getByText(/n'a pas encore renseigné ses coordonnées bancaires/)
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Votre agence n'a pas activé le paiement en ligne. Contactez-la : elle enregistrera votre règlement.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Choisir ce moyen" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/IBAN|virement/i)).not.toBeInTheDocument();
+    expect(mockedApi.get.mock.calls.some((appel) => String(appel[0]).startsWith("/agency/mine"))).toBe(false);
   });
 
   it("redirige vers l'URL PayDunya quand le paiement nécessite une action (REQUIRES_ACTION)", async () => {
