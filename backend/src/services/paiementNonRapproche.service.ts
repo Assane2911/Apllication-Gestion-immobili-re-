@@ -1,10 +1,10 @@
-import * as Sentry from "@sentry/node";
 import { and, eq, like } from "drizzle-orm";
 import { db } from "../db/client";
 import { activityLogs, contracts, invoices, properties, users } from "../db/schema";
 import { escapeHtml } from "../utils/html";
 import { formaterMontant } from "../utils/montant";
 import { resteDu } from "../utils/montants";
+import { signalerASentry } from "../utils/signalerASentry";
 import { logActivity } from "./activity.service";
 import { sendEmail } from "./email.service";
 
@@ -36,15 +36,11 @@ export async function signalerPaiementNonRapproche(paiement: {
 }) {
   const nom = PRESTATAIRES[paiement.prestataire];
   try {
-    // Isolé : un suivi d'erreurs indisponible ne doit pas empêcher de prévenir le gestionnaire, qui est l'essentiel.
-    try {
-      Sentry.captureMessage(`Paiement ${nom} encaissé mais non rapproché (${paiement.raison})`, {
-        level: "warning",
-        tags: { source: "paiement.non_rapproche", prestataire: paiement.prestataire },
-      });
-    } catch {
-      // Voir ci-dessus.
-    }
+    // Isolé (voir signalerASentry) : un suivi d'erreurs indisponible ne doit pas empêcher de prévenir le gestionnaire, qui est l'essentiel.
+    await signalerASentry(`Paiement ${nom} encaissé mais non rapproché (${paiement.raison})`, {
+      level: "warning",
+      tags: { source: "paiement.non_rapproche", prestataire: paiement.prestataire },
+    });
 
     const [ligne] = await db
       .select({ invoice: invoices, property: properties })
@@ -116,19 +112,15 @@ export async function signalerPaiementNonRapproche(paiement: {
  * prévenu par la plateforme — le gestionnaire paie sans rien obtenir —, donc l'événement remonte à Sentry avec de
  * quoi retrouver le paiement chez le prestataire. Ne lève jamais.
  */
-export function signalerAbonnementNonRapproche(paiement: {
+export async function signalerAbonnementNonRapproche(paiement: {
   prestataire: keyof typeof PRESTATAIRES;
   referencePrestataire: string;
   montant: number;
   raison: string;
-}) {
-  try {
-    Sentry.captureMessage(`Paiement d'abonnement ${PRESTATAIRES[paiement.prestataire]} encaissé mais non appliqué (${paiement.raison})`, {
-      level: "error",
-      tags: { source: "abonnement.non_rapproche", prestataire: paiement.prestataire },
-      extra: { referencePrestataire: paiement.referencePrestataire, montant: paiement.montant },
-    });
-  } catch {
-    // Un suivi d'erreurs indisponible ne doit jamais faire échouer le webhook.
-  }
+}): Promise<void> {
+  await signalerASentry(`Paiement d'abonnement ${PRESTATAIRES[paiement.prestataire]} encaissé mais non appliqué (${paiement.raison})`, {
+    level: "error",
+    tags: { source: "abonnement.non_rapproche", prestataire: paiement.prestataire },
+    extra: { referencePrestataire: paiement.referencePrestataire, montant: paiement.montant },
+  });
 }

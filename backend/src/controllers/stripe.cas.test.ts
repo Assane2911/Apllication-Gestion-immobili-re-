@@ -265,7 +265,7 @@ describe("webhook Stripe — abonnement de la plateforme", () => {
   });
 
   it("signale avec son prestataire, sa référence, son montant et sa raison un paiement dont l'abonnement est introuvable", async () => {
-    const signaler = vi.spyOn(paiementNonRapproche, "signalerAbonnementNonRapproche").mockImplementation(() => undefined);
+    const signaler = vi.spyOn(paiementNonRapproche, "signalerAbonnementNonRapproche").mockResolvedValue(undefined);
 
     await livrer(session({ id: "cs_inconnue", client_reference_id: "sub_quelquun_1", amount_total: 2900 }));
 
@@ -279,7 +279,7 @@ describe("webhook Stripe — renouvellement et prélèvement raté", () => {
 
   it("une facture de renouvellement sans abonnement lisible n'appelle rien", async () => {
     const renouveler = vi.spyOn(subscriptionActivation, "renewSubscriptionFromStripeInvoice").mockResolvedValue(null);
-    const signaler = vi.spyOn(paiementNonRapproche, "signalerAbonnementNonRapproche").mockImplementation(() => undefined);
+    const signaler = vi.spyOn(paiementNonRapproche, "signalerAbonnementNonRapproche").mockResolvedValue(undefined);
 
     const res = await livrer(renouvellement({ subscription: undefined }));
 
@@ -290,7 +290,7 @@ describe("webhook Stripe — renouvellement et prélèvement raté", () => {
 
   it("transmet l'abonnement, la facture, le montant et la devise en majuscules, sans signaler quand le renouvellement est appliqué", async () => {
     const renouveler = vi.spyOn(subscriptionActivation, "renewSubscriptionFromStripeInvoice").mockResolvedValue({ id: "ligne" } as never);
-    const signaler = vi.spyOn(paiementNonRapproche, "signalerAbonnementNonRapproche").mockImplementation(() => undefined);
+    const signaler = vi.spyOn(paiementNonRapproche, "signalerAbonnementNonRapproche").mockResolvedValue(undefined);
 
     await livrer(renouvellement());
 
@@ -300,7 +300,7 @@ describe("webhook Stripe — renouvellement et prélèvement raté", () => {
 
   it("signale un renouvellement non appliqué, avec le prestataire, la facture, le montant et la raison", async () => {
     vi.spyOn(subscriptionActivation, "renewSubscriptionFromStripeInvoice").mockResolvedValue(null);
-    const signaler = vi.spyOn(paiementNonRapproche, "signalerAbonnementNonRapproche").mockImplementation(() => undefined);
+    const signaler = vi.spyOn(paiementNonRapproche, "signalerAbonnementNonRapproche").mockResolvedValue(undefined);
 
     await livrer(renouvellement());
 
