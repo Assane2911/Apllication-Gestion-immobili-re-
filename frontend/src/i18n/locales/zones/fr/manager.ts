@@ -845,10 +845,6 @@ const zone = {
       charts: {
         revenueVsExpenses: "Revenus vs Dépenses par mois ({{year}})",
         noData: "Aucune donnée pour cet exercice.",
-        tooltipRevenue: "Revenus encaissés",
-        tooltipExpense: "Dépenses & Travaux",
-        legendRevenue: "Revenus",
-        legendExpense: "Dépenses",
         categoryBreakdown: "Répartition des charges",
         noCategoryData: "Aucune dépense enregistrée sur cet exercice.",
       },

@@ -846,10 +846,6 @@ const zone: ZoneManager = {
       charts: {
         revenueVsExpenses: "Ingresos vs Gastos por mes ({{year}})",
         noData: "Sin datos para este ejercicio.",
-        tooltipRevenue: "Alquileres cobrados",
-        tooltipExpense: "Gastos y Obras",
-        legendRevenue: "Ingresos",
-        legendExpense: "Gastos",
         categoryBreakdown: "Desglose de gastos",
         noCategoryData: "Ningún gasto registrado en este ejercicio.",
       },

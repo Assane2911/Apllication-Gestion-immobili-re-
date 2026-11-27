@@ -844,10 +844,6 @@ const zone: ZoneManager = {
       charts: {
         revenueVsExpenses: "Income vs Expenses by month ({{year}})",
         noData: "No data for this fiscal year.",
-        tooltipRevenue: "Rent collected",
-        tooltipExpense: "Expenses & Repairs",
-        legendRevenue: "Income",
-        legendExpense: "Expenses",
         categoryBreakdown: "Expense breakdown",
         noCategoryData: "No expenses recorded for this fiscal year.",
       },

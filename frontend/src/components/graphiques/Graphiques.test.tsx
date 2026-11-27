@@ -1,7 +1,7 @@
 import { fireEvent, render, waitFor } from "@testing-library/react";
 import { cloneElement, type ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { GraphiqueComparaisonFiscale, GraphiqueParc, GraphiqueRevenusDepenses } from "./Graphiques";
+import { GraphiqueParc, GraphiqueRevenusDepenses } from "./Graphiques";
 import { COULEUR_REVENUS } from "./couleurs";
 
 // jsdom n'a aucune taille de mise en page : le conteneur adaptatif ne dessinerait rien. On lui en donne une, fixe.
@@ -13,7 +13,7 @@ vi.mock("recharts", async () => {
 vi.mock("../../context/currency", () => ({ useCurrency: () => ({ formatMoney: (valeur: number, devise: string) => `${valeur} ${devise}` }) }));
 
 /**
- * Les graphiques du tableau de bord et du bilan fiscal : libellés de légende et d'infobulle (traduits), montant affiché dans la
+ * Les graphiques du tableau de bord et du bilan fiscal (même graphique revenus / dépenses, un par devise) : libellés de légende et d'infobulle (traduits), montant affiché dans la
  * BONNE devise, une paire de barres par devise, couleurs par statut. Un graphique qui montre un montant dans la mauvaise devise
  * est plus trompeur qu'un graphique absent.
  */
@@ -76,50 +76,6 @@ describe("GraphiqueRevenusDepenses (tableau de bord)", () => {
     expect(pastille(container, "revenue")).toBe(COULEUR_REVENUS);
     expect(pastille(container, "expense")).toBe("url(#hachure-depenses)");
     expect(container.querySelector("pattern#hachure-depenses")).not.toBeNull();
-  });
-});
-
-describe("GraphiqueComparaisonFiscale (bilan fiscal)", () => {
-  const donnees = [{ month: "Jan", revenue_XOF: 500000, expense_XOF: 120000, revenue_EUR: 800, expense_EUR: 200 }];
-
-  it("une seule devise : légende simple, sans rappel de la devise", () => {
-    const { container } = render(<GraphiqueComparaisonFiscale data={donnees} devises={["XOF"]} />);
-
-    expect(legende(container)).toEqual({ revenue_XOF: "Revenus", expense_XOF: "Dépenses" });
-  });
-
-  it("plusieurs devises : une paire de barres par devise, légende et infobulle précisent laquelle", async () => {
-    const { container } = render(<GraphiqueComparaisonFiscale data={donnees} devises={["XOF", "EUR"]} />);
-
-    expect(legende(container)).toEqual({ revenue_XOF: "Revenus (XOF)", expense_XOF: "Dépenses (XOF)", revenue_EUR: "Revenus (EUR)", expense_EUR: "Dépenses (EUR)" });
-    expect(container.querySelectorAll(".recharts-bar").length).toBe(4);
-
-    survoler(container);
-
-    await waitFor(() => expect(infobulle(container)).toContain("Revenus encaissés (XOF) : 500000 XOF"));
-    expect(infobulle(container)).toContain("Dépenses & Travaux (EUR) : 200 EUR");
-    expect(infobulle(container)).toContain("Revenus encaissés (EUR) : 800 EUR");
-  });
-
-  it("chaque devise a sa propre couleur de revenus et sa propre hachure de dépenses", () => {
-    const { container } = render(<GraphiqueComparaisonFiscale data={donnees} devises={["XOF", "EUR"]} />);
-
-    expect(pastille(container, "revenue_XOF")).toBeTruthy();
-    expect(pastille(container, "revenue_EUR")).toBeTruthy();
-    expect(pastille(container, "revenue_XOF")).not.toBe(pastille(container, "revenue_EUR"));
-    expect(pastille(container, "expense_XOF")).toBe("url(#hachure-fiscal-0)");
-    expect(pastille(container, "expense_EUR")).toBe("url(#hachure-fiscal-1)");
-    expect(container.querySelector("pattern#hachure-fiscal-0")).not.toBeNull();
-    expect(container.querySelector("pattern#hachure-fiscal-1")).not.toBeNull();
-  });
-
-  it("une seule devise : l'infobulle n'ajoute pas la devise au libellé, mais le montant la porte", async () => {
-    const { container } = render(<GraphiqueComparaisonFiscale data={donnees} devises={["XOF"]} />);
-
-    survoler(container);
-
-    await waitFor(() => expect(infobulle(container)).toContain("Revenus encaissés : 500000 XOF"));
-    expect(infobulle(container)).not.toContain("(XOF)");
   });
 });
 

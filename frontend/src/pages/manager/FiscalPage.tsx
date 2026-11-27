@@ -3,7 +3,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiErrorMessage } from "../../api/client";
 import BandeauChiffres from "../../components/BandeauChiffres";
-import { GraphiqueComparaisonFiscale } from "../../components/graphiques/graphiquesALaDemande";
+import { GraphiqueRevenusDepenses } from "../../components/graphiques/graphiquesALaDemande";
 import SectionReglage from "../../components/SectionReglage";
 import { Skeleton, StatCardSkeleton } from "../../components/Skeleton";
 import { useCurrency } from "../../context/currency";
@@ -197,14 +197,16 @@ export default function FiscalPage() {
     return moisCourt(year, Number(mm), i18n.language);
   };
 
-  const comparisonChartData = allMonths.map((month) => {
-    const row: Record<string, string | number> = { month: monthLabel(month) };
-    for (const currency of monthlyCurrencies) {
-      row[`revenue_${currency}`] = Number(synthesis.revenueByMonth[month]?.[currency] ?? 0);
-      row[`expense_${currency}`] = Number(synthesis.expensesByMonth[month]?.[currency] ?? 0);
-    }
-    return row;
-  });
+  // Un graphique PAR devise : sur un axe commun, les barres d'une petite devise (euros) disparaissent sous celles d'une grande
+  // (francs CFA). Même présentation que le tableau de bord.
+  const graphiquesParDevise = monthlyCurrencies.map((currency) => ({
+    currency,
+    data: allMonths.map((month) => ({
+      month: monthLabel(month),
+      revenue: Number(synthesis.revenueByMonth[month]?.[currency] ?? 0),
+      expense: Number(synthesis.expensesByMonth[month]?.[currency] ?? 0),
+    })),
+  }));
 
   const repartition = repartitionParCategorie(synthesis.expensesByCategory);
 
@@ -345,10 +347,21 @@ export default function FiscalPage() {
             {!hasMonthlyData ? (
               <p className="py-16 text-center text-sm text-slate-600">{t("manager.fiscal.charts.noData")}</p>
             ) : vue === "graphique" ? (
-              <div className="h-[280px] w-full">
-                <Suspense fallback={<Skeleton className="h-full w-full" />}>
-                  <GraphiqueComparaisonFiscale data={comparisonChartData} devises={monthlyCurrencies} />
-                </Suspense>
+              <div className="space-y-6">
+                {graphiquesParDevise.map(({ currency, data }) => (
+                  <div
+                    key={currency}
+                    role={graphiquesParDevise.length > 1 ? "group" : undefined}
+                    aria-label={graphiquesParDevise.length > 1 ? t("manager.dashboard.charts.chartForCurrency", { currency }) : undefined}
+                  >
+                    {graphiquesParDevise.length > 1 && <p className="mb-2 text-xs font-semibold text-slate-600">{currency}</p>}
+                    <div className={graphiquesParDevise.length > 1 ? "h-[220px] w-full" : "h-[280px] w-full"}>
+                      <Suspense fallback={<Skeleton className="h-full w-full" />}>
+                        <GraphiqueRevenusDepenses data={data} currency={currency} />
+                      </Suspense>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="space-y-6">
