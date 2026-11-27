@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useCurrency } from "../../context/currency";
@@ -86,53 +85,6 @@ export function GraphiqueParc({ data, libelles }: { data: Array<{ status: Proper
           itemStyle={{ color: "#f8fafc" }}
         />
       </PieChart>
-    </ResponsiveContainer>
-  );
-}
-
-const COULEURS_REVENUS_FISCAL = ["#124a73", "#d9480f", "#2b8a6e", "#6a7f8a"];
-const COULEURS_DEPENSES_FISCAL = ["#f59e0b", "#ea580c", "#65a30d", "#a16207"];
-
-/** Revenus et dépenses de l'année par mois, une paire de barres par devise (bilan fiscal). */
-export function GraphiqueComparaisonFiscale({ data, devises }: { data: Array<Record<string, number | string>>; devises: string[] }) {
-  const { t, i18n } = useTranslation();
-  const { formatMoney } = useCurrency();
-  const plusieurs = devises.length > 1;
-  return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data}>
-        <defs>
-          {COULEURS_DEPENSES_FISCAL.map((couleur, idx) => (
-            <Hachure key={couleur} id={`hachure-fiscal-${idx}`} couleur={couleur} />
-          ))}
-        </defs>
-        <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100" />
-        <XAxis dataKey="month" tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600" />
-        <YAxis tick={{ fontSize: 12, fill: "currentColor" }} className="text-slate-600" tickFormatter={(v: number) => abreger(v, i18n.language)} width={52} />
-        <Tooltip
-          formatter={(value: number | string, name: string) => {
-            const [kind, currency] = String(name).split("_");
-            const label = kind === "revenue" ? t("manager.fiscal.charts.tooltipRevenue") : t("manager.fiscal.charts.tooltipExpense");
-            return [formatMoney(Number(value), currency), plusieurs ? `${label} (${currency})` : label];
-          }}
-          contentStyle={STYLE_INFOBULLE}
-          itemStyle={{ color: "#f8fafc" }}
-        />
-        <Legend
-          formatter={(value) => {
-            const [kind, currency] = String(value).split("_");
-            const label = kind === "revenue" ? t("manager.fiscal.charts.legendRevenue") : t("manager.fiscal.charts.legendExpense");
-            return plusieurs ? `${label} (${currency})` : label;
-          }}
-          wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
-        />
-        {devises.map((currency, idx) => (
-          <Fragment key={currency}>
-            <Bar dataKey={`revenue_${currency}`} name={`revenue_${currency}`} fill={COULEURS_REVENUS_FISCAL[idx % COULEURS_REVENUS_FISCAL.length]} radius={0} />
-            <Bar dataKey={`expense_${currency}`} name={`expense_${currency}`} fill={`url(#hachure-fiscal-${idx % COULEURS_DEPENSES_FISCAL.length})`} stroke={COULEURS_DEPENSES_FISCAL[idx % COULEURS_DEPENSES_FISCAL.length]} strokeWidth={1} radius={0} />
-          </Fragment>
-        ))}
-      </BarChart>
     </ResponsiveContainer>
   );
 }

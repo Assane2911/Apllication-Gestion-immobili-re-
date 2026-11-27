@@ -8,6 +8,3 @@ export const GraphiqueRevenusDepenses = lazyWithReload(() =>
   import("./Graphiques").then((m) => ({ default: m.GraphiqueRevenusDepenses }))
 );
 export const GraphiqueParc = lazyWithReload(() => import("./Graphiques").then((m) => ({ default: m.GraphiqueParc })));
-export const GraphiqueComparaisonFiscale = lazyWithReload(() =>
-  import("./Graphiques").then((m) => ({ default: m.GraphiqueComparaisonFiscale }))
-);

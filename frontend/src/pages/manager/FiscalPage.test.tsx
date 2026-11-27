@@ -12,6 +12,13 @@ vi.mock("../../api/client", async () => {
   return { ...actual, api: { get: vi.fn(), post: vi.fn() } };
 });
 
+// Le vrai graphique ne dessine rien sous jsdom (aucune taille de mise en page) : une doublure expose ce que la page lui transmet.
+vi.mock("../../components/graphiques/graphiquesALaDemande", () => ({
+  GraphiqueRevenusDepenses: ({ data, currency }: { data: Array<{ month: string; revenue: number; expense: number }>; currency: string }) => (
+    <div data-testid={`graphique-${currency}`} data-donnees={JSON.stringify(data)} />
+  ),
+}));
+
 const mockedApi = vi.mocked(api, { deep: true });
 
 function synthesis(overrides: Partial<AnnualFiscalSynthesis> = {}): AnnualFiscalSynthesis {
@@ -243,3 +250,70 @@ describe("FiscalPage", () => {
     });
   });
 });
+
+describe("FiscalPage : graphique des douze mois, un par devise", () => {
+  const donnees = (el: HTMLElement) => JSON.parse(el.getAttribute("data-donnees") ?? "[]") as Array<{ month: string; revenue: number; expense: number }>;
+
+  async function afficher(overrides: Partial<AnnualFiscalSynthesis>) {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 5, 15));
+    mockedApi.get.mockReset();
+    mockedApi.get.mockResolvedValue({ data: synthesis(overrides) });
+    renderPage();
+    await screen.findByRole("group", { name: "Affichage de l'analyse" });
+  }
+
+  it("deux devises : deux graphiques séparés, chacun avec SES montants (les euros ne sont pas écrasés par les francs CFA)", async () => {
+    try {
+      await afficher({
+        totalRevenueByCurrency: { EUR: 3000, XOF: 450000 },
+        revenueByMonth: { "2026-03": { EUR: 3000 }, "2026-04": { XOF: 450000 } },
+        expensesByMonth: { "2026-03": { EUR: 900, XOF: 70000 } },
+      });
+
+      const euros = screen.getByTestId("graphique-EUR");
+      const cfa = screen.getByTestId("graphique-XOF");
+      expect(donnees(euros)).toHaveLength(12);
+      expect(donnees(euros)[2]).toEqual({ month: expect.any(String), revenue: 3000, expense: 900 });
+      expect(donnees(euros)[3]).toMatchObject({ revenue: 0, expense: 0 });
+      expect(donnees(cfa)[2]).toMatchObject({ revenue: 0, expense: 70000 });
+      expect(donnees(cfa)[3]).toMatchObject({ revenue: 450000, expense: 0 });
+      // Aucune valeur d'une devise ne se retrouve dans le graphique de l'autre.
+      expect(donnees(euros).some((m) => m.revenue === 450000 || m.expense === 70000)).toBe(false);
+      expect(donnees(cfa).some((m) => m.revenue === 3000 || m.expense === 900)).toBe(false);
+      // Chaque graphique est annoncé comme tel, avec sa devise.
+      expect(screen.getByRole("group", { name: "Revenus et dépenses en EUR" })).toContainElement(euros);
+      expect(screen.getByRole("group", { name: "Revenus et dépenses en XOF" })).toContainElement(cfa);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("une seule devise : un seul graphique, sans cadre ni intitulé de devise", async () => {
+    try {
+      await afficher({});
+
+      expect(screen.getAllByTestId(/^graphique-/)).toHaveLength(1);
+      expect(screen.getByTestId("graphique-EUR")).toBeInTheDocument();
+      expect(screen.queryByRole("group", { name: /Revenus et dépenses en/ })).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("aucun mois renseigné : pas de graphique, le message le dit", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 5, 15));
+    try {
+      mockedApi.get.mockReset();
+      mockedApi.get.mockResolvedValue({ data: synthesis({ revenueByMonth: {}, expensesByMonth: {} }) });
+      renderPage();
+
+      expect(await screen.findByText("Aucune donnée pour cet exercice.")).toBeInTheDocument();
+      expect(screen.queryByTestId(/^graphique-/)).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+

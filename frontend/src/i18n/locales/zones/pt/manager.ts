@@ -844,10 +844,6 @@ const zone: ZoneManager = {
       charts: {
         revenueVsExpenses: "Receitas vs Despesas por mês ({{year}})",
         noData: "Sem dados para este exercício.",
-        tooltipRevenue: "Rendas recebidas",
-        tooltipExpense: "Despesas & Obras",
-        legendRevenue: "Receitas",
-        legendExpense: "Despesas",
         categoryBreakdown: "Repartição das despesas",
         noCategoryData: "Nenhuma despesa registada neste exercício.",
       },
