@@ -19,13 +19,13 @@
     "date-fns": "^4.4.0",
     "i18next": "^26.4.0",
     "i18next-browser-languagedetector": "^8.2.1",
-    "lucide-react": "^1.37.0",
+    "lucide-react": "^1.78.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-hook-form": "^7.86.0",
     "react-i18next": "^17.0.12",
     "react-router-dom": "^7.18.3",
-    "recharts": "^3.10.1"
+    "recharts": "^3.11.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
@@ -38,7 +38,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "@vitest/coverage-v8": "^5.0.5",
     "jsdom": "^30.0.1",
-    "oxlint": "^1.82.0",
+    "oxlint": "^1.95.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.7.2",
