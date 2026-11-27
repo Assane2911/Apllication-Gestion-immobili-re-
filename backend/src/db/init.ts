@@ -1259,6 +1259,10 @@ export async function initDb() {
     // aurait été incohérent.
     // Lu d'abord : l'UPDATE ne se lance que s'il y a réellement une ligne à
     // corriger (il n'y en a plus aucune en régime normal).
+    // Jamais un compte qui n'est pas en essai : un abonné (ACTIVE, CANCELLED) ou un compte arrivé à terme (EXPIRED) sans
+    // date d'essai n'a pas à en recevoir une, et ce rattrapage lui réécrivait aussi son statut en « TRIAL » : un
+    // abonné payant redevenait « en essai » (constaté en production le 26 novembre 2026 sur un compte de test), un
+    // compte expiré retrouvait 15 jours gratuits. Le statut n'est donc plus jamais écrit ici.
     // Jamais les collaborateurs invités (team_owner_id renseigné) : ils n'ont
     // pas d'abonnement propre — c'est celui du gestionnaire propriétaire qui
     // compte — et sont créés sans date d'essai. Les inclure faisait repartir
@@ -1267,11 +1271,11 @@ export async function initDb() {
     await alterSiBesoin(() =>
       avecVerrouBorne(async (tx) => {
         const aCorriger = lignes<{ un: number }>(
-          await tx.execute(sql`SELECT 1 AS un FROM users WHERE role = 'MANAGER' AND team_owner_id IS NULL AND trial_ends_at IS NULL LIMIT 1`)
+          await tx.execute(sql`SELECT 1 AS un FROM users WHERE role = 'MANAGER' AND subscription_status = 'TRIAL' AND team_owner_id IS NULL AND trial_ends_at IS NULL LIMIT 1`)
         );
         if (aCorriger.length === 0) return;
         await tx.execute(
-          sql`UPDATE users SET trial_ends_at = CURRENT_TIMESTAMP + INTERVAL '15 days', subscription_status = 'TRIAL' WHERE role = 'MANAGER' AND team_owner_id IS NULL AND trial_ends_at IS NULL`
+          sql`UPDATE users SET trial_ends_at = CURRENT_TIMESTAMP + INTERVAL '15 days' WHERE role = 'MANAGER' AND subscription_status = 'TRIAL' AND team_owner_id IS NULL AND trial_ends_at IS NULL`
         );
       })
     );
