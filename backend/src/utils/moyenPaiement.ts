@@ -21,6 +21,7 @@ const LIBELLES: Record<Langue, Record<string, string>> = {
     CASH: "Espèces",
     CHEQUE: "Chèque",
     MOBILE_MONEY: "Mobile Money",
+    OTHER: "Autre moyen",
   },
   en: {
     BANK_TRANSFER: "Bank transfer",
@@ -30,6 +31,7 @@ const LIBELLES: Record<Langue, Record<string, string>> = {
     CASH: "Cash",
     CHEQUE: "Cheque",
     MOBILE_MONEY: "Mobile Money",
+    OTHER: "Other method",
   },
   es: {
     BANK_TRANSFER: "Transferencia bancaria",
@@ -39,6 +41,7 @@ const LIBELLES: Record<Langue, Record<string, string>> = {
     CASH: "Efectivo",
     CHEQUE: "Cheque",
     MOBILE_MONEY: "Mobile Money",
+    OTHER: "Otro medio",
   },
   pt: {
     BANK_TRANSFER: "Transferência bancária",
@@ -48,6 +51,7 @@ const LIBELLES: Record<Langue, Record<string, string>> = {
     CASH: "Dinheiro",
     CHEQUE: "Cheque",
     MOBILE_MONEY: "Mobile Money",
+    OTHER: "Outro meio",
   },
 };
 

@@ -462,6 +462,7 @@ const zone = {
       CASH: "Espèces",
       CHEQUE: "Chèque",
       MOBILE_MONEY: "Mobile Money",
+      OTHER: "Autre moyen",
     },
     language: {
       label: "Langue",

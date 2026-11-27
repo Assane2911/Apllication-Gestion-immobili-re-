@@ -10,6 +10,7 @@ describe("libelleMoyenPaiement", () => {
     ["CASH", "Espèces"],
     ["CHEQUE", "Chèque"],
     ["MOBILE_MONEY", "Mobile Money"],
+    ["OTHER", "Autre moyen"],
   ])("traduit %s en « %s » : jamais le code technique", (code, attendu) => {
     expect(libelleMoyenPaiement(code)).toBe(attendu);
     expect(libelleMoyenPaiement(code)).not.toMatch(/^[A-Z_]+$/);

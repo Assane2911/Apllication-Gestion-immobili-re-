@@ -113,7 +113,7 @@ export const listInvoices = asyncHandler(async (req: Request, res: Response) => 
  * saisir à la main ferait passer un encaissement non vérifié pour un paiement
  * en ligne.
  */
-export const MOYENS_SAISIS_A_LA_MAIN = ["CASH", "CHEQUE", "MOBILE_MONEY"] as const;
+export const MOYENS_SAISIS_A_LA_MAIN = ["CASH", "CHEQUE", "MOBILE_MONEY", "OTHER"] as const;
 
 const markPaidSchema = z.object({
   paymentMethod: z.enum(MOYENS_SAISIS_A_LA_MAIN).default("CASH"),

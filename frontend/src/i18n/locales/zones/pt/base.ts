@@ -464,6 +464,7 @@ const zone: ZoneBase = {
       CASH: "Numerário",
       CHEQUE: "Cheque",
       MOBILE_MONEY: "Mobile Money",
+      OTHER: "Outro meio",
     },
     language: {
       label: "Idioma",

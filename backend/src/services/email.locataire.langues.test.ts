@@ -158,7 +158,7 @@ describe("libelleMoyenPaiement", () => {
   });
 
   it("traduit chaque moyen connu dans chaque langue", () => {
-    const moyens = ["BANK_TRANSFER", "STRIPE", "PAYDUNYA", "DEMO", "CASH", "CHEQUE", "MOBILE_MONEY"];
+    const moyens = ["BANK_TRANSFER", "STRIPE", "PAYDUNYA", "DEMO", "CASH", "CHEQUE", "MOBILE_MONEY", "OTHER"];
     for (const l of AUTRES) {
       const libelles = moyens.map((m) => libelleMoyenPaiement(m, l));
       expect(libelles.every((x) => x.length > 2 && !/_/.test(x))).toBe(true);
