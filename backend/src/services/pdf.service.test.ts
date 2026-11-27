@@ -149,6 +149,7 @@ describe("generateReceiptHtml", () => {
     ["BANK_TRANSFER", "Virement bancaire"],
     ["STRIPE", "Carte bancaire (en ligne)"],
     ["PAYDUNYA", "Mobile Money / carte (en ligne)"],
+    ["OTHER", "Autre moyen"],
   ])("affiche « %s » en clair (%s) sur la quittance, jamais le code technique", (code, libelle) => {
     const html = generateReceiptHtml({ ...baseReceipt, invoice: { ...baseReceipt.invoice, paymentMethod: code } });
 

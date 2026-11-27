@@ -27,8 +27,9 @@ export const roleEnum = pgEnum("role", ["MANAGER", "TENANT", "ADMIN", "OWNER"]);
 export const propertyStatusEnum = pgEnum("property_status", ["AVAILABLE", "OCCUPIED", "MAINTENANCE"]);
 export const contractStatusEnum = pgEnum("contract_status", ["ACTIVE", "ENDED", "TERMINATED"]);
 export const invoiceStatusEnum = pgEnum("invoice_status", ["PENDING", "PAID", "LATE", "CANCELLED"]);
-// CASH, CHEQUE et MOBILE_MONEY : encaissements saisis à la main par le gestionnaire
+// CASH, CHEQUE, MOBILE_MONEY et OTHER : encaissements saisis à la main par le gestionnaire
 // (voir markInvoicePaid). STRIPE, PAYDUNYA et DEMO ne viennent que des prestataires.
+// BANK_TRANSFER n'est plus proposé nulle part : la valeur reste pour l'historique existant.
 export const paymentMethodEnum = pgEnum("payment_method", [
   "STRIPE",
   "PAYDUNYA",
@@ -37,6 +38,7 @@ export const paymentMethodEnum = pgEnum("payment_method", [
   "CASH",
   "CHEQUE",
   "MOBILE_MONEY",
+  "OTHER",
 ]);
 export const issueStatusEnum = pgEnum("issue_status", ["OPEN", "IN_PROGRESS", "RESOLVED", "REJECTED"]);
 export const subscriptionStatusEnum = pgEnum("subscription_status", ["TRIAL", "ACTIVE", "EXPIRED", "CANCELLED"]);

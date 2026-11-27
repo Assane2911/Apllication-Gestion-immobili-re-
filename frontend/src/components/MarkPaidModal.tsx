@@ -7,7 +7,7 @@ import CadreModale from "./CadreModale";
 import ChampDate from "./ChampDate";
 import { AIDE, AVIS, BOUTON_ANNULER, BOUTON_PLEIN, BOUTON_TRAIT, CHAMP, ERREUR, ETIQUETTE } from "./styleFormulaire";
 
-const MOYENS: MoyenSaisiAlaMain[] = ["CASH", "CHEQUE", "MOBILE_MONEY"];
+const MOYENS: MoyenSaisiAlaMain[] = ["CASH", "CHEQUE", "MOBILE_MONEY", "OTHER"];
 
 interface MarkPaidModalProps {
   invoiceId: string;

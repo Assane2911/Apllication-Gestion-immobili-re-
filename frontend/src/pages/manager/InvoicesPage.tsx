@@ -81,6 +81,7 @@ export default function InvoicesPage() {
     CASH: t("common.paymentMethods.CASH"),
     CHEQUE: t("common.paymentMethods.CHEQUE"),
     MOBILE_MONEY: t("common.paymentMethods.MOBILE_MONEY"),
+    OTHER: t("common.paymentMethods.OTHER"),
   };
 
   function load(signal?: AbortSignal) {

@@ -53,3 +53,28 @@ describe("MarkPaidModal — règlement partiel et solde", () => {
     expect(mockedApi.post).toHaveBeenCalledWith("/invoices/inv-1/mark-paid", expect.objectContaining({ amount: 200 }));
   });
 });
+
+describe("MarkPaidModal — moyen d'encaissement", () => {
+  beforeEach(() => mockedApi.post.mockReset());
+
+  it("propose espèces, chèque, Mobile Money et « Autre moyen », jamais le virement", () => {
+    afficher();
+
+    const options = screen.getAllByRole("option").map((o) => o.textContent);
+    expect(options).toEqual(["Espèces", "Chèque", "Mobile Money", "Autre moyen"]);
+    expect(screen.queryByRole("option", { name: /virement/i })).not.toBeInTheDocument();
+  });
+
+  it("envoie « OTHER » quand le gestionnaire choisit « Autre moyen » (loyer reçu par un moyen que l'application ne liste pas)", async () => {
+    const user = userEvent.setup();
+    mockedApi.post.mockResolvedValueOnce({ data: {} });
+    const { onSuccess } = afficher();
+
+    await user.selectOptions(screen.getByLabelText(/Moyen de paiement/), "OTHER");
+    await user.click(screen.getByRole("button", { name: "Marquer réglée" }));
+
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled());
+    expect(mockedApi.post).toHaveBeenCalledWith("/invoices/inv-1/mark-paid", expect.objectContaining({ paymentMethod: "OTHER", amount: 500 }));
+  });
+});
+

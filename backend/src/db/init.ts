@@ -115,7 +115,7 @@ async function lireEtatSchema(): Promise<EtatSchema> {
   );
   const contraintes = lignes<{ conname: string }>(
     await db.execute(
-      sql`SELECT conname FROM pg_constraint WHERE conname IN ('users_role_check', 'tenants_email_key', 'invoices_payment_method_check') AND connamespace = current_schema()::regnamespace`
+      sql`SELECT conname FROM pg_constraint WHERE conname IN ('users_role_check', 'tenants_email_key', 'invoices_payment_method_check', 'invoice_payments_payment_method_check') AND connamespace = current_schema()::regnamespace`
     )
   );
 
@@ -305,11 +305,11 @@ async function contrainteRoleAJour(): Promise<boolean> {
 }
 
 /** Moyens de paiement connus de schema.ts (paymentMethodEnum). */
-const MOYENS_DE_PAIEMENT = ["STRIPE", "PAYDUNYA", "BANK_TRANSFER", "DEMO", "CASH", "CHEQUE", "MOBILE_MONEY"];
+const MOYENS_DE_PAIEMENT = ["STRIPE", "PAYDUNYA", "BANK_TRANSFER", "DEMO", "CASH", "CHEQUE", "MOBILE_MONEY", "OTHER"];
 
 /**
- * Élargit les moyens de paiement acceptés par `invoices.payment_method` aux
- * encaissements saisis à la main (espèces, chèque, Mobile Money).
+ * Élargit les moyens de paiement acceptés par `invoices.payment_method` et `invoice_payments.payment_method` aux
+ * encaissements saisis à la main (espèces, chèque, Mobile Money, autre moyen).
  *
  * Deux formes de base coexistent :
  *  - production (créée par drizzle-kit) : un vrai type ENUM `payment_method` →
@@ -330,15 +330,23 @@ async function elargirMoyensDePaiement(): Promise<void> {
     for (const moyen of MOYENS_DE_PAIEMENT.filter((m) => !existants.includes(m))) {
       await alterSiBesoin(() => executerDdl(sql.raw(`ALTER TYPE payment_method ADD VALUE IF NOT EXISTS '${moyen}'`)));
     }
-    return;
+  } else {
+    await elargirContrainteMoyens("invoices", "invoices_payment_method_check");
   }
+  // `invoice_payments` (paiements partiels) est en TEXT + CHECK sous les DEUX formes de base, production comprise : l'énumération
+  // ne la concerne pas, sa contrainte doit donc être élargie à part.
+  await elargirContrainteMoyens("invoice_payments", "invoice_payments_payment_method_check");
+}
 
-  if (!etat.contraintes.has("invoices_payment_method_check")) return;
+/**
+ * Remplace la contrainte CHECK d'une colonne TEXT des moyens de paiement, uniquement si elle ne connaît pas encore tous les
+ * moyens : rien n'est émis (donc aucun verrou) quand elle est déjà à jour ou absente.
+ */
+async function elargirContrainteMoyens(table: string, contrainte: string): Promise<void> {
+  if (!etat.contraintes.has(contrainte)) return;
   try {
     const resultat = await avecVerrouBorne((tx) =>
-      tx.execute(
-        sql`SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint WHERE conname = 'invoices_payment_method_check' AND connamespace = current_schema()::regnamespace`
-      )
+      tx.execute(sql`SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint WHERE conname = ${contrainte} AND connamespace = current_schema()::regnamespace`)
     );
     const definition = lignes<{ def: string }>(resultat)[0]?.def ?? "";
     if (MOYENS_DE_PAIEMENT.every((m) => definition.includes(`'${m}'`))) return;
@@ -348,8 +356,8 @@ async function elargirMoyensDePaiement(): Promise<void> {
   const liste = MOYENS_DE_PAIEMENT.map((m) => `'${m}'`).join(", ");
   await alterSiBesoin(() =>
     executerDdl(
-      sql`ALTER TABLE invoices DROP CONSTRAINT IF EXISTS invoices_payment_method_check`,
-      sql.raw(`ALTER TABLE invoices ADD CONSTRAINT invoices_payment_method_check CHECK (payment_method IN (${liste}))`)
+      sql.raw(`ALTER TABLE ${table} DROP CONSTRAINT IF EXISTS ${contrainte}`),
+      sql.raw(`ALTER TABLE ${table} ADD CONSTRAINT ${contrainte} CHECK (payment_method IN (${liste}))`)
     )
   );
 }
@@ -603,7 +611,7 @@ export async function initDb() {
         due_date TIMESTAMP NOT NULL,
         status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PAID', 'LATE', 'CANCELLED')),
         paid_at TIMESTAMP,
-        payment_method TEXT CHECK (payment_method IN ('STRIPE', 'PAYDUNYA', 'BANK_TRANSFER', 'DEMO', 'CASH', 'CHEQUE', 'MOBILE_MONEY')),
+        payment_method TEXT CHECK (payment_method IN ('STRIPE', 'PAYDUNYA', 'BANK_TRANSFER', 'DEMO', 'CASH', 'CHEQUE', 'MOBILE_MONEY', 'OTHER')),
         payment_ref TEXT,
         amount_paid DOUBLE PRECISION NOT NULL DEFAULT 0,
         reminder_sent_at TIMESTAMP,
@@ -629,7 +637,7 @@ export async function initDb() {
         invoice_id TEXT NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
         amount DOUBLE PRECISION NOT NULL,
         paid_at TIMESTAMP NOT NULL,
-        payment_method TEXT NOT NULL CHECK (payment_method IN ('STRIPE', 'PAYDUNYA', 'BANK_TRANSFER', 'DEMO', 'CASH', 'CHEQUE', 'MOBILE_MONEY')),
+        payment_method TEXT NOT NULL CHECK (payment_method IN ('STRIPE', 'PAYDUNYA', 'BANK_TRANSFER', 'DEMO', 'CASH', 'CHEQUE', 'MOBILE_MONEY', 'OTHER')),
         payment_ref TEXT,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )

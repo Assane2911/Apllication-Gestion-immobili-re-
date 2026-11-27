@@ -67,6 +67,19 @@ describe("paiement partiel", () => {
     expect((await paiements(invoice.id)).map((p: { amount: number }) => p.amount).sort()).toEqual([200, 300]);
   });
 
+  it("accepte « Autre moyen » pour un acompte puis pour le solde, et le garde dans l'historique des paiements", async () => {
+    const { manager, invoice } = await facture(500);
+    await payer(manager, invoice.id, { amount: 300, paymentMethod: "OTHER", paymentRef: "VIR-RECU-1" });
+    const res = await payer(manager, invoice.id, { amount: 200, paymentMethod: "OTHER" });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ status: "PAID", solde: true, resteDu: 0 });
+    expect((await relire(invoice.id)).paymentMethod).toBe("OTHER");
+    const lignes = await paiements(invoice.id);
+    expect(lignes).toHaveLength(2);
+    expect(lignes.every((p: { paymentMethod: string }) => p.paymentMethod === "OTHER")).toBe(true);
+  });
+
   it("sans montant : règle le reste dû (comportement d'avant pour une facture sans acompte)", async () => {
     const { manager, invoice } = await facture(500);
     const res = await payer(manager, invoice.id, {});

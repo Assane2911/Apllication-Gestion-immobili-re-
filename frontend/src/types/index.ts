@@ -503,10 +503,10 @@ export interface AgencySettings {
 }
 
 export type InvoiceStatus = "PENDING" | "PAID" | "LATE" | "CANCELLED";
-export type PaymentMethod = "STRIPE" | "PAYDUNYA" | "DEMO" | "CASH" | "CHEQUE" | "MOBILE_MONEY";
+export type PaymentMethod = "STRIPE" | "PAYDUNYA" | "DEMO" | "CASH" | "CHEQUE" | "MOBILE_MONEY" | "OTHER";
 
 /** Moyens que le gestionnaire peut saisir à la main en marquant un loyer réglé. */
-export type MoyenSaisiAlaMain = "CASH" | "CHEQUE" | "MOBILE_MONEY";
+export type MoyenSaisiAlaMain = "CASH" | "CHEQUE" | "MOBILE_MONEY" | "OTHER";
 
 export interface Invoice {
   id: string;
